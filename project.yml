@@ -1,0 +1,42 @@
+name: MeetingCountdown
+options:
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+targets:
+  FeishuMeetingCountdown:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: MeetingCountdownApp
+        excludes:
+          - "**/AGENTS.md"
+    settings:
+      base:
+        PRODUCT_NAME: FeishuMeetingCountdown
+        PRODUCT_BUNDLE_IDENTIFIER: com.luiszeng.meetingcountdown
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Feishu Meeting Countdown
+        INFOPLIST_KEY_LSUIElement: YES
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      gatherCoverageData: true
+      testTargets:
+        - FeishuMeetingCountdownTests
+  FeishuMeetingCountdownTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: MeetingCountdownAppTests
+        excludes:
+          - "**/AGENTS.md"
+    dependencies:
+      - target: FeishuMeetingCountdown
