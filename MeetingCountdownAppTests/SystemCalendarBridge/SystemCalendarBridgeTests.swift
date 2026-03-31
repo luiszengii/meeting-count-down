@@ -1,0 +1,229 @@
+import Foundation
+import XCTest
+@testable import FeishuMeetingCountdown
+
+/// 这些测试验证 Phase 2 系统日历桥接层的关键规则是否稳定。
+@MainActor
+final class SystemCalendarBridgeTests: XCTestCase {
+    /// 验证默认推荐规则只认飞书 CalDAV 账户，不会把其它 CalDAV / iCloud 来源也一起标成推荐。
+    func testShouldSuggestCalendarOnlyForFeishuCalDAVSource() {
+        XCTAssertTrue(EventKitSystemCalendarAccess.shouldSuggestCalendar(sourceTitle: "caldav.feishu.cn"))
+        XCTAssertTrue(EventKitSystemCalendarAccess.shouldSuggestCalendar(sourceTitle: "  CalDAV.FEISHU.CN  "))
+        XCTAssertFalse(EventKitSystemCalendarAccess.shouldSuggestCalendar(sourceTitle: "iCloud"))
+        XCTAssertFalse(EventKitSystemCalendarAccess.shouldSuggestCalendar(sourceTitle: "caldav.icloud.com"))
+    }
+
+    /// 验证当用户首次授权后还没有手动选过日历时，控制器会自动预选建议日历并持久化。
+    func testConnectionControllerAutoSelectsSuggestedCalendarsOnFirstAuthorizedLoad() async {
+        let preferencesStore = InMemoryPreferencesStore()
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [
+                calendar(id: "feishu", title: "飞书日历", suggested: true),
+                calendar(id: "personal", title: "个人", suggested: false)
+            ]
+        )
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: access,
+            preferencesStore: preferencesStore,
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+        let storedCalendarIDs = await preferencesStore.loadSelectedSystemCalendarIDs()
+
+        XCTAssertEqual(controller.selectedCalendarIDs, ["feishu"])
+        XCTAssertEqual(storedCalendarIDs, ["feishu"])
+    }
+
+    /// 验证当用户已经显式保存过“空选择”后，控制器不会在下一次刷新时又自动把推荐日历选回来。
+    func testConnectionControllerDoesNotReselectSuggestedCalendarsAfterExplicitEmptySelection() async {
+        let preferencesStore = InMemoryPreferencesStore(
+            selectedSystemCalendarIDs: [],
+            hasStoredSelectedSystemCalendarIDs: true
+        )
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [
+                calendar(id: "feishu", title: "飞书日历", suggested: true),
+                calendar(id: "personal", title: "个人", suggested: false)
+            ]
+        )
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: access,
+            preferencesStore: preferencesStore,
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+
+        XCTAssertEqual(controller.selectedCalendarIDs, [])
+    }
+
+    /// 验证用户切换某个系统日历选择后，会立即写回持久化层。
+    func testConnectionControllerPersistsSelectionChanges() async {
+        let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [
+                calendar(id: "feishu", title: "飞书日历", suggested: true),
+                calendar(id: "personal", title: "个人", suggested: false)
+            ]
+        )
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: access,
+            preferencesStore: preferencesStore,
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+        await controller.setCalendarSelection(calendarID: "personal", isSelected: true)
+        let storedCalendarIDs = await preferencesStore.loadSelectedSystemCalendarIDs()
+
+        XCTAssertEqual(controller.selectedCalendarIDs, ["feishu", "personal"])
+        XCTAssertEqual(storedCalendarIDs, ["feishu", "personal"])
+    }
+
+    /// 验证系统日历数据源在未选择任何日历时，会保持未配置状态而不是误判成失败。
+    func testSystemCalendarMeetingSourceReturnsUnconfiguredWithoutSelection() async {
+        let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: [])
+        let source = SystemCalendarMeetingSource(
+            calendarAccess: StubSystemCalendarAccess(authorizationState: .authorized),
+            preferencesStore: preferencesStore
+        )
+
+        let healthState = await source.healthState()
+
+        XCTAssertEqual(healthState, .unconfigured(message: "尚未选择需要纳入提醒的系统日历"))
+    }
+
+    /// 验证系统日历事件能被统一标准化成会议，并把来源信息标成具体系统日历。
+    func testSystemCalendarMeetingSourceRefreshNormalizesPayloadsIntoMeetings() async throws {
+        let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [calendar(id: "feishu", title: "飞书日历", suggested: true)],
+            events: [
+                (
+                    calendar: calendar(id: "feishu", title: "飞书日历", suggested: true),
+                    payload: SystemCalendarEventPayload(
+                        identifier: "event-1",
+                        title: "团队周会",
+                        startAt: fixedNow().addingTimeInterval(15 * 60),
+                        endAt: fixedNow().addingTimeInterval(45 * 60),
+                        timeZoneIdentifier: "Asia/Shanghai",
+                        isAllDay: false,
+                        isCancelled: false,
+                        primaryURL: URL(string: "https://meet.feishu.cn/abc"),
+                        notes: "会议详情 https://example.com/detail"
+                    )
+                )
+            ]
+        )
+        let source = SystemCalendarMeetingSource(
+            calendarAccess: access,
+            preferencesStore: preferencesStore
+        )
+
+        let snapshot = try await source.refresh(trigger: .manualRefresh, now: fixedNow())
+
+        XCTAssertEqual(snapshot.meetings.count, 1)
+        XCTAssertEqual(snapshot.meetings.first?.title, "团队周会")
+        XCTAssertEqual(snapshot.meetings.first?.source.sourceIdentifier, "feishu")
+        XCTAssertEqual(snapshot.meetings.first?.links.count, 2)
+        XCTAssertEqual(snapshot.healthState, .ready(message: "已从 1 个系统日历读取会议"))
+    }
+
+    /// 验证 URL 提取和标题兜底逻辑能在不依赖 EventKit 的情况下直接被规则测试锁住。
+    func testEventNormalizerUsesFallbackTitleAndDeduplicatesLinks() {
+        let meeting = SystemCalendarEventNormalizer.makeMeetingRecord(
+            from: SystemCalendarEventPayload(
+                identifier: "event-2",
+                title: "   ",
+                startAt: fixedNow(),
+                endAt: fixedNow().addingTimeInterval(30 * 60),
+                timeZoneIdentifier: nil,
+                isAllDay: false,
+                isCancelled: false,
+                primaryURL: URL(string: "https://example.com/detail"),
+                notes: "重复链接 https://example.com/detail"
+            ),
+            calendar: calendar(id: "local", title: "工作", suggested: false)
+        )
+
+        XCTAssertEqual(meeting.title, "未命名会议")
+        XCTAssertEqual(meeting.links.count, 1)
+        XCTAssertEqual(meeting.links.first?.kind, .web)
+    }
+
+    /// 统一生成测试用系统日历描述符。
+    private func calendar(id: String, title: String, suggested: Bool) -> SystemCalendarDescriptor {
+        SystemCalendarDescriptor(
+            id: id,
+            title: title,
+            sourceTitle: "测试账户",
+            sourceTypeLabel: "CalDAV",
+            isSuggestedByDefault: suggested
+        )
+    }
+
+    /// 所有桥接层测试共享同一个固定时间。
+    private func fixedNow() -> Date {
+        Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 3, day: 31, hour: 9, minute: 0))!
+    }
+}
+
+/// 用纯 Swift stub 替换真实 EventKit 访问层，让桥接测试不依赖机器权限或真实日历。
+@MainActor
+private final class StubSystemCalendarAccess: SystemCalendarAccessing {
+    /// 测试预设的授权状态。
+    var authorizationState: SystemCalendarAuthorizationState
+    /// 测试预设的系统日历候选。
+    var calendars: [SystemCalendarDescriptor]
+    /// 测试预设的事件载荷。
+    var events: [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)]
+
+    init(
+        authorizationState: SystemCalendarAuthorizationState,
+        calendars: [SystemCalendarDescriptor] = [],
+        events: [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)] = []
+    ) {
+        self.authorizationState = authorizationState
+        self.calendars = calendars
+        self.events = events
+    }
+
+    func currentAuthorizationState() -> SystemCalendarAuthorizationState {
+        authorizationState
+    }
+
+    func requestReadAccess() async throws -> SystemCalendarAuthorizationState {
+        authorizationState
+    }
+
+    func fetchCalendars() -> [SystemCalendarDescriptor] {
+        calendars
+    }
+
+    func fetchEventPayloads(
+        start: Date,
+        end: Date,
+        calendarIDs: Set<String>
+    ) throws -> [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)] {
+        events.filter { calendarIDs.contains($0.calendar.id) }
+    }
+}
+
+/// 这些桥接层测试同样使用固定时钟，避免“最近更新时间”依赖真实当前时间。
+private struct FixedDateProvider: DateProviding {
+    /// 测试注入的固定当前时间。
+    let currentDate: Date
+
+    /// 直接返回固定时间。
+    func now() -> Date {
+        currentDate
+    }
+}

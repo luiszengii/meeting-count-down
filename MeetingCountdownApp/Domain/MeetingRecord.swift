@@ -2,7 +2,7 @@ import Foundation
 
 /// 这个文件承载应用的统一会议模型。
 /// 设计重点不是一次性把所有来源字段搬全，而是定义提醒引擎真正依赖的最小公共集合：
-/// 会议何时开始、是否全天、是否已取消、有哪些链接、来自哪种数据源。
+/// 会议何时开始、是否全天、是否已取消、有哪些链接、来自哪个系统日历来源。
 /// 后续具体接入可以把额外原始信息放进 `metadata`，但不能跳过这里直接把原始模型送进提醒层。
 
 struct MeetingRecord: Identifiable, Equatable, Sendable {
@@ -94,10 +94,8 @@ enum MeetingParticipantResponseStatus: String, Codable, Equatable, Sendable {
     case unknown
 }
 
-/// 描述当前会议记录来自哪一种上游源，以及在该源内的标识信息。
+/// 描述当前会议记录来自哪个上游源，以及在该源内的标识信息。
 struct MeetingSourceDescriptor: Equatable, Sendable {
-    /// 会议来自哪一种连接模式，例如 CalDAV 或 BYO Feishu App。
-    var mode: ConnectionMode
     /// 该来源内部的唯一标识，可用于日志和诊断。
     var sourceIdentifier: String
     /// 面向用户展示的来源名称。

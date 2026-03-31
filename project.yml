@@ -25,6 +25,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Feishu Meeting Countdown
         INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: Feishu Meeting Countdown 需要读取你在 macOS 日历中同步的飞书会议，用来计算下一场会议并在会前提醒。
         SUPPORTS_MACCATALYST: NO
     scheme:
       gatherCoverageData: true

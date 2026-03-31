@@ -8,7 +8,6 @@ final class NextMeetingSelectorTests: XCTestCase {
     private let selector = DefaultNextMeetingSelector()
     /// 测试里统一复用同一份来源描述，避免每个用例重复构造。
     private let calendarSource = MeetingSourceDescriptor(
-        mode: .caldavSystemCalendar,
         sourceIdentifier: "test-source",
         displayName: "测试系统日历"
     )

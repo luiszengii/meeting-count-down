@@ -12,3 +12,5 @@ ADR 表示 Architecture / Decision Record，用于记录技术栈、产品形态
 - [2026-03-30 单一 app target 启动工程骨架](./2026-03-30-single-app-target-bootstrap.md)
 - [2026-03-30 强化学习导向的 Swift 注释密度要求](./2026-03-30-learning-oriented-swift-comment-density.md)
 - [2026-03-30 提升最低 macOS 版本到 14](./2026-03-30-bump-minimum-macos-to-14.md)
+- [2026-03-30 Phase 1 先用设置窗口承载接入向导](./2026-03-30-onboarding-routes-through-settings-window.md)
+- [2026-03-31 CalDAV-only 产品范围收敛](./2026-03-31-caldav-only-product-scope.md)

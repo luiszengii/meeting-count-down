@@ -2,13 +2,13 @@ import Foundation
 
 /// `MeetingSource` 统一抽象任何可提供会议列表的上游来源。
 /// 协议故意从 Phase 0 开始就采用 `async` 形式，
-/// 因为后续无论是 EventKit、OAuth 刷新、HTTP 拉取还是导入替换，都会天然涉及异步边界。
+/// 因为后续无论是 EventKit 读取、系统事件监听触发的重读，还是本地缓存恢复，都会天然涉及异步边界。
 /// 这样可以避免未来接入真实实现时，为了补异步再大面积修改调用方。
 
 enum MeetingSourceError: Error, Equatable, Sendable {
-    /// 代表这一路源还没完成前置配置，例如还没填 App ID 或没选系统日历。
+    /// 代表这一路源还没完成前置配置，例如还没选系统日历或还没授权读取权限。
     case notConfigured(message: String)
-    /// 代表源本身暂时不可用，例如 CLI 不存在、网络错误或系统能力失败。
+    /// 代表源本身暂时不可用，例如 EventKit 读取失败或系统能力异常。
     case unavailable(message: String)
 
     /// 把底层错误统一压成可直接展示给用户的文本，避免 UI 层再理解领域错误的细节。

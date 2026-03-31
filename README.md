@@ -2,73 +2,57 @@
 
 一个面向 macOS 的菜单栏常驻应用，用于读取飞书日历中的即将开始会议，并在会前自动触发倒计时与音效提醒。
 
-当前项目采用“四路接入”模式：`CalDAV -> macOS Calendar`、`BYO Feishu App` 直连、`离线导入`、`lark-cli` 辅助。客户端在本地完成会议数据规范化、倒计时调度和音效提醒，不再假设所有用户都具备飞书开放平台权限。
+当前项目已经收敛为单一路线：`CalDAV -> macOS Calendar -> 本地 app`。用户先把飞书日历通过 CalDAV 同步到 macOS 自带“日历”应用，再由本 app 通过 `EventKit` 只读系统日历并完成提醒。不再提供 `BYO Feishu App`、`离线导入`、`lark-cli` 等其他会议接入方式。
 
-项目现在同时采用“文档先行”原则：仓库级规则在 [AGENTS.md](./AGENTS.md)，持续演进文档在 [docs/README.md](./docs/README.md)。
+项目同时采用“文档先行”原则：仓库级规则在 [AGENTS.md](./AGENTS.md)，持续演进文档在 [docs/README.md](./docs/README.md)。
 
 ## 当前目标
 
 - 做成可安装、可分享的独立 macOS 软件
-- 首版聚焦“能接入任一路径 + 能读下一场会议 + 能稳定提醒”
-- 在有权限时优先走实时或准实时同步，在无权限时提供可退化的本地导入方案
+- 首版只聚焦一条普通用户可走通的 CalDAV 路径
+- 先把“能读下一场会议 + 能稳定提醒”做扎实，再扩展更多体验细节
 
 ## 核心能力
 
-- `lark-cli` 辅助接入与诊断
-- 飞书应用配置：`App ID`、`App Secret`
-- 本地 OAuth 授权与 loopback 回调
-- `user_access_token` / `refresh_token` 获取与刷新
-- 飞书日历 API 读取与同步
-- CalDAV 同步到 macOS Calendar 后的系统日历读取
-- `.ics` 或会议快照离线导入
+- 飞书 CalDAV 同步到 macOS Calendar 后的系统日历读取
 - 自动计算下一场会议
 - 菜单栏状态展示
 - 会前音效播放与倒计时触发
-- 手动刷新、定时刷新、睡眠唤醒后重算
+- 手动刷新、定时重读、睡眠唤醒后重算
 - 本地音效导入、播放测试、静音模式、总开关
 
-## 接入路径
-
-推荐顺序：`CalDAV -> BYO Feishu App -> Offline Import`，`lark-cli` 仅作为辅助工具出现，不作为默认接入路径。
+## 唯一接入路径
 
 ### `CalDAV -> macOS Calendar`
 
-- 用户在飞书日历中生成 Mac 专用密码
-- 用户在 macOS Calendar 中添加 `Other CalDAV Account`
-- 客户端通过 `EventKit` 读取系统日历中的飞书会议
+- 这是当前唯一支持的飞书会议接入方式
+- 用户不需要创建飞书开放平台应用
+- app 不保存飞书账号密码，也不管理 OAuth token
+- app 只读取已经同步到 macOS Calendar 的飞书会议
 
-### `BYO Feishu App` 直连
+推荐按下面步骤操作：
 
-推荐使用飞书 `企业自建应用`，并完成以下配置：
+1. 在飞书里进入“设置 -> 日历 -> CalDAV 同步 -> 进入设置”。
+2. 复制飞书提供的 `用户名`、`专用密码`、`服务器地址`。
+3. 打开 macOS 自带“日历”应用，进入“设置”。
+4. 打开“账户”标签页，点击左下角 `+`。
+5. 选择“其他 CalDAV 账户”。
+6. 账户类型选择“手动”。
+7. 把刚刚复制的 `用户名`、`密码`、`服务器地址` 粘贴进去并完成添加。
+8. 添加成功后，账户列表里应出现类似 `caldav.feishu.cn` 的供应商。
+9. 你可以在 macOS 日历里把刷新间隔调成 `5 分钟` 或更短，尽量缩短系统日历同步延迟。
+10. 回到本 app，授予系统日历读取权限，并选择同步出来的飞书日历。
 
-- 开启并发布用户身份权限
-- 权限包含 `calendar:calendar:readonly`
-- 权限包含 `offline_access`
-- 在安全设置中配置重定向地址：
-  - `http://127.0.0.1:23388/oauth/callback`
-
-### `离线导入`
-
-- 支持导入 `.ics`
-- 可扩展支持 `lark-cli` 导出的会议快照
-- 作为无审批、无开放权限时的最终兜底路径
-
-### `CLI 辅助接入`
-
-- 不内置 `lark-cli`
-- 由用户或用户自己的 agent 安装并运行
-- 用于诊断、权限探测、辅助导入或开发调试
+这条路径的限制也要提前说明：app 读到的是 macOS Calendar 当前已经同步下来的数据，所以飞书会议刚被改期或取消时，是否立刻反映出来仍取决于系统日历同步时机。
 
 ## 技术栈
 
 - Swift 5.10+ / Swift 6
 - SwiftUI
 - `MenuBarExtra` / `NSStatusItem`
-- `URLSession`
-- `AVFoundation`
 - `EventKit`
+- `AVFoundation`
 - `UserNotifications`
-- Keychain
 - UserDefaults + 文件系统
 
 ## 当前工程状态
@@ -77,22 +61,21 @@
 - 工程规格文件为 [project.yml](./project.yml)，用于生成并维护原生 Xcode 工程
 - App 源码根目录为 [MeetingCountdownApp](./MeetingCountdownApp)
 - 单元测试根目录为 [MeetingCountdownAppTests](./MeetingCountdownAppTests)
-- 当前已完成 `Phase 0`：菜单栏应用骨架、统一会议域模型、活动数据源协调层、固定 loopback 回调配置和基础测试
+- 当前文档路线已经切换为 CalDAV-only，后续代码实现也应继续向单一路线收敛
 
 ## 预期架构
 
-- macOS 客户端负责接入方式选择、本地配置、OAuth 回调、Token 管理、系统日历读取、离线导入、提醒调度和音效播放
-- 飞书开放平台负责用户授权、Token 签发和 Calendar API
-- 飞书日历客户端能力负责 CalDAV 同步
-- 敏感信息只进入 Keychain，不写入明文文件
+- macOS 客户端负责首次引导、系统日历权限申请、目标日历选择、会议读取、提醒调度和音效播放
+- macOS Calendar 负责保存 CalDAV 账户并执行远端同步
+- 飞书日历提供 CalDAV 同步源
+- app 不保存飞书开放平台凭证，不引入自建应用 OAuth 流程
 
 ## 当前里程碑
 
-- M1：完成四路接入向导与诊断
-- M2：至少完成一条接入路径
-- M3：完成会议读取、导入与同步
-- M4：完成提醒与菜单栏状态联动
-- M5：完成签名、打包与分发
+- M1：完成 CalDAV 接入引导与系统日历权限检查
+- M2：完成系统日历读取与下一场会议选择
+- M3：完成提醒与菜单栏状态联动
+- M4：完成签名、打包与分发
 
 ## 仓库说明
 

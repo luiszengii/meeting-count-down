@@ -6,12 +6,11 @@
 
 ## 模块目的
 
-存放跨模块可复用、但又不属于某个具体业务域的轻量工具。当前阶段主要包含日志封装和本地 OAuth loopback 的固定配置。
+存放跨模块可复用、但又不属于某个具体业务域的轻量工具。当前阶段主要包含日志封装。
 
 ## 包含内容
 
 - `AppLogger.swift`
-- `OAuthLoopbackConfiguration.swift`
 
 ## 关键依赖
 
@@ -24,7 +23,7 @@
 
 ## 阅读入口
 
-先看 `AppLogger.swift`，再看 `OAuthLoopbackConfiguration.swift`。
+先看 `AppLogger.swift`。
 
 ## 开发注意事项
 

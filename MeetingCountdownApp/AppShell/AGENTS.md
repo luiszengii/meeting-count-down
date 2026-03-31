@@ -6,24 +6,25 @@
 
 ## 模块目的
 
-负责应用运行壳层：SwiftUI `App` 入口、菜单栏内容、设置窗口和依赖装配。它只消费聚合后的应用状态，不直接承担接入实现、系统权限读取或网络同步。
+负责应用运行壳层：SwiftUI `App` 入口、菜单栏内容、设置窗口和依赖装配。它只消费聚合后的应用状态，不直接承担 EventKit 原始读取或系统日历配置细节。
 
 ## 包含内容
 
 - `FeishuMeetingCountdownApp.swift`：应用入口和场景定义。
-- `AppContainer.swift`：组装默认依赖与 stub 数据源。
+- `AppContainer.swift`：组装 CalDAV 主链路所需依赖。
 - `MenuBarContentView.swift`：菜单栏内容。
-- `SettingsView.swift`：Phase 0 设置窗口占位。
+- `SettingsView.swift`：设置窗口，承载 CalDAV 配置和当前状态总览。
 
 ## 关键依赖
 
 - SwiftUI
 - AppKit
 - `SourceCoordinator`
+- `SystemCalendarConnectionController`
 
 ## 关键状态 / 数据流
 
-`AppShell` 从 `SourceCoordinator` 读取只读状态并触发显式动作，例如手动刷新、切换活动数据源、打开设置与退出应用。菜单栏标题和图标都应该从协调层状态派生，不在视图里重复实现业务规则。
+`AppShell` 从 `SourceCoordinator` 和 `SystemCalendarConnectionController` 读取只读状态并触发显式动作，例如手动刷新会议、重新检查系统日历配置、打开设置与退出应用。菜单栏标题和图标都应该从协调层状态派生，不在视图里重复实现业务规则。
 
 ## 阅读入口
 

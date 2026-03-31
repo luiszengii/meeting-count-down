@@ -16,6 +16,8 @@ enum RefreshTrigger: String, Equatable, Sendable {
     case timezoneChanged
     /// 用户切换了主数据源模式。
     case sourceChanged
+    /// 系统 Calendar 内容发生变化，需要重新读取系统日历。
+    case systemCalendarChanged
 
     /// 提供面向 UI 或日志的人类可读名称，避免显示原始枚举名。
     var displayName: String {
@@ -32,6 +34,8 @@ enum RefreshTrigger: String, Equatable, Sendable {
             "时区变化"
         case .sourceChanged:
             "切换数据源"
+        case .systemCalendarChanged:
+            "系统日历变化"
         }
     }
 }

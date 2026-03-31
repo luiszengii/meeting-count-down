@@ -2,12 +2,15 @@ import AppKit
 import SwiftUI
 
 /// `MenuBarContentView` 展示当前菜单栏应用能给用户看到的最小状态。
-/// 这个视图只读取 `SourceCoordinatorState` 的聚合结果，不知道底层数据到底来自
-/// 系统日历、飞书 API、离线导入还是 CLI。这样后续接入真实能力时，
-/// 菜单栏层只需要跟随状态字段扩展，而不需要被具体实现反向污染。
+/// 这个视图只读取 `SourceCoordinatorState` 的聚合结果，不直接接触 EventKit 或日历配置控制器，
+/// 这样菜单栏层就只关心“当前有没有下一场会议”“刷新是否失败”这些真正需要展示的事实。
 struct MenuBarContentView: View {
     /// 视图只观察协调层，不直接依赖任何底层接入实现。
     @ObservedObject var sourceCoordinator: SourceCoordinator
+    /// 共享的设置窗口控制器负责把已存在的设置页窗口拉回前台。
+    let settingsWindowController: SettingsWindowController
+    /// SwiftUI 官方提供的设置窗口打开动作。
+    @Environment(\.openSettings) private var openSettings
 
     /// SwiftUI 通过 `body` 描述当前菜单内容应该如何由状态渲染出来。
     var body: some View {
@@ -57,8 +60,11 @@ struct MenuBarContentView: View {
             }
             .disabled(sourceCoordinator.state.isRefreshing)
 
-            /// 最低版本已经提升到 macOS 14，因此这里回到系统推荐的 `SettingsLink`。
-            SettingsLink {
+            /// 这里仍然走 SwiftUI 官方支持的 `openSettings()`，
+            /// 只是额外在打开后把已知设置窗口显式提到最前，修复菜单栏应用容易被其它 app 压住的问题。
+            Button {
+                openSettingsWindow()
+            } label: {
                 Label("打开设置", systemImage: "gearshape")
             }
 
@@ -70,5 +76,15 @@ struct MenuBarContentView: View {
         }
         .padding(14)
         .frame(width: 300)
+    }
+
+    /// 显式打开设置窗口并把它提升到前台，避免菜单栏 app 的设置页落在其它窗口后面。
+    private func openSettingsWindow() {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        openSettings()
+
+        DispatchQueue.main.async {
+            settingsWindowController.activateKnownWindow()
+        }
     }
 }

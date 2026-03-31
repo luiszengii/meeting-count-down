@@ -10,9 +10,10 @@
 
 ## 包含内容
 
-- `OAuthLoopbackConfigurationTests.swift`：固定 loopback 回调地址契约测试。
 - `Domain/`：领域规则测试。
 - `SourceCoordinator/`：协调层状态测试。
+- `Diagnostics/`：接入前置检查测试。
+- `SystemCalendarBridge/`：系统日历桥接与 CalDAV 配置状态测试。
 
 ## 关键依赖
 
@@ -25,7 +26,7 @@
 
 ## 阅读入口
 
-先看 `OAuthLoopbackConfigurationTests.swift`，再看 `Domain/NextMeetingSelectorTests.swift`，最后看 `SourceCoordinator/SourceCoordinatorTests.swift`。
+先看 `Domain/NextMeetingSelectorTests.swift`，再看 `SystemCalendarBridge/SystemCalendarBridgeTests.swift`，最后看 `SourceCoordinator/SourceCoordinatorTests.swift`。
 
 ## 开发注意事项
 
