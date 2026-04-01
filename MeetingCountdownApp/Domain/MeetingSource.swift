@@ -60,13 +60,13 @@ enum SourceHealthState: Equatable, Sendable {
     var symbolName: String {
         switch self {
         case .unconfigured:
-            "slider.horizontal.3"
+            "calendar.badge.exclamationmark"
         case .ready:
-            "checkmark.circle"
+            "timer"
         case .warning:
-            "exclamationmark.triangle"
+            "calendar.badge.exclamationmark"
         case .failed:
-            "xmark.octagon"
+            "calendar.badge.xmark"
         }
     }
 }

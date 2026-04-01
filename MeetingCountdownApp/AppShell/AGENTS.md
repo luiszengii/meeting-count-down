@@ -20,11 +20,12 @@
 - SwiftUI
 - AppKit
 - `SourceCoordinator`
+- `ReminderEngine`
 - `SystemCalendarConnectionController`
 
 ## 关键状态 / 数据流
 
-`AppShell` 从 `SourceCoordinator` 和 `SystemCalendarConnectionController` 读取只读状态并触发显式动作，例如手动刷新会议、重新检查系统日历配置、打开设置与退出应用。菜单栏标题和图标都应该从协调层状态派生，不在视图里重复实现业务规则。
+`AppShell` 从 `SourceCoordinator`、`ReminderEngine` 和 `SystemCalendarConnectionController` 读取只读状态并触发显式动作，例如手动刷新会议、重新检查系统日历配置、打开设置与退出应用。菜单栏和设置页都只展示聚合后的提醒状态，不在视图里重复实现调度或音频逻辑。
 
 ## 阅读入口
 

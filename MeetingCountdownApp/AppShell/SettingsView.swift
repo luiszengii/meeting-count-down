@@ -2,13 +2,15 @@ import AppKit
 import SwiftUI
 
 /// `SettingsView` 现在只承载 CalDAV 单一路径需要的配置和状态总览。
-/// 它不直接操作 EventKit 原始对象，而是通过 `SystemCalendarConnectionController`
-/// 和 `SourceCoordinator` 暴露出来的聚合状态驱动界面。
+/// 它不直接操作 EventKit 原始对象，而是通过 `SystemCalendarConnectionController`、
+/// `SourceCoordinator` 和 `ReminderEngine` 暴露出来的聚合状态驱动界面。
 struct SettingsView: View {
     /// 设置窗口和菜单栏共享同一份数据源协调层。
     @ObservedObject var sourceCoordinator: SourceCoordinator
     /// CalDAV / 系统日历路线的真实配置状态和动作入口。
     @ObservedObject var systemCalendarConnectionController: SystemCalendarConnectionController
+    /// 设置页同样要观察提醒状态，向用户解释提醒是否已经真正建立。
+    @ObservedObject var reminderEngine: ReminderEngine
     /// 设置页自己把真实窗口登记到这里，供菜单栏入口复用。
     let settingsWindowController: SettingsWindowController
 
@@ -26,11 +28,11 @@ struct SettingsView: View {
         .background(
             SettingsWindowAccessor { window in
                 settingsWindowController.register(window: window)
-                settingsWindowController.activateKnownWindow()
             }
         )
     }
 
+    /// 用最短路径向用户解释当前产品只支持哪一条接入流程。
     @ViewBuilder
     private var caldavGuideGroup: some View {
         GroupBox {
@@ -140,7 +142,7 @@ struct SettingsView: View {
         }
     }
 
-    /// 当前应用运行态摘要，帮助用户区分“权限问题”“日历选择问题”和“当前没有会议”。
+    /// 当前应用运行态摘要，帮助用户区分“权限问题”“日历选择问题”“当前没有会议”和“提醒是否已建好”。
     @ViewBuilder
     private var appStatusGroup: some View {
         GroupBox {
@@ -164,6 +166,11 @@ struct SettingsView: View {
                 LabeledContent("活动数据源", value: "CalDAV / 系统日历")
                 LabeledContent("健康状态", value: sourceCoordinator.state.healthState.summary)
                 LabeledContent("最近刷新", value: sourceCoordinator.lastRefreshLine)
+                LabeledContent("提醒状态", value: reminderEngine.state.summary)
+
+                Text(reminderEngine.state.detailLine)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 if let nextMeeting = sourceCoordinator.state.nextMeeting {
                     VStack(alignment: .leading, spacing: 4) {

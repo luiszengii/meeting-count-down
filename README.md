@@ -16,7 +16,7 @@
 
 - 飞书 CalDAV 同步到 macOS Calendar 后的系统日历读取
 - 自动计算下一场会议
-- 菜单栏状态展示
+- 菜单栏状态展示与高优先级提醒态
 - 会前音效播放与倒计时触发
 - 手动刷新、定时重读、睡眠唤醒后重算
 - 本地音效导入、播放测试、静音模式、总开关
@@ -52,7 +52,6 @@
 - `MenuBarExtra` / `NSStatusItem`
 - `EventKit`
 - `AVFoundation`
-- `UserNotifications`
 - UserDefaults + 文件系统
 
 ## 当前工程状态
@@ -62,6 +61,7 @@
 - App 源码根目录为 [MeetingCountdownApp](./MeetingCountdownApp)
 - 单元测试根目录为 [MeetingCountdownAppTests](./MeetingCountdownAppTests)
 - 当前文档路线已经切换为 CalDAV-only，后续代码实现也应继续向单一路线收敛
+- 本地提醒引擎已经接入运行时：会根据“下一场会议”建立单条活动提醒，并把提醒状态展示到菜单栏和设置页
 
 ## 预期架构
 
@@ -74,7 +74,7 @@
 
 - M1：完成 CalDAV 接入引导与系统日历权限检查
 - M2：完成系统日历读取与下一场会议选择
-- M3：完成提醒与菜单栏状态联动
+- M3：完成提醒与菜单栏状态联动，本地音效提醒与状态机已落地
 - M4：完成签名、打包与分发
 
 ## 仓库说明

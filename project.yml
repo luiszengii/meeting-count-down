@@ -18,6 +18,9 @@ targets:
       - path: MeetingCountdownApp
         excludes:
           - "**/AGENTS.md"
+          - "Resources/**"
+      - path: MeetingCountdownApp/Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: FeishuMeetingCountdown

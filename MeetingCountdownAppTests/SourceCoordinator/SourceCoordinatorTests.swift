@@ -53,6 +53,30 @@ final class SourceCoordinatorTests: XCTestCase {
         XCTAssertNotEqual(coordinator.menuBarTitle, coordinator.state.healthState.shortLabel)
     }
 
+    /// 验证没有下一场会议时，菜单栏基础图标会继续保留日历 / 倒计时语义，而不是退回看起来像设置入口的符号。
+    func testMenuBarSymbolUsesCalendarOrTimerSemanticsInsteadOfSettingsSlider() async {
+        let now = fixedNow()
+        let coordinator = SourceCoordinator(
+            source: StubMeetingSource(
+                descriptor: descriptor(),
+                currentHealthState: .ready(message: "系统日历已接入"),
+                sampleMeetings: []
+            ),
+            nextMeetingSelector: DefaultNextMeetingSelector(),
+            dateProvider: FixedDateProvider(currentDate: now),
+            logger: AppLogger(source: "SourceCoordinatorTests"),
+            autoRefreshOnStart: false
+        )
+
+        XCTAssertEqual(coordinator.menuBarSymbolName, "calendar.badge.exclamationmark")
+        XCTAssertNotEqual(coordinator.menuBarSymbolName, "slider.horizontal.3")
+
+        await coordinator.refresh(trigger: .manualRefresh)
+
+        XCTAssertEqual(coordinator.menuBarSymbolName, "timer")
+        XCTAssertNotEqual(coordinator.menuBarSymbolName, "slider.horizontal.3")
+    }
+
     /// 验证底层源抛出真正不可用错误时，协调层会把状态标记为失败并清空会议结果。
     func testRefreshFailureMarksStateAsFailed() async {
         let now = fixedNow()

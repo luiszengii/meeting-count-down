@@ -8,10 +8,32 @@ import SwiftUI
 final class SettingsWindowController {
     /// 这里必须是弱引用，避免控制器反过来强持有窗口，打乱 AppKit 的窗口生命周期。
     private weak var settingsWindow: NSWindow?
+    /// 当用户显式要求打开设置，但窗口还没真正创建出来时，先记住这次前置请求。
+    /// 等 SwiftUI 设置场景把真实 `NSWindow` 注册进来后，只消费一次这次请求。
+    private var shouldActivateOnNextRegistration = false
 
     /// 当设置页解析出自己所在的 `NSWindow` 后，把它登记到控制器里，供菜单栏入口复用。
     func register(window: NSWindow) {
         settingsWindow = window
+
+        guard shouldActivateOnNextRegistration else {
+            return
+        }
+
+        shouldActivateOnNextRegistration = false
+        activateKnownWindow()
+    }
+
+    /// 用户显式要求打开设置窗口时统一走这里。
+    /// 如果窗口已经存在，就立刻前置；如果窗口还没准备好，就把这次前置请求挂起到下一次注册。
+    func requestWindowActivation() {
+        guard settingsWindow != nil else {
+            shouldActivateOnNextRegistration = true
+            return
+        }
+
+        shouldActivateOnNextRegistration = false
+        activateKnownWindow()
     }
 
     /// 把已经存在的设置窗口拉到最前面。
