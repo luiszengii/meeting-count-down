@@ -23,6 +23,8 @@
 		5AB73F7901F71BFBEB90DBA1 /* ReminderPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434080B94782F33E5F0BE80 /* ReminderPreferencesController.swift */; };
 		5C0D63A2079B309B3E27F8CC /* SoundProfileLibraryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */; };
 		5EE9174C36E6A73A282C8036 /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC530C79CB8AFC603615014 /* AppRuntime.swift */; };
+		66D922920448C6C423981DF3 /* SettingsSceneOpenController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */; };
+		6AC08E6B218E5EEB68C49548 /* SettingsSceneOpenControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */; };
 		7238928744EFEB29EB2C746A /* ReminderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */; };
 		81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */; };
 		8C113D0D214E22A3D593B4E6 /* FeishuMeetingCountdownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */; };
@@ -87,7 +89,9 @@
 		6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileLibraryController.swift; sourceTree = "<group>"; };
 		6C222E5FE9F387BE53A9B74C /* AppRefreshController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRefreshController.swift; sourceTree = "<group>"; };
 		6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeishuMeetingCountdownApp.swift; sourceTree = "<group>"; };
+		70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenControllerTests.swift; sourceTree = "<group>"; };
 		79A62141776821479D9F3A36 /* NextMeetingSelectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMeetingSelectorTests.swift; sourceTree = "<group>"; };
+		8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenController.swift; sourceTree = "<group>"; };
 		8A63B3B4A8E497046F57B57F /* SystemCalendarConnectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarConnectionController.swift; sourceTree = "<group>"; };
 		8A9C0B1F3FDD2F2635D422E9 /* SoundProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfile.swift; sourceTree = "<group>"; };
 		8DB44FF575940D623FFD822F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -223,6 +227,7 @@
 		BA420259AD4B1F4EEAC14883 /* MeetingCountdownAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				CB89145FE191D29FF04E62E8 /* AppShell */,
 				D749900478B506C5599A3A69 /* Diagnostics */,
 				F411A69A9714942C9E539A61 /* Domain */,
 				2CCA056AF6BFA5A5B84FE83D /* Preferences */,
@@ -239,6 +244,14 @@
 				BAB554BC93E4A5CD4D5F4D48 /* SourceCoordinatorTests.swift */,
 			);
 			path = SourceCoordinator;
+			sourceTree = "<group>";
+		};
+		CB89145FE191D29FF04E62E8 /* AppShell */ = {
+			isa = PBXGroup;
+			children = (
+				70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */,
+			);
+			path = AppShell;
 			sourceTree = "<group>";
 		};
 		D73391623F1867E646C390E4 /* ReminderEngine */ = {
@@ -270,6 +283,7 @@
 				02E35285E19D5F099F9FDF69 /* MenuBarContentView.swift */,
 				CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */,
 				CE290BAC98F94507CC538D90 /* MenuBarStatusItemController.swift */,
+				8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */,
 				8DB44FF575940D623FFD822F /* SettingsView.swift */,
 				4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */,
 			);
@@ -404,6 +418,7 @@
 				BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */,
 				ACA0046E387F16D4868029A4 /* ReminderStateTests.swift in Sources */,
 				D02C06C468AD048A059B9A07 /* SelectableSoundProfileReminderAudioEngineTests.swift in Sources */,
+				6AC08E6B218E5EEB68C49548 /* SettingsSceneOpenControllerTests.swift in Sources */,
 				04047189B27507D4B11E5421 /* SoundProfileLibraryControllerTests.swift in Sources */,
 				A9A569940CA3C6B96391A0C7 /* SourceCoordinatorTests.swift in Sources */,
 				E29CF28B89883514939F5BE6 /* SystemCalendarBridgeTests.swift in Sources */,
@@ -437,6 +452,7 @@
 				5AB73F7901F71BFBEB90DBA1 /* ReminderPreferencesController.swift in Sources */,
 				0AC8890F86D334C2ABA050CC /* ReminderState.swift in Sources */,
 				9D21C498FE78EA8E84C076CB /* SelectableSoundProfileReminderAudioEngine.swift in Sources */,
+				66D922920448C6C423981DF3 /* SettingsSceneOpenController.swift in Sources */,
 				C4C5668DAF91ECD4D3E7EE9B /* SettingsView.swift in Sources */,
 				F48E4AE2F6AD606FD26FB575 /* SettingsWindowController.swift in Sources */,
 				A2D1B7F8E66FF1EFFD1C9473 /* SoundProfile.swift in Sources */,

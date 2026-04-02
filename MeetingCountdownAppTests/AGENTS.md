@@ -10,6 +10,7 @@
 
 ## 包含内容
 
+- `AppShell/`：菜单栏壳层、设置场景桥接等轻量壳层测试。
 - `Domain/`：领域规则测试。
 - `SourceCoordinator/`：协调层状态测试。
 - `ReminderEngine/`：本地提醒调度、去重和静音规则测试。
@@ -27,7 +28,7 @@
 
 ## 阅读入口
 
-先看 `Domain/NextMeetingSelectorTests.swift`，再看 `ReminderEngine/ReminderEngineTests.swift` 与 `SystemCalendarBridge/SystemCalendarBridgeTests.swift`，最后看 `SourceCoordinator/SourceCoordinatorTests.swift`。
+先看 `Domain/NextMeetingSelectorTests.swift`，再看 `ReminderEngine/ReminderEngineTests.swift` 与 `SystemCalendarBridge/SystemCalendarBridgeTests.swift`；如果需要理解菜单栏和设置窗口的壳层约束，再看 `AppShell/` 里的测试。
 
 ## 开发注意事项
 

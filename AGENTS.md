@@ -6,9 +6,9 @@ Feishu Meeting Countdown for macOS
 
 ## 项目概览
 
-这是一个面向 macOS 的菜单栏常驻应用，用于读取飞书相关会议数据，在会前自动触发倒计时与音效提醒。当前产品定位不是“单一路径接飞书 API”，而是“多来源接入 + 本地统一规范化 + 本地提醒调度”：同一套客户端覆盖普通用户、管理员/开发者，以及完全拿不到开放权限的用户。
+这是一个面向 macOS 的菜单栏常驻应用，用于读取飞书日历同步到系统日历后的会议数据，在会前自动触发倒计时与音效提醒。项目当前已经明确收敛为单一路线：`CalDAV -> macOS Calendar -> EventKit -> 本地提醒调度`，不再扩展 `BYO Feishu App`、`Offline Import`、`lark-cli` 等历史接入方向。
 
-当前版本聚焦 macOS 与飞书会议场景，目标是先把“下一场会议提醒”做稳定，再扩展视觉和高级筛选能力。
+当前代码进度已经完成 `Phase 0 ~ 5` 的主体能力：CalDAV-only 引导文案、系统日历桥接、下一场会议选择、本地提醒引擎、提醒音频列表与试听、菜单栏秒级倒计时和闪烁、默认关闭的“仅在耳机连接时播放”可选音频策略、刷新策略、同步新鲜度提示和开机启动。当前主要剩余工作是 `Phase 6` 的签名、打包、自动更新和对外接入文档。
 
 ## 仓库级持久规则
 
@@ -161,7 +161,7 @@ V1.1 再做多套音效方案、指定多个系统日历生效、跳过全天事
 
 ### 技术栈
 
-客户端语言为 Swift 5.10+ / Swift 6，UI 使用 SwiftUI，菜单栏以 `MenuBarExtra` 为主、必要时补 `NSStatusItem`；音频播放使用 AVFoundation / `AVAudioPlayer`；系统日历访问使用 EventKit；非敏感偏好和缓存放在 UserDefaults + 文件系统；启动项使用 ServiceManagement。
+客户端语言为 Swift 5.10+ / Swift 6，UI 使用 SwiftUI，菜单栏入口当前以 `NSStatusItem + NSPopover` 为主，设置页仍由 SwiftUI `Settings` scene 托管；音频播放使用 AVFoundation / `AVAudioPlayer`；系统日历访问使用 EventKit；非敏感偏好和缓存放在 UserDefaults + 文件系统；启动项使用 ServiceManagement。
 
 ### 总体架构
 
@@ -171,20 +171,20 @@ V1.1 再做多套音效方案、指定多个系统日历生效、跳过全天事
 
 | 模块 | 责任 |
 | --- | --- |
-| `AppShell` | 应用入口、菜单栏、设置窗口、CalDAV 引导文案 |
-| `OnboardingRouter` | 首次启动引导、权限检查、目标日历选择、失败提示 |
+| `AppShell` | 应用入口、菜单栏、设置窗口、提醒偏好 UI、壳层依赖装配 |
+| `OnboardingRouter` | 首次启动引导的占位目录；当前首版引导文案和入口仍主要落在 `AppShell/SettingsView` |
 | `SystemCalendarBridge` | EventKit 权限、系统日历读取、CalDAV 日历识别、系统日历变化监听 |
 | `SourceCoordinator` | 系统日历快照聚合、事件标准化、错误状态聚合 |
 | `ReminderEngine` | 下一场会议计算、本地定时、倒计时状态机 |
-| `AudioEngine` | 音效导入、时长分析、播放与停止 |
-| `Preferences` | 用户偏好、过滤规则、开机启动、刷新频率 |
+| `Preferences` | 用户偏好、提醒音频列表、过滤规则、开机启动、刷新频率 |
 | `Diagnostics` | 系统日历权限检查、CalDAV 账户存在性检查、同步新鲜度提示、目标日历状态检查 |
+| `Shared` | 跨模块共用日志与轻量基础设施 |
 
 ## 数据设计
 
 敏感数据不进入本 app。CalDAV 用户名、专用密码和账户同步都由 macOS Calendar 自己管理，客户端不重复保存飞书密码，也不保存任何飞书 OAuth token。
 
-本地非敏感数据至少包括：`selected_system_calendar_ids`、`last_successful_refresh_at`、`recent_events_cache`、`sound_profiles`、`reminder_preferences`、`window_state`、`onboarding_state`。
+本地非敏感数据至少包括：`selected_system_calendar_ids`、`last_successful_refresh_at`、`recent_events_cache`、`sound_profiles`、`selected_sound_profile_id`、`reminder_preferences`、`window_state`、`onboarding_state`。
 
 本地模型统一围绕 `SystemCalendarProfile`、`MeetingRecord`、`SoundProfile`、`ReminderPreference` 展开。历史上如果代码里还保留多源模型，新工作应优先收敛这些命名和状态，而不是继续扩展它们。
 
@@ -198,16 +198,16 @@ V1.1 再做多套音效方案、指定多个系统日历生效、跳过全天事
 
 ## 开发计划
 
-| Phase | 目标 |
-| --- | --- |
-| 0 | 保留现有 macOS 工程骨架和文档系统，但开始清理多路接入的历史文案与状态模型 |
-| 1 | 完成 CalDAV-only 引导：系统日历权限检测、用户步骤说明、目标日历选择、失败提示 |
-| 2 | 完成 `CalDAV` / 系统日历桥接：EventKit 权限、系统日历枚举、CalDAV 会议读取、变化监听 |
-| 3 | 完成会议标准化与读取：时间窗口、重复日程实例处理、下一场会议选择 |
-| 4 | 完成本地提醒引擎：timer、菜单栏状态、音效播放、会议变更后重调度 |
-| 5 | 完成设置与偏好：音效、倒计时秒数覆盖、日历过滤、会议过滤、默认关闭的“仅耳机输出时播放”可选音频策略、开机启动、刷新策略、同步新鲜度提示 |
-| 6 | 完成签名、notarization、DMG、自动更新方案和用户接入文档 |
-| 7 | 公开测试：重点覆盖 CalDAV 配置、系统同步延迟、睡眠唤醒、网络波动、时区切换问题 |
+| Phase | 目标 | 当前状态 |
+| --- | --- | --- |
+| 0 | 保留现有 macOS 工程骨架和文档系统，但开始清理多路接入的历史文案与状态模型 | 已完成 |
+| 1 | 完成 CalDAV-only 引导：系统日历权限检测、用户步骤说明、目标日历选择、失败提示 | 已完成 |
+| 2 | 完成 `CalDAV` / 系统日历桥接：EventKit 权限、系统日历枚举、CalDAV 会议读取、变化监听 | 已完成 |
+| 3 | 完成会议标准化与读取：时间窗口、重复日程实例处理、下一场会议选择 | 已完成 |
+| 4 | 完成本地提醒引擎：timer、菜单栏状态、音效播放、会议变更后重调度 | 已完成 |
+| 5 | 完成设置与偏好：音效、倒计时秒数覆盖、日历过滤、会议过滤、默认关闭的“仅耳机输出时播放”可选音频策略、开机启动、刷新策略、同步新鲜度提示 | 已完成 |
+| 6 | 完成签名、notarization、DMG、自动更新方案和用户接入文档 | 当前阶段 |
+| 7 | 公开测试：重点覆盖 CalDAV 配置、系统同步延迟、睡眠唤醒、网络波动、时区切换问题 | 未开始 |
 
 ## 测试计划
 

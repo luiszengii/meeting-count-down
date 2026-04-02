@@ -11,6 +11,12 @@
 | `adrs/` | 技术、产品形态、架构变动记录 | [ADR 索引](./adrs/README.md) |
 | `templates/` | 文档模板与复制入口 | [模板索引](./templates/README.md) |
 
+## 当前进度快照
+
+- `Phase 0 ~ 5` 已完成：CalDAV-only 收敛、系统日历桥接、下一场会议选择、本地提醒引擎、提醒音频库、菜单栏倒计时与闪烁、刷新策略、同步新鲜度提示和开机启动都已经接入运行时。
+- 当前阶段是 `Phase 6`：重点开始转向签名、notarization、DMG / 自动更新方案和用户接入文档，而不是继续扩张新的接入模式。
+- 最近一次壳层回归修复集中在菜单栏 `Settings` scene 的官方打开路径，详见 [2026-04-02 开发日志](./dev-logs/2026-04-02.md) 和 [SwiftUI Settings scene 在菜单栏 app 里的打开方式](./pitfalls/swiftui-settings-scene-in-menu-bar-app.md)。
+
 ## 使用规则
 
 1. 有当天推进，就更新当天日志，不新建多份同日文件。

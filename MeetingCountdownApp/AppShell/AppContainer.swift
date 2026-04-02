@@ -13,6 +13,7 @@ enum AppContainer {
         let preferencesStore = UserDefaultsPreferencesStore()
         let calendarAccess = EventKitSystemCalendarAccess()
         let settingsWindowController = SettingsWindowController()
+        let settingsSceneOpenController = SettingsSceneOpenController()
         let soundProfileAssetStore = SoundProfileAssetStore()
         let audioEngine = SelectableSoundProfileReminderAudioEngine(
             preferencesStore: preferencesStore,
@@ -80,6 +81,7 @@ enum AppContainer {
             sourceCoordinator: sourceCoordinator,
             reminderEngine: reminderEngine,
             settingsWindowController: settingsWindowController,
+            settingsSceneOpenController: settingsSceneOpenController,
             menuBarPresentationClock: menuBarPresentationClock
         )
         let appRefreshController = AppRefreshController(

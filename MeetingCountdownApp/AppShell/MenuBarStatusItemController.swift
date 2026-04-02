@@ -16,6 +16,8 @@ final class MenuBarStatusItemController {
     private let reminderEngine: ReminderEngine
     /// 设置窗口前台化仍然通过共享控制器统一完成。
     private let settingsWindowController: SettingsWindowController
+    /// SwiftUI 官方 `Settings` 打开动作需要单独桥接给 AppKit 菜单栏控制器使用。
+    private let settingsSceneOpenController: SettingsSceneOpenController
     /// 秒级倒计时和闪烁节奏继续共用现有展示时钟。
     private let menuBarPresentationClock: MenuBarPresentationClock
 
@@ -32,11 +34,13 @@ final class MenuBarStatusItemController {
         sourceCoordinator: SourceCoordinator,
         reminderEngine: ReminderEngine,
         settingsWindowController: SettingsWindowController,
+        settingsSceneOpenController: SettingsSceneOpenController,
         menuBarPresentationClock: MenuBarPresentationClock
     ) {
         self.sourceCoordinator = sourceCoordinator
         self.reminderEngine = reminderEngine
         self.settingsWindowController = settingsWindowController
+        self.settingsSceneOpenController = settingsSceneOpenController
         self.menuBarPresentationClock = menuBarPresentationClock
         self.popover = NSPopover()
         self.popover.behavior = .transient
@@ -99,11 +103,11 @@ final class MenuBarStatusItemController {
     }
 
     /// 浮层里的内容仍然复用 SwiftUI 视图，只是改成显式注入“打开设置”动作，
-    /// 避免继续依赖 `MenuBarExtra` 独有的环境值。
+    /// 同时补一层 `openSettings` 官方动作登记，避免继续依赖过时的 AppKit selector。
     private func configurePopover() {
         let rootView = MenuBarContentView(
             sourceCoordinator: sourceCoordinator,
-            reminderEngine: reminderEngine,
+            settingsSceneOpenController: settingsSceneOpenController,
             openSettingsAction: { [weak self] in
                 self?.openSettingsWindow()
             }
@@ -121,10 +125,7 @@ final class MenuBarStatusItemController {
         closePopover()
         settingsWindowController.requestWindowActivation()
         NSApplication.shared.activate(ignoringOtherApps: true)
-
-        if NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) == false {
-            _ = NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
+        settingsSceneOpenController.openSettingsIfAvailable()
     }
 
     /// 统一监听三类会影响菜单栏按钮展示的状态：

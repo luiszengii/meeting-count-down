@@ -11,7 +11,9 @@
 ## 包含内容
 
 - `AppShell/`：应用入口、菜单栏、设置窗口、依赖装配。
+- `OnboardingRouter/`：首次启动引导相关的占位目录；当前尚未恢复为独立模块。
 - `Domain/`：统一会议模型、数据源协议、时间与选择规则。
+- `SystemCalendarBridge/`：系统日历权限、日历枚举、飞书 CalDAV 识别和事件标准化。
 - `SourceCoordinator/`：CalDAV 主数据源的统一刷新入口、状态聚合。
 - `ReminderEngine/`：本地提醒状态机、默认音效播放和调度封装。
 - `Preferences/`：偏好模型、提醒音频列表与本地持久化。
@@ -28,7 +30,7 @@
 
 ## 关键状态 / 数据流
 
-当前主状态流已经收敛为 `EventKit -> SystemCalendarBridge -> MeetingSource -> SourceCoordinatorState -> ReminderEngine -> AppShell View`。任何系统日历原始事件都必须先转换成统一的 `MeetingRecord`，再由 `SourceCoordinator` 计算当前健康状态、最近刷新时间和下一场会议；提醒引擎只消费统一会议模型和当前选中的提醒音频，UI 不直接读取底层原始数据、自己创建定时任务，或直接操作音频文件。
+当前主状态流已经收敛为 `EventKit -> SystemCalendarBridge -> MeetingSource -> SourceCoordinatorState -> ReminderEngine -> AppShell View`。任何系统日历原始事件都必须先转换成统一的 `MeetingRecord`，再由 `SourceCoordinator` 计算当前健康状态、最近刷新时间和下一场会议；提醒引擎只消费统一会议模型和当前选中的提醒音频，UI 不直接读取底层原始数据、自己创建定时任务，或直接操作音频文件。当前首版的引导文案和入口仍然主要放在 `AppShell/SettingsView`，`OnboardingRouter/` 仅保留为后续如果需要独立首启流时的边界占位。
 
 ## 阅读入口
 
