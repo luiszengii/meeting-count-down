@@ -93,10 +93,14 @@ struct DiagnosticItemDescriptor: Identifiable, Equatable, Sendable {
 struct DiagnosticsSnapshot: Equatable, Sendable {
     /// 系统日历权限检查结果，对 CalDAV / EventKit 路线最关键。
     var calendarPermission: DiagnosticCheckStatus
+    /// 本地系统日历读取的新鲜度检查结果。
+    /// 这里只表达“本 app 最近一次成功读取本地系统日历是否过久”，不声称远端 CalDAV 一定已同步。
+    var syncFreshness: DiagnosticCheckStatus
 
     /// `phaseZero` 表示还没有真正开始做任何检查时的默认状态。
     static let phaseZero = DiagnosticsSnapshot(
-        calendarPermission: .idle
+        calendarPermission: .idle,
+        syncFreshness: .idle
     )
 
     /// 把检查结果映射成一组可直接展示的诊断项。
@@ -106,6 +110,11 @@ struct DiagnosticsSnapshot: Equatable, Sendable {
                 id: "calendar-permission",
                 title: "系统日历权限",
                 status: calendarPermission
+            ),
+            DiagnosticItemDescriptor(
+                id: "sync-freshness",
+                title: "本地同步新鲜度",
+                status: syncFreshness
             )
         ]
     }

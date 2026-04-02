@@ -7,18 +7,51 @@ import Foundation
 protocol NextMeetingSelecting: Sendable {
     /// 在给定当前时间的前提下，从规范化会议列表里选择“下一场会议”。
     /// 这里把 `now` 作为显式参数传入，目的是让规则层更易测试，也避免内部偷偷依赖真实时钟。
-    func selectNextMeeting(from meetings: [MeetingRecord], now: Date) -> MeetingRecord?
+    func selectNextMeeting(
+        from meetings: [MeetingRecord],
+        now: Date,
+        reminderPreferences: ReminderPreferences
+    ) -> MeetingRecord?
 }
 
 struct DefaultNextMeetingSelector: NextMeetingSelecting {
     /// 先过滤掉不应进入提醒候选集的会议，再按时间和稳定次序排序。
-    func selectNextMeeting(from meetings: [MeetingRecord], now: Date) -> MeetingRecord? {
+    func selectNextMeeting(
+        from meetings: [MeetingRecord],
+        now: Date,
+        reminderPreferences: ReminderPreferences
+    ) -> MeetingRecord? {
         meetings
             .filter { meeting in
-                meeting.startAt >= now && !meeting.isAllDay && !meeting.isCancelled
+                shouldInclude(meeting: meeting, now: now, reminderPreferences: reminderPreferences)
             }
             .sorted(by: Self.sortMeetings)
             .first
+    }
+
+    /// 统一收拢“下一场会议”候选过滤规则，避免以后把过滤条件散落到协调层或视图层。
+    private func shouldInclude(
+        meeting: MeetingRecord,
+        now: Date,
+        reminderPreferences: ReminderPreferences
+    ) -> Bool {
+        guard meeting.startAt >= now else {
+            return false
+        }
+
+        guard !meeting.isAllDay, !meeting.isCancelled else {
+            return false
+        }
+
+        if reminderPreferences.onlyForMeetingsWithVideoLink && !meeting.hasVideoConferenceLink {
+            return false
+        }
+
+        if reminderPreferences.skipDeclinedMeetings && meeting.isDeclinedByCurrentUser {
+            return false
+        }
+
+        return true
     }
 
     /// 当两场会议都满足候选条件时，优先按开始时间排序；如果时间完全相同，再按稳定 id 排序。

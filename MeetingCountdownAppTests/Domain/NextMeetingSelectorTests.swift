@@ -11,12 +11,14 @@ final class NextMeetingSelectorTests: XCTestCase {
         sourceIdentifier: "test-source",
         displayName: "测试系统日历"
     )
+    /// 默认提醒偏好。
+    private let defaultPreferences = ReminderPreferences.default
 
     /// 验证空列表时不会凭空构造会议结果。
     func testEmptyListReturnsNil() {
         let now = makeDate(hour: 9, minute: 0)
 
-        XCTAssertNil(selector.selectNextMeeting(from: [], now: now))
+        XCTAssertNil(selector.selectNextMeeting(from: [], now: now, reminderPreferences: defaultPreferences))
     }
 
     /// 验证选择器会跳过不应提醒的全天事件和已取消事件。
@@ -28,7 +30,7 @@ final class NextMeetingSelectorTests: XCTestCase {
             makeMeeting(id: "usable", title: "有效会议", startHour: 10, minute: 10)
         ]
 
-        let nextMeeting = selector.selectNextMeeting(from: meetings, now: now)
+        let nextMeeting = selector.selectNextMeeting(from: meetings, now: now, reminderPreferences: defaultPreferences)
 
         XCTAssertEqual(nextMeeting?.id, "usable")
     }
@@ -42,9 +44,58 @@ final class NextMeetingSelectorTests: XCTestCase {
             makeMeeting(id: "started", title: "已开始会议", startHour: 8, minute: 55)
         ]
 
-        let nextMeeting = selector.selectNextMeeting(from: meetings, now: now)
+        let nextMeeting = selector.selectNextMeeting(from: meetings, now: now, reminderPreferences: defaultPreferences)
 
         XCTAssertEqual(nextMeeting?.id, "earliest")
+    }
+
+    /// 验证开启“仅视频会议”后，会跳过没有 VC 链接的会议。
+    func testSelectorSkipsMeetingsWithoutVideoLinksWhenPreferenceEnabled() {
+        let now = makeDate(hour: 9, minute: 0)
+        let meetings = [
+            makeMeeting(id: "plain", title: "普通事件", startHour: 9, minute: 10),
+            makeMeeting(
+                id: "vc",
+                title: "视频会议",
+                startHour: 9,
+                minute: 15,
+                links: [MeetingLink(kind: .vc, url: URL(string: "https://meet.feishu.cn/abc")!)]
+            )
+        ]
+
+        let nextMeeting = selector.selectNextMeeting(
+            from: meetings,
+            now: now,
+            reminderPreferences: ReminderPreferences(
+                countdownOverrideSeconds: nil,
+                globalReminderEnabled: true,
+                isMuted: false,
+                playSoundOnlyWhenHeadphonesConnected: false,
+                onlyForMeetingsWithVideoLink: true,
+                skipDeclinedMeetings: true
+            )
+        )
+
+        XCTAssertEqual(nextMeeting?.id, "vc")
+    }
+
+    /// 验证开启“跳过已拒绝会议”后，会继续选取下一个符合条件的会议。
+    func testSelectorSkipsDeclinedMeetingsWhenPreferenceEnabled() {
+        let now = makeDate(hour: 9, minute: 0)
+        let meetings = [
+            makeMeeting(
+                id: "declined",
+                title: "已拒绝会议",
+                startHour: 9,
+                minute: 10,
+                attendeeResponse: .declined
+            ),
+            makeMeeting(id: "next", title: "下一场会议", startHour: 9, minute: 20)
+        ]
+
+        let nextMeeting = selector.selectNextMeeting(from: meetings, now: now, reminderPreferences: defaultPreferences)
+
+        XCTAssertEqual(nextMeeting?.id, "next")
     }
 
     /// 构造测试会议。
@@ -55,7 +106,9 @@ final class NextMeetingSelectorTests: XCTestCase {
         startHour: Int,
         minute: Int,
         isAllDay: Bool = false,
-        isCancelled: Bool = false
+        isCancelled: Bool = false,
+        links: [MeetingLink] = [],
+        attendeeResponse: MeetingParticipantResponseStatus = .unknown
     ) -> MeetingRecord {
         let startAt = makeDate(hour: startHour, minute: minute)
         let endAt = Calendar(identifier: .gregorian).date(byAdding: .minute, value: 30, to: startAt)!
@@ -67,7 +120,9 @@ final class NextMeetingSelectorTests: XCTestCase {
             endAt: endAt,
             isAllDay: isAllDay,
             isCancelled: isCancelled,
-            source: calendarSource
+            links: links,
+            source: calendarSource,
+            attendeeResponse: attendeeResponse
         )
     }
 

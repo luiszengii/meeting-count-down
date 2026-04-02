@@ -9,19 +9,33 @@ import Foundation
 struct DefaultDiagnosticsProvider: DiagnosticsProviding {
     /// CalDAV / EventKit 路线依赖的权限检查器。
     let calendarPermissionChecker: any DiagnosticChecking
+    /// 本地同步新鲜度检查器。
+    let syncFreshnessChecker: any DiagnosticChecking
 
     /// 默认使用真实系统实现；测试里也可以注入自定义检查器。
     init(
-        calendarPermissionChecker: any DiagnosticChecking = SystemCalendarPermissionDiagnostic()
+        calendarPermissionChecker: any DiagnosticChecking = SystemCalendarPermissionDiagnostic(),
+        syncFreshnessChecker: any DiagnosticChecking = StaticDiagnosticChecker(status: .idle)
     ) {
         self.calendarPermissionChecker = calendarPermissionChecker
+        self.syncFreshnessChecker = syncFreshnessChecker
     }
 
     /// 读取当前系统日历权限并包装成统一快照。
     func currentSnapshot() async -> DiagnosticsSnapshot {
         return DiagnosticsSnapshot(
-            calendarPermission: await calendarPermissionChecker.run()
+            calendarPermission: await calendarPermissionChecker.run(),
+            syncFreshness: await syncFreshnessChecker.run()
         )
+    }
+}
+
+/// `StaticDiagnosticChecker` 让 provider 在当前还没有真实检查器时，也能稳定返回固定状态。
+private struct StaticDiagnosticChecker: DiagnosticChecking {
+    let status: DiagnosticCheckStatus
+
+    func run() async -> DiagnosticCheckStatus {
+        status
     }
 }
 
@@ -55,5 +69,75 @@ struct SystemCalendarPermissionDiagnostic: DiagnosticChecking {
         @unknown default:
             return .warning(message: "无法确认系统日历权限状态，建议稍后重新检查")
         }
+    }
+}
+
+/// `SyncFreshnessDiagnostic` 负责把“最近一次成功读取本地系统日历的时间”折叠成统一诊断语义。
+/// 它不判断飞书远端是否同步完成，只判断本 app 是否已经太久没有成功读到本地系统日历。
+struct SyncFreshnessDiagnostic: DiagnosticChecking {
+    /// 最近一次成功读取本地系统日历的时间。
+    let lastSuccessfulRefreshAt: Date?
+    /// 读取“当前时间”的闭包，方便测试固定时钟。
+    let nowProvider: @Sendable () -> Date
+    /// 超过这个阈值就进入 warning。
+    let warningThreshold: TimeInterval
+
+    init(
+        lastSuccessfulRefreshAt: Date?,
+        warningThreshold: TimeInterval = 10 * 60,
+        nowProvider: @escaping @Sendable () -> Date = Date.init
+    ) {
+        self.lastSuccessfulRefreshAt = lastSuccessfulRefreshAt
+        self.warningThreshold = warningThreshold
+        self.nowProvider = nowProvider
+    }
+
+    func run() async -> DiagnosticCheckStatus {
+        Self.status(
+            lastSuccessfulRefreshAt: lastSuccessfulRefreshAt,
+            now: nowProvider(),
+            warningThreshold: warningThreshold
+        )
+    }
+
+    /// 公开纯值映射，方便设置页和单元测试直接复用。
+    static func status(
+        lastSuccessfulRefreshAt: Date?,
+        now: Date,
+        warningThreshold: TimeInterval = 10 * 60
+    ) -> DiagnosticCheckStatus {
+        guard let lastSuccessfulRefreshAt else {
+            return .warning(message: "尚未成功读取本地系统日历")
+        }
+
+        let elapsed = now.timeIntervalSince(lastSuccessfulRefreshAt)
+
+        if elapsed <= warningThreshold {
+            return .passed(
+                message: "最近一次成功读取本地系统日历是在 \(freshnessDescription(elapsed)) 前"
+            )
+        }
+
+        return .warning(
+            message: "距离最近一次成功读取本地系统日历已过去 \(freshnessDescription(elapsed))"
+        )
+    }
+
+    /// 统一把秒数压成短时间描述，避免设置页直接拼接原始数值。
+    private static func freshnessDescription(_ elapsed: TimeInterval) -> String {
+        let totalMinutes = max(1, Int(elapsed / 60))
+
+        guard totalMinutes >= 60 else {
+            return "\(totalMinutes) 分钟"
+        }
+
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        if minutes == 0 {
+            return "\(hours) 小时"
+        }
+
+        return "\(hours) 小时 \(minutes) 分钟"
     }
 }

@@ -95,21 +95,47 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler,
             reminderPreferences: ReminderPreferences(
-                countdownOverrideSeconds: nil,
-                globalReminderEnabled: true,
                 isMuted: true
             )
         )
 
         await engine.reconcile(with: readyState(nextMeeting: meeting(id: "muted", now: now, offsetSeconds: 30)))
 
-        guard case let .triggeredSilently(context, _) = engine.state else {
+        guard case let .triggeredSilently(context, _, reason) = engine.state else {
             return XCTFail("Expected silent trigger state, got \(engine.state)")
         }
 
         XCTAssertTrue(context.triggeredImmediately)
+        XCTAssertEqual(reason, .userMuted)
         XCTAssertEqual(audioEngine.playCallCount, 0)
         XCTAssertTrue(scheduler.activeTasks.isEmpty)
+    }
+
+    /// 验证开启“仅耳机输出时播放”后，如果默认输出是外放，则会静默命中而不是播放音频。
+    func testReconcileTriggersSilentlyWhenHeadphonePolicyBlocksCurrentOutput() async {
+        let now = fixedNow()
+        let audioEngine = SpyReminderAudioEngine(defaultDuration: 120)
+        let scheduler = TestReminderScheduler()
+        let routeProvider = StubAudioOutputRouteProvider(
+            route: AudioOutputRouteSnapshot(name: "MacBook Pro Speakers", kind: .speakerLike)
+        )
+        let engine = makeEngine(
+            now: now,
+            audioEngine: audioEngine,
+            scheduler: scheduler,
+            audioOutputRouteProvider: routeProvider,
+            reminderPreferences: ReminderPreferences(playSoundOnlyWhenHeadphonesConnected: true)
+        )
+
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "speaker", now: now, offsetSeconds: 30)))
+
+        guard case let .triggeredSilently(context, _, reason) = engine.state else {
+            return XCTFail("Expected silent trigger state, got \(engine.state)")
+        }
+
+        XCTAssertTrue(context.triggeredImmediately)
+        XCTAssertEqual(reason, .outputRoutePolicy(routeName: "MacBook Pro Speakers"))
+        XCTAssertEqual(audioEngine.playCallCount, 0)
     }
 
     /// 验证关闭总提醒开关后，不会创建任何活动提醒任务。
@@ -122,9 +148,7 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler,
             reminderPreferences: ReminderPreferences(
-                countdownOverrideSeconds: nil,
-                globalReminderEnabled: false,
-                isMuted: false
+                globalReminderEnabled: false
             )
         )
 
@@ -206,11 +230,11 @@ final class ReminderEngineTests: XCTestCase {
         XCTAssertTrue(message.contains("提醒已触发"))
     }
 
-    /// 验证正在播放提醒音效时，菜单栏会切到更显眼的提醒态标签。
+    /// 验证会前倒计时进行中时，菜单栏会切到秒级倒计时标签。
     func testPlayingStateProvidesMenuBarAlertPresentation() {
         let now = fixedNow()
         let context = ScheduledReminderContext(
-            meeting: meeting(id: "menu-bar-playing", now: now, offsetSeconds: 30),
+            meeting: meeting(id: "menu-bar-playing", now: now, offsetSeconds: 10),
             triggerAt: now,
             countdownSeconds: 4,
             triggeredImmediately: true
@@ -218,11 +242,13 @@ final class ReminderEngineTests: XCTestCase {
         let state = ReminderState.playing(context: context, startedAt: now)
 
         XCTAssertEqual(
-            state.menuBarAlertPresentation(),
+            state.menuBarAlertPresentation(at: now),
             ReminderMenuBarAlertPresentation(
-                title: "马上开会",
-                symbolName: "exclamationmark.circle.fill",
-                isHighPriority: true
+                title: "10s",
+                symbolName: "timer.circle.fill",
+                isHighPriority: true,
+                showsCapsuleBackground: true,
+                shouldHighlightRed: true
             )
         )
     }
@@ -236,14 +262,47 @@ final class ReminderEngineTests: XCTestCase {
             countdownSeconds: 4,
             triggeredImmediately: true
         )
-        let state = ReminderState.triggeredSilently(context: context, triggeredAt: now)
+        let state = ReminderState.triggeredSilently(
+            context: context,
+            triggeredAt: now,
+            reason: .userMuted
+        )
 
         XCTAssertEqual(
-            state.menuBarAlertPresentation(),
+            state.menuBarAlertPresentation(at: now),
             ReminderMenuBarAlertPresentation(
                 title: "静音开会",
                 symbolName: "bell.slash.circle.fill",
-                isHighPriority: true
+                isHighPriority: true,
+                showsCapsuleBackground: true,
+                shouldHighlightRed: false
+            )
+        )
+    }
+
+    /// 验证因耳机输出策略被拦截时，菜单栏会切到单独的“避免外放”提醒标签。
+    func testTriggeredSilentlyByOutputPolicyProvidesDedicatedMenuBarAlertPresentation() {
+        let now = fixedNow()
+        let context = ScheduledReminderContext(
+            meeting: meeting(id: "menu-bar-speaker", now: now, offsetSeconds: 30),
+            triggerAt: now,
+            countdownSeconds: 4,
+            triggeredImmediately: true
+        )
+        let state = ReminderState.triggeredSilently(
+            context: context,
+            triggeredAt: now,
+            reason: .outputRoutePolicy(routeName: "MacBook Pro Speakers")
+        )
+
+        XCTAssertEqual(
+            state.menuBarAlertPresentation(at: now),
+            ReminderMenuBarAlertPresentation(
+                title: "避免外放",
+                symbolName: "speaker.slash.circle.fill",
+                isHighPriority: true,
+                showsCapsuleBackground: true,
+                shouldHighlightRed: false
             )
         )
     }
@@ -259,7 +318,7 @@ final class ReminderEngineTests: XCTestCase {
         )
         let state = ReminderState.scheduled(context)
 
-        XCTAssertNil(state.menuBarAlertPresentation())
+        XCTAssertNil(state.menuBarAlertPresentation(at: now))
     }
 
     /// 用统一入口构造提醒引擎，避免每个测试都重复拼接样板依赖。
@@ -267,11 +326,15 @@ final class ReminderEngineTests: XCTestCase {
         now: Date,
         audioEngine: SpyReminderAudioEngine,
         scheduler: TestReminderScheduler,
+        audioOutputRouteProvider: any AudioOutputRouteProviding = StubAudioOutputRouteProvider(
+            route: AudioOutputRouteSnapshot(name: "AirPods Pro", kind: .privateListening)
+        ),
         reminderPreferences: ReminderPreferences = .default
     ) -> ReminderEngine {
         ReminderEngine(
             preferencesStore: InMemoryPreferencesStore(reminderPreferences: reminderPreferences),
             audioEngine: audioEngine,
+            audioOutputRouteProvider: audioOutputRouteProvider,
             scheduler: scheduler,
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "ReminderEngineTests")
@@ -310,6 +373,20 @@ final class ReminderEngineTests: XCTestCase {
     /// 提供所有测试共享的固定当前时间，避免断言依赖真实时钟。
     private func fixedNow() -> Date {
         Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 4, day: 1, hour: 9, minute: 0, second: 0))!
+    }
+}
+
+/// 用固定路由替代真实 CoreAudio 探测，让测试可以精确控制“当前默认输出设备”的语义。
+@MainActor
+private final class StubAudioOutputRouteProvider: AudioOutputRouteProviding {
+    let route: AudioOutputRouteSnapshot
+
+    init(route: AudioOutputRouteSnapshot) {
+        self.route = route
+    }
+
+    func currentRoute() -> AudioOutputRouteSnapshot {
+        route
     }
 }
 

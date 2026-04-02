@@ -13,11 +13,14 @@ enum AppContainer {
         let preferencesStore = UserDefaultsPreferencesStore()
         let calendarAccess = EventKitSystemCalendarAccess()
         let settingsWindowController = SettingsWindowController()
-        let audioEngine = BundledAudioFileReminderAudioEngine(
-            resourceName: "PS5 Game Start",
-            resourceExtension: "flac",
+        let soundProfileAssetStore = SoundProfileAssetStore()
+        let audioEngine = SelectableSoundProfileReminderAudioEngine(
+            preferencesStore: preferencesStore,
+            assetStore: soundProfileAssetStore,
             fallbackEngine: GeneratedToneReminderAudioEngine()
         )
+        let soundProfilePreviewPlayer = SoundProfilePreviewPlayer(assetStore: soundProfileAssetStore)
+        let audioOutputRouteProvider = CoreAudioOutputRouteProvider()
         let systemCalendarSource = SystemCalendarMeetingSource(
             calendarAccess: calendarAccess,
             preferencesStore: preferencesStore
@@ -26,14 +29,17 @@ enum AppContainer {
         let sourceCoordinator = SourceCoordinator(
             source: systemCalendarSource,
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: preferencesStore,
             dateProvider: dateProvider,
             logger: AppLogger(source: "SourceCoordinator"),
+            lastSuccessfulRefreshAt: UserDefaultsPreferencesStore.bootstrapLastSuccessfulRefreshAt(),
             autoRefreshOnStart: true
         )
 
         let reminderEngine = ReminderEngine(
             preferencesStore: preferencesStore,
             audioEngine: audioEngine,
+            audioOutputRouteProvider: audioOutputRouteProvider,
             scheduler: TaskReminderScheduler(),
             dateProvider: dateProvider,
             logger: AppLogger(source: "ReminderEngine")
@@ -50,11 +56,48 @@ enum AppContainer {
             autoRefreshOnStart: true
         )
 
+        let reminderPreferencesController = ReminderPreferencesController(
+            preferencesStore: preferencesStore,
+            onPreferencesChanged: { [weak sourceCoordinator] in
+                await sourceCoordinator?.refresh(trigger: .preferencesChanged)
+            },
+            autoRefreshOnStart: true
+        )
+
+        let soundProfileLibraryController = SoundProfileLibraryController(
+            preferencesStore: preferencesStore,
+            assetStore: soundProfileAssetStore,
+            previewPlayer: soundProfilePreviewPlayer,
+            onSelectedSoundProfileChanged: { [weak sourceCoordinator] in
+                await sourceCoordinator?.refresh(trigger: .preferencesChanged)
+            },
+            autoRefreshOnStart: true
+        )
+
+        let launchAtLoginController = LaunchAtLoginController()
+        let menuBarPresentationClock = MenuBarPresentationClock()
+        let menuBarStatusItemController = MenuBarStatusItemController(
+            sourceCoordinator: sourceCoordinator,
+            reminderEngine: reminderEngine,
+            settingsWindowController: settingsWindowController,
+            menuBarPresentationClock: menuBarPresentationClock
+        )
+        let appRefreshController = AppRefreshController(
+            sourceCoordinator: sourceCoordinator,
+            dateProvider: dateProvider
+        )
+
         return AppRuntime(
             sourceCoordinator: sourceCoordinator,
             systemCalendarConnectionController: systemCalendarConnectionController,
             reminderEngine: reminderEngine,
-            settingsWindowController: settingsWindowController
+            reminderPreferencesController: reminderPreferencesController,
+            soundProfileLibraryController: soundProfileLibraryController,
+            launchAtLoginController: launchAtLoginController,
+            settingsWindowController: settingsWindowController,
+            menuBarPresentationClock: menuBarPresentationClock,
+            menuBarStatusItemController: menuBarStatusItemController,
+            appRefreshController: appRefreshController
         )
     }
 }

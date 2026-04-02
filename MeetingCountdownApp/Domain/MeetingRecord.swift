@@ -58,6 +58,17 @@ struct MeetingRecord: Identifiable, Equatable, Sendable {
         self.attendeeResponse = attendeeResponse
         self.metadata = metadata
     }
+
+    /// 当前会议是否包含可直接入会的视频会议链接。
+    /// 这条语义后续会被“仅提醒视频会议”过滤规则直接复用。
+    var hasVideoConferenceLink: Bool {
+        links.contains { $0.kind == .vc }
+    }
+
+    /// 当前用户是否已经明确拒绝这场会议。
+    var isDeclinedByCurrentUser: Bool {
+        attendeeResponse == .declined
+    }
 }
 
 /// 统一表达“从会议里提取出来的可点击链接”。

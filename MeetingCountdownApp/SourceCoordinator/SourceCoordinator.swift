@@ -20,10 +20,10 @@ struct SourceCoordinatorState: Equatable, Sendable {
 
     /// 构造应用启动后的初始状态。
     /// 这里故意把大多数字段清空，等真实刷新完成后再写入健康状态和会议数据。
-    static func initial(sourceDisplayName: String) -> SourceCoordinatorState {
+    static func initial(sourceDisplayName: String, lastRefreshAt: Date? = nil) -> SourceCoordinatorState {
         SourceCoordinatorState(
             healthState: .unconfigured(message: "\(sourceDisplayName) 尚未完成接入"),
-            lastRefreshAt: nil,
+            lastRefreshAt: lastRefreshAt,
             nextMeeting: nil,
             meetings: [],
             isRefreshing: false,
@@ -54,6 +54,9 @@ final class SourceCoordinator: ObservableObject {
     private let source: any MeetingSource
     /// 独立注入选择器，确保“下一场会议规则”可单测、可替换。
     private let nextMeetingSelector: any NextMeetingSelecting
+    /// 非敏感偏好持久化入口。
+    /// 协调层需要读取它来应用会议过滤规则，并在成功刷新后落最近成功读取时间。
+    private let preferencesStore: any PreferencesStore
     /// 独立注入时钟，避免业务层直接绑定真实时间。
     private let dateProvider: any DateProviding
     /// 统一日志入口，方便后续接入真实系统能力时保留可追踪记录。
@@ -63,15 +66,21 @@ final class SourceCoordinator: ObservableObject {
     init(
         source: any MeetingSource,
         nextMeetingSelector: any NextMeetingSelecting,
+        preferencesStore: any PreferencesStore,
         dateProvider: any DateProviding,
         logger: AppLogger,
+        lastSuccessfulRefreshAt: Date? = nil,
         autoRefreshOnStart: Bool = true
     ) {
         self.source = source
         self.nextMeetingSelector = nextMeetingSelector
+        self.preferencesStore = preferencesStore
         self.dateProvider = dateProvider
         self.logger = logger
-        self.state = .initial(sourceDisplayName: source.descriptor.displayName)
+        self.state = .initial(
+            sourceDisplayName: source.descriptor.displayName,
+            lastRefreshAt: lastSuccessfulRefreshAt
+        )
 
         if autoRefreshOnStart {
             Task { [weak self] in
@@ -149,12 +158,18 @@ final class SourceCoordinator: ObservableObject {
             let snapshot = try await source.refresh(trigger: trigger, now: now)
             /// 先统一排序，再做“下一场会议”选择，避免底层源返回顺序不稳定。
             let sortedMeetings = snapshot.meetings.sorted(by: Self.sortMeetings)
+            let reminderPreferences = await preferencesStore.loadReminderPreferences()
 
             state.healthState = snapshot.healthState
             state.lastRefreshAt = snapshot.refreshedAt
             state.meetings = sortedMeetings
-            state.nextMeeting = nextMeetingSelector.selectNextMeeting(from: sortedMeetings, now: now)
+            state.nextMeeting = nextMeetingSelector.selectNextMeeting(
+                from: sortedMeetings,
+                now: now,
+                reminderPreferences: reminderPreferences
+            )
             state.lastErrorMessage = nil
+            try? await preferencesStore.saveLastSuccessfulRefreshAt(snapshot.refreshedAt)
         } catch let error as MeetingSourceError {
             switch error {
             case .notConfigured:

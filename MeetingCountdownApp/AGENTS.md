@@ -14,7 +14,7 @@
 - `Domain/`：统一会议模型、数据源协议、时间与选择规则。
 - `SourceCoordinator/`：CalDAV 主数据源的统一刷新入口、状态聚合。
 - `ReminderEngine/`：本地提醒状态机、默认音效播放和调度封装。
-- `Preferences/`：偏好模型与持久化接口骨架。
+- `Preferences/`：偏好模型、提醒音频列表与本地持久化。
 - `Diagnostics/`：系统日历权限相关的只读诊断状态与检查器。
 - `Shared/`：跨模块共用工具，例如日志封装。
 
@@ -28,11 +28,11 @@
 
 ## 关键状态 / 数据流
 
-当前主状态流已经收敛为 `EventKit -> SystemCalendarBridge -> MeetingSource -> SourceCoordinatorState -> ReminderEngine -> AppShell View`。任何系统日历原始事件都必须先转换成统一的 `MeetingRecord`，再由 `SourceCoordinator` 计算当前健康状态、最近刷新时间和下一场会议；提醒引擎只消费统一会议模型，UI 不直接读取底层原始数据或自己创建定时任务。
+当前主状态流已经收敛为 `EventKit -> SystemCalendarBridge -> MeetingSource -> SourceCoordinatorState -> ReminderEngine -> AppShell View`。任何系统日历原始事件都必须先转换成统一的 `MeetingRecord`，再由 `SourceCoordinator` 计算当前健康状态、最近刷新时间和下一场会议；提醒引擎只消费统一会议模型和当前选中的提醒音频，UI 不直接读取底层原始数据、自己创建定时任务，或直接操作音频文件。
 
 ## 阅读入口
 
-建议先读 `AppShell/FeishuMeetingCountdownApp.swift`、`SourceCoordinator/SourceCoordinator.swift` 和 `ReminderEngine/ReminderEngine.swift`，再看 `SystemCalendarBridge/` 与 `Diagnostics/`，最后再看 `Domain/` 里的统一模型和 `Preferences/`。
+建议先读 `AppShell/FeishuMeetingCountdownApp.swift`、`SourceCoordinator/SourceCoordinator.swift` 和 `ReminderEngine/ReminderEngine.swift`，再看 `Preferences/` 里的提醒音频与偏好状态，随后再看 `SystemCalendarBridge/`、`Diagnostics/` 和 `Domain/`。
 
 ## 开发注意事项
 

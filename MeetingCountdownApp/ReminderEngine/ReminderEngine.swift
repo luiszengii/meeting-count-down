@@ -77,6 +77,10 @@ final class TaskReminderScheduler: ReminderScheduling {
 /// 它只围绕“当前下一场会议”维护一条活动提醒，不负责读取日历或决定哪场会才是下一场。
 @MainActor
 final class ReminderEngine: ObservableObject {
+    /// 会议真正开始后，菜单栏标题提醒额外保留多久再回到普通状态。
+    /// 这样用户才能真正看到当前会议标题，而不是在倒计时归零瞬间立刻被空闲态覆盖。
+    private static let meetingStartedBannerHoldDuration: TimeInterval = 3
+
     /// 对外暴露的提醒状态，供菜单栏和设置页直接读取。
     @Published private(set) var state: ReminderState
 
@@ -84,6 +88,8 @@ final class ReminderEngine: ObservableObject {
     private let preferencesStore: any PreferencesStore
     /// 默认音效播放实现。
     private let audioEngine: any ReminderAudioEngine
+    /// 当前默认输出设备探测入口。
+    private let audioOutputRouteProvider: any AudioOutputRouteProviding
     /// 可替换的延迟调度器。
     private let scheduler: any ReminderScheduling
     /// 统一时钟入口，便于测试固定当前时间。
@@ -99,17 +105,22 @@ final class ReminderEngine: ObservableObject {
     private var playbackCompletionTask: (any ReminderScheduledTask)?
     /// 最近一次已经真正触发过的提醒主键，用来防止同一会议被重复提醒。
     private var lastTriggeredIdentity: ReminderIdentity?
+    /// 当前活动提醒调度所绑定的执行策略。
+    /// 只要静音或耳机输出策略发生变化，即使会议上下文没变，也应该重建调度。
+    private var activeExecutionPolicy: ReminderExecutionPolicy?
 
     /// 先构造一个空闲提醒引擎，后续再通过 `bind` 接上真正的数据源状态流。
     init(
         preferencesStore: any PreferencesStore,
         audioEngine: any ReminderAudioEngine,
+        audioOutputRouteProvider: any AudioOutputRouteProviding,
         scheduler: any ReminderScheduling,
         dateProvider: any DateProviding,
         logger: AppLogger
     ) {
         self.preferencesStore = preferencesStore
         self.audioEngine = audioEngine
+        self.audioOutputRouteProvider = audioOutputRouteProvider
         self.scheduler = scheduler
         self.dateProvider = dateProvider
         self.logger = logger
@@ -162,6 +173,10 @@ final class ReminderEngine: ObservableObject {
                 from: reminderPreferences,
                 defaultSoundDuration: soundDuration
             )
+            let executionPolicy = ReminderExecutionPolicy(
+                isMuted: reminderPreferences.isMuted,
+                playSoundOnlyWhenHeadphonesConnected: reminderPreferences.playSoundOnlyWhenHeadphonesConnected
+            )
             let triggerAt = nextMeeting.startAt.addingTimeInterval(-TimeInterval(countdownSeconds))
             let triggeredImmediately = triggerAt <= dateProvider.now()
             let context = ScheduledReminderContext(
@@ -171,7 +186,7 @@ final class ReminderEngine: ObservableObject {
                 triggeredImmediately: triggeredImmediately
             )
 
-            if canReuseCurrentState(for: context) {
+            if canReuseCurrentState(for: context, executionPolicy: executionPolicy) {
                 return
             }
 
@@ -187,12 +202,13 @@ final class ReminderEngine: ObservableObject {
                 await triggerReminder(
                     context: context,
                     soundDuration: soundDuration,
-                    isMuted: reminderPreferences.isMuted
+                    executionPolicy: executionPolicy
                 )
                 return
             }
 
             state = .scheduled(context)
+            activeExecutionPolicy = executionPolicy
             let delay = max(0, triggerAt.timeIntervalSince(dateProvider.now()))
 
             scheduledReminderTask = scheduler.schedule(after: delay) { [weak self] in
@@ -203,7 +219,7 @@ final class ReminderEngine: ObservableObject {
                 await self.triggerReminder(
                     context: context,
                     soundDuration: soundDuration,
-                    isMuted: reminderPreferences.isMuted
+                    executionPolicy: executionPolicy
                 )
             }
 
@@ -232,12 +248,15 @@ final class ReminderEngine: ObservableObject {
 
     /// 当上游状态只是重复发布同一场会议时，这里直接复用当前提醒状态，
     /// 避免先取消再重建导致日志噪音、任务抖动，甚至打断已经开始的播放。
-    private func canReuseCurrentState(for context: ScheduledReminderContext) -> Bool {
+    private func canReuseCurrentState(
+        for context: ScheduledReminderContext,
+        executionPolicy: ReminderExecutionPolicy
+    ) -> Bool {
         switch state {
         case let .scheduled(currentContext),
              let .playing(currentContext, _),
-             let .triggeredSilently(currentContext, _):
-            return currentContext == context
+             let .triggeredSilently(currentContext, _, _):
+            return currentContext == context && activeExecutionPolicy == executionPolicy
         case .idle, .disabled, .failed:
             return false
         }
@@ -247,14 +266,15 @@ final class ReminderEngine: ObservableObject {
     private func triggerReminder(
         context: ScheduledReminderContext,
         soundDuration: TimeInterval,
-        isMuted: Bool
+        executionPolicy: ReminderExecutionPolicy
     ) async {
         lastTriggeredIdentity = context.identity
         scheduledReminderTask = nil
+        activeExecutionPolicy = executionPolicy
 
-        if isMuted {
+        if let silentReason = silentTriggerReason(for: executionPolicy) {
             let triggeredAt = dateProvider.now()
-            state = .triggeredSilently(context: context, triggeredAt: triggeredAt)
+            state = .triggeredSilently(context: context, triggeredAt: triggeredAt, reason: silentReason)
             logger.info("Reminder hit silently for \(context.meeting.id)")
             return
         }
@@ -273,7 +293,12 @@ final class ReminderEngine: ObservableObject {
 
     /// 在默认音效播放完成后，把状态从“正在播放”收回“已触发，等待下一场会议”。
     private func schedulePlaybackCompletion(for context: ScheduledReminderContext, after soundDuration: TimeInterval) {
-        playbackCompletionTask = scheduler.schedule(after: max(0, soundDuration)) { [weak self] in
+        let countdownAndBannerDelay =
+            max(0, context.meeting.startAt.timeIntervalSince(dateProvider.now()))
+            + Self.meetingStartedBannerHoldDuration
+        let completionDelay = max(max(0, soundDuration), countdownAndBannerDelay)
+
+        playbackCompletionTask = scheduler.schedule(after: completionDelay) { [weak self] in
             guard let self else {
                 return
             }
@@ -291,6 +316,7 @@ final class ReminderEngine: ObservableObject {
             return
         }
 
+        activeExecutionPolicy = nil
         state = .idle(message: "《\(context.meeting.title)》的提醒已触发，等待下一场会议。")
     }
 
@@ -301,6 +327,7 @@ final class ReminderEngine: ObservableObject {
         scheduledReminderTask = nil
         playbackCompletionTask?.cancel()
         playbackCompletionTask = nil
+        activeExecutionPolicy = nil
 
         if shouldStopAudio {
             await audioEngine.stopPlayback()
@@ -319,4 +346,31 @@ final class ReminderEngine: ObservableObject {
 
         return "当前没有可安排提醒的下一场会议。"
     }
+
+    /// 按当前执行策略判断这次提醒是否应该静默命中。
+    private func silentTriggerReason(for executionPolicy: ReminderExecutionPolicy) -> SilentTriggerReason? {
+        if executionPolicy.isMuted {
+            return .userMuted
+        }
+
+        guard executionPolicy.playSoundOnlyWhenHeadphonesConnected else {
+            return nil
+        }
+
+        let currentRoute = audioOutputRouteProvider.currentRoute()
+
+        switch currentRoute.kind {
+        case .privateListening:
+            return nil
+        case .speakerLike, .unknown:
+            return .outputRoutePolicy(routeName: currentRoute.name)
+        }
+    }
+}
+
+/// `ReminderExecutionPolicy` 把一次提醒真正执行时依赖的偏好收拢成纯值。
+/// 这样提醒引擎在判断“能否复用当前调度”时，就不会遗漏静音或耳机策略变化。
+private struct ReminderExecutionPolicy: Equatable, Sendable {
+    let isMuted: Bool
+    let playSoundOnlyWhenHeadphonesConnected: Bool
 }

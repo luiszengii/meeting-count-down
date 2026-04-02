@@ -14,6 +14,10 @@ enum RefreshTrigger: String, Equatable, Sendable {
     case networkRestored
     /// 时区变化后触发时间重算。
     case timezoneChanged
+    /// 周期性重读本地系统日历。
+    case scheduledRefresh
+    /// 用户调整了提醒偏好，需要重新计算候选会议和提醒。
+    case preferencesChanged
     /// 用户切换了主数据源模式。
     case sourceChanged
     /// 系统 Calendar 内容发生变化，需要重新读取系统日历。
@@ -32,6 +36,10 @@ enum RefreshTrigger: String, Equatable, Sendable {
             "网络恢复"
         case .timezoneChanged:
             "时区变化"
+        case .scheduledRefresh:
+            "周期刷新"
+        case .preferencesChanged:
+            "提醒偏好变化"
         case .sourceChanged:
             "切换数据源"
         case .systemCalendarChanged:

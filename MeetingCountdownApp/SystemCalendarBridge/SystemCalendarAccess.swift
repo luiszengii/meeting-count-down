@@ -142,9 +142,33 @@ final class EventKitSystemCalendarAccess: SystemCalendarAccessing {
             timeZoneIdentifier: event.timeZone?.identifier,
             isAllDay: event.isAllDay,
             isCancelled: event.status == .canceled,
+            attendeeResponse: currentUserResponse(from: event),
             primaryURL: event.url,
             notes: event.notes
         )
+    }
+
+    /// 尝试从 EventKit 参与者列表里找出“当前用户”这一项，并把它映射成统一响应状态。
+    /// 如果上游没有暴露当前用户或状态语义不够明确，就回退成 `.unknown`，避免误过滤会议。
+    private static func currentUserResponse(from event: EKEvent) -> MeetingParticipantResponseStatus {
+        guard let currentUserParticipant = event.attendees?.first(where: \.isCurrentUser) else {
+            return .unknown
+        }
+
+        switch currentUserParticipant.participantStatus {
+        case .accepted:
+            return .accepted
+        case .tentative:
+            return .tentative
+        case .pending:
+            return .needsAction
+        case .declined:
+            return .declined
+        case .delegated, .completed, .inProcess, .unknown:
+            return .unknown
+        @unknown default:
+            return .unknown
+        }
     }
 
     /// 对用户最关键的是先看到“推荐默认选中的日历”，再看到其它候选。

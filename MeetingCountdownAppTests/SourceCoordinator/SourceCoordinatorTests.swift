@@ -18,6 +18,7 @@ final class SourceCoordinatorTests: XCTestCase {
                 ]
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SourceCoordinatorTests"),
             autoRefreshOnStart: false
@@ -40,6 +41,7 @@ final class SourceCoordinatorTests: XCTestCase {
                 sampleMeetings: [meeting(id: "calendar", now: now, offsetMinutes: 40)]
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SourceCoordinatorTests"),
             autoRefreshOnStart: false
@@ -63,6 +65,7 @@ final class SourceCoordinatorTests: XCTestCase {
                 sampleMeetings: []
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SourceCoordinatorTests"),
             autoRefreshOnStart: false
@@ -86,6 +89,7 @@ final class SourceCoordinatorTests: XCTestCase {
                 error: .unavailable(message: "网络不可用")
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SourceCoordinatorTests"),
             autoRefreshOnStart: false
@@ -107,6 +111,7 @@ final class SourceCoordinatorTests: XCTestCase {
                 error: .notConfigured(message: "尚未选择需要纳入提醒的系统日历")
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
             dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SourceCoordinatorTests"),
             autoRefreshOnStart: false

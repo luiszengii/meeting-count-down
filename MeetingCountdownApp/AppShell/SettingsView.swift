@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// `SettingsView` 现在只承载 CalDAV 单一路径需要的配置和状态总览。
 /// 它不直接操作 EventKit 原始对象，而是通过 `SystemCalendarConnectionController`、
@@ -11,8 +12,16 @@ struct SettingsView: View {
     @ObservedObject var systemCalendarConnectionController: SystemCalendarConnectionController
     /// 设置页同样要观察提醒状态，向用户解释提醒是否已经真正建立。
     @ObservedObject var reminderEngine: ReminderEngine
+    /// 提醒偏好由单独控制器管理，避免视图自己直接读写持久化层。
+    @ObservedObject var reminderPreferencesController: ReminderPreferencesController
+    /// 提醒音频库由独立控制器管理，负责多次导入、切换和试听。
+    @ObservedObject var soundProfileLibraryController: SoundProfileLibraryController
+    /// 开机启动开关需要单独管理系统注册状态和错误。
+    @ObservedObject var launchAtLoginController: LaunchAtLoginController
     /// 设置页自己把真实窗口登记到这里，供菜单栏入口复用。
     let settingsWindowController: SettingsWindowController
+    /// 控制 macOS 文件选择器是否弹出。
+    @State private var isPresentingSoundImporter = false
 
     /// 统一渲染设置窗口内容。
     var body: some View {
@@ -20,6 +29,8 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 caldavGuideGroup
                 systemCalendarConfigurationGroup
+                reminderPreferencesGroup
+                syncAndIntegrationGroup
                 appStatusGroup
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -30,6 +41,20 @@ struct SettingsView: View {
                 settingsWindowController.register(window: window)
             }
         )
+        .fileImporter(
+            isPresented: $isPresentingSoundImporter,
+            allowedContentTypes: [.audio],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case let .success(urls):
+                Task {
+                    await soundProfileLibraryController.importSoundFiles(from: urls)
+                }
+            case let .failure(error):
+                soundProfileLibraryController.reportFileImportFailure(error)
+            }
+        }
     }
 
     /// 用最短路径向用户解释当前产品只支持哪一条接入流程。
@@ -165,7 +190,6 @@ struct SettingsView: View {
 
                 LabeledContent("活动数据源", value: "CalDAV / 系统日历")
                 LabeledContent("健康状态", value: sourceCoordinator.state.healthState.summary)
-                LabeledContent("最近刷新", value: sourceCoordinator.lastRefreshLine)
                 LabeledContent("提醒状态", value: reminderEngine.state.summary)
 
                 Text(reminderEngine.state.detailLine)
@@ -189,6 +213,261 @@ struct SettingsView: View {
                 }
 
                 if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
+                    Text(lastErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 提醒偏好集中放在单独分组里，避免和只读状态混在一起。
+    @ViewBuilder
+    private var reminderPreferencesGroup: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("提醒偏好")
+                        .font(.headline)
+
+                    Spacer()
+
+                    if reminderPreferencesController.isLoadingState || reminderPreferencesController.isSavingState {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+
+                Toggle(
+                    "启用本地提醒",
+                    isOn: Binding(
+                        get: { reminderPreferencesController.reminderPreferences.globalReminderEnabled },
+                        set: { isEnabled in
+                            Task {
+                                await reminderPreferencesController.setGlobalReminderEnabled(isEnabled)
+                            }
+                        }
+                    )
+                )
+                .disabled(isReminderPreferenceEditingDisabled)
+
+                Toggle(
+                    "静音模式",
+                    isOn: Binding(
+                        get: { reminderPreferencesController.reminderPreferences.isMuted },
+                        set: { isMuted in
+                            Task {
+                                await reminderPreferencesController.setMuted(isMuted)
+                            }
+                        }
+                    )
+                )
+                .disabled(isReminderPreferenceEditingDisabled)
+
+                Toggle(
+                    "仅在耳机连接时播放提醒音频",
+                    isOn: Binding(
+                        get: { reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected },
+                        set: { isEnabled in
+                            Task {
+                                await reminderPreferencesController.setPlaySoundOnlyWhenHeadphonesConnected(isEnabled)
+                            }
+                        }
+                    )
+                )
+                .disabled(isReminderPreferenceEditingDisabled)
+
+                Text("默认关闭。开启后只有在当前默认输出被识别为耳机、蓝牙耳机或其他私密收听设备时才播放音频；否则会静默命中，并保留菜单栏高优先级提醒态。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle(
+                    "仅提醒含视频会议信息的事件",
+                    isOn: Binding(
+                        get: { reminderPreferencesController.reminderPreferences.onlyForMeetingsWithVideoLink },
+                        set: { isEnabled in
+                            Task {
+                                await reminderPreferencesController.setOnlyForMeetingsWithVideoLink(isEnabled)
+                            }
+                        }
+                    )
+                )
+                .disabled(isReminderPreferenceEditingDisabled)
+
+                Toggle(
+                    "跳过已拒绝会议",
+                    isOn: Binding(
+                        get: { reminderPreferencesController.reminderPreferences.skipDeclinedMeetings },
+                        set: { isEnabled in
+                            Task {
+                                await reminderPreferencesController.setSkipDeclinedMeetings(isEnabled)
+                            }
+                        }
+                    )
+                )
+                .disabled(isReminderPreferenceEditingDisabled)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("提醒音频")
+                            .font(.caption.weight(.medium))
+
+                        Spacer()
+
+                        if soundProfileLibraryController.isLoadingState
+                            || soundProfileLibraryController.isImportingState
+                            || soundProfileLibraryController.isApplyingState {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+
+                        Button {
+                            isPresentingSoundImporter = true
+                        } label: {
+                            Label("上传音频", systemImage: "square.and.arrow.down")
+                        }
+                        .disabled(isSoundProfileEditingDisabled)
+                    }
+
+                    if let selectedSoundProfile = soundProfileLibraryController.selectedSoundProfile {
+                        Text("当前使用：\(selectedSoundProfile.displayName) · \(selectedSoundProfile.durationLine)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("支持一次选择多个音频文件，也可以后续继续追加上传。列表里的任一音频都可以试听并切换为正式提醒音频。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(soundProfileLibraryController.soundProfiles) { soundProfile in
+                            soundProfileRow(for: soundProfile)
+                        }
+                    }
+
+                    if let lastErrorMessage = soundProfileLibraryController.lastErrorMessage {
+                        Text(lastErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("倒计时秒数覆盖")
+                        .font(.caption.weight(.medium))
+
+                    if let overrideSeconds = reminderPreferencesController.reminderPreferences.countdownOverrideSeconds {
+                        Stepper(
+                            value: Binding(
+                                get: { overrideSeconds },
+                                set: { newValue in
+                                    Task {
+                                        await reminderPreferencesController.setCountdownOverrideSeconds(newValue)
+                                    }
+                                }
+                            ),
+                            in: 1 ... 300
+                        ) {
+                            Text("当前手动设为 \(overrideSeconds) 秒")
+                        }
+                        .disabled(isReminderPreferenceEditingDisabled)
+
+                        Button {
+                            Task {
+                                await reminderPreferencesController.setCountdownOverrideSeconds(nil)
+                            }
+                        } label: {
+                            Label("改回跟随当前提醒音频时长", systemImage: "arrow.uturn.backward")
+                        }
+                        .disabled(isReminderPreferenceEditingDisabled)
+                    } else {
+                        if let selectedSoundProfile = soundProfileLibraryController.selectedSoundProfile {
+                            Text("当前跟随 \(selectedSoundProfile.displayName) 的时长（\(selectedSoundProfile.durationLine)）。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("当前跟随默认提醒音效时长。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text("如果你不手动覆盖秒数，提醒会按当前选中的音频时长自动计算。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            Task {
+                                await reminderPreferencesController.setCountdownOverrideSeconds(10)
+                            }
+                        } label: {
+                            Label("改为手动 10 秒", systemImage: "timer")
+                        }
+                        .disabled(isReminderPreferenceEditingDisabled)
+                    }
+                }
+
+                if let lastErrorMessage = reminderPreferencesController.lastErrorMessage {
+                    Text(lastErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 把同步新鲜度和开机启动这些系统级运行策略收口到同一块。
+    @ViewBuilder
+    private var syncAndIntegrationGroup: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("同步与系统集成")
+                        .font(.headline)
+
+                    Spacer()
+
+                    badge(
+                        text: syncFreshnessStatus.badgeText,
+                        color: diagnosticBadgeColor(for: syncFreshnessStatus)
+                    )
+                }
+
+                LabeledContent("最近成功读取", value: sourceCoordinator.lastRefreshLine)
+
+                Text(syncFreshnessStatus.summary)
+                    .font(.caption)
+                    .foregroundStyle(syncFreshnessTextColor(for: syncFreshnessStatus))
+
+                Text("这里展示的是 app 最近一次成功读取本地系统日历的时间，不等同于飞书远端实时同步状态。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+
+                Toggle(
+                    "登录后自动启动",
+                    isOn: Binding(
+                        get: { launchAtLoginController.isEnabled },
+                        set: { isEnabled in
+                            Task {
+                                await launchAtLoginController.setEnabled(isEnabled)
+                            }
+                        }
+                    )
+                )
+                .disabled(launchAtLoginController.isApplyingState)
+
+                Text(launchAtLoginController.statusSummary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let lastErrorMessage = launchAtLoginController.lastErrorMessage {
                     Text(lastErrorMessage)
                         .font(.caption)
                         .foregroundStyle(.red)
@@ -239,6 +518,76 @@ struct SettingsView: View {
         )
     }
 
+    /// 单条提醒音频的列表行，提供“切换当前音频”“试听”和“删除”能力。
+    @ViewBuilder
+    private func soundProfileRow(for soundProfile: SoundProfile) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(soundProfile.displayName)
+                            .font(.body.weight(.medium))
+
+                        if soundProfile.isBundledDefault {
+                            badge(text: "内建", color: .secondary)
+                        }
+
+                        if soundProfile.id == soundProfileLibraryController.selectedSoundProfileID {
+                            badge(text: "当前使用中", color: .blue)
+                        }
+                    }
+
+                    Text(soundProfile.durationLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    Task {
+                        await soundProfileLibraryController.togglePreview(for: soundProfile.id)
+                    }
+                } label: {
+                    Label(
+                        soundProfileLibraryController.currentlyPreviewingSoundProfileID == soundProfile.id ? "停止" : "播放",
+                        systemImage: soundProfileLibraryController.currentlyPreviewingSoundProfileID == soundProfile.id
+                            ? "stop.circle"
+                            : "play.circle"
+                    )
+                }
+                .disabled(soundProfileLibraryController.isLoadingState)
+
+                if soundProfile.id != soundProfileLibraryController.selectedSoundProfileID {
+                    Button {
+                        Task {
+                            await soundProfileLibraryController.selectSoundProfile(id: soundProfile.id)
+                        }
+                    } label: {
+                        Label("使用", systemImage: "checkmark.circle")
+                    }
+                    .disabled(isSoundProfileEditingDisabled)
+                }
+
+                if soundProfile.isImported {
+                    Button(role: .destructive) {
+                        Task {
+                            await soundProfileLibraryController.deleteSoundProfile(id: soundProfile.id)
+                        }
+                    } label: {
+                        Label("删除", systemImage: "trash")
+                    }
+                    .disabled(isSoundProfileEditingDisabled)
+                }
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+    }
+
     /// 授权状态标签使用更贴近日历流程的颜色。
     private func authorizationBadgeColor(for state: SystemCalendarAuthorizationState) -> Color {
         switch state {
@@ -250,6 +599,32 @@ struct SettingsView: View {
             return .red
         case .unknown:
             return .secondary
+        }
+    }
+
+    /// 同步新鲜度诊断沿用统一的 `DiagnosticCheckStatus` 颜色语义。
+    private func diagnosticBadgeColor(for status: DiagnosticCheckStatus) -> Color {
+        switch status {
+        case .passed:
+            return .green
+        case .warning:
+            return .orange
+        case .failed:
+            return .red
+        case .idle, .pending:
+            return .secondary
+        }
+    }
+
+    /// 详细文案用较轻的颜色表达，warning / failed 则适度强调。
+    private func syncFreshnessTextColor(for status: DiagnosticCheckStatus) -> Color {
+        switch status {
+        case .passed, .idle, .pending:
+            return .secondary
+        case .warning:
+            return .orange
+        case .failed:
+            return .red
         }
     }
 
@@ -283,4 +658,24 @@ struct SettingsView: View {
         formatter.timeStyle = .short
         return formatter
     }()
+
+    /// 统一控制提醒偏好编辑区的禁用条件。
+    private var isReminderPreferenceEditingDisabled: Bool {
+        reminderPreferencesController.isLoadingState || reminderPreferencesController.isSavingState
+    }
+
+    /// 音频列表编辑和切换的禁用条件。
+    private var isSoundProfileEditingDisabled: Bool {
+        soundProfileLibraryController.isLoadingState
+            || soundProfileLibraryController.isImportingState
+            || soundProfileLibraryController.isApplyingState
+    }
+
+    /// 设置页使用的本地同步新鲜度摘要。
+    private var syncFreshnessStatus: DiagnosticCheckStatus {
+        SyncFreshnessDiagnostic.status(
+            lastSuccessfulRefreshAt: sourceCoordinator.state.lastRefreshAt,
+            now: Date()
+        )
+    }
 }

@@ -6,7 +6,7 @@
 
 | 目录 / 文件 | 作用 | 入口 |
 | --- | --- | --- |
-| `dev-logs/` | 每日开发推进记录 | [今日日志](./dev-logs/2026-03-31.md) |
+| `dev-logs/` | 每日开发推进记录 | [今日日志](./dev-logs/2026-04-02.md) |
 | `pitfalls/` | 踩坑记录、排查过程、根因与修复 | [Pitfalls 索引](./pitfalls/README.md) |
 | `adrs/` | 技术、产品形态、架构变动记录 | [ADR 索引](./adrs/README.md) |
 | `templates/` | 文档模板与复制入口 | [模板索引](./templates/README.md) |
@@ -32,6 +32,8 @@
 
 - 开发日志：[2026-03-30](./dev-logs/2026-03-30.md)
 - 开发日志：[2026-03-31](./dev-logs/2026-03-31.md)
+- 开发日志：[2026-04-01](./dev-logs/2026-04-01.md)
+- 开发日志：[2026-04-02](./dev-logs/2026-04-02.md)
 - ADR：
   - [建立项目级文档治理系统](./adrs/2026-03-30-documentation-governance.md)
   - [单一 app target 启动工程骨架](./adrs/2026-03-30-single-app-target-bootstrap.md)

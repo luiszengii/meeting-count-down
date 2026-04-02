@@ -91,6 +91,9 @@ struct SystemCalendarEventPayload: Equatable, Sendable {
     let timeZoneIdentifier: String?
     let isAllDay: Bool
     let isCancelled: Bool
+    /// 当前用户对该会议的响应状态。
+    /// EventKit 无法可靠提供时保持 `.unknown`，供上游过滤逻辑保守处理。
+    var attendeeResponse: MeetingParticipantResponseStatus = .unknown
     let primaryURL: URL?
     let notes: String?
 }
@@ -115,7 +118,8 @@ enum SystemCalendarEventNormalizer {
             source: MeetingSourceDescriptor(
                 sourceIdentifier: calendar.id,
                 displayName: calendar.title
-            )
+            ),
+            attendeeResponse: payload.attendeeResponse
         )
     }
 
