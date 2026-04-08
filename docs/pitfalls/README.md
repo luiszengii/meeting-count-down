@@ -17,6 +17,7 @@
 
 - [xcodebuild 首次运行时插件加载失败](./xcodebuild-first-launch-plugin-failure.md)
 - [EventKit 日历权限调试边界](./eventkit-calendar-permission-debugging.md)
+- [unsigned DMG 在另一台 Mac 上无法稳定承接 Calendar 权限](./unsigned-dmg-calendar-permission-on-other-mac.md)
 - [MenuBarExtra label 使用 TimelineView 导致高频重绘](./swiftui-menubarextra-timelineview-overdraw.md)
 - [SwiftUI Settings scene 在菜单栏 app 里的打开方式](./swiftui-settings-scene-in-menu-bar-app.md)
 - [新增源文件后需要重新生成 Xcode 工程](./xcodegen-regenerate-project-after-adding-files.md)

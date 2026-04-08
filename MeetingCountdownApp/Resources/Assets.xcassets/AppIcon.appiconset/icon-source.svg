@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    Occupancy app icon derived from Lucide's "calendar-clock" icon:
+    https://lucide.dev/icons/calendar-clock
+    License: ISC
+    Repository: https://github.com/lucide-icons/lucide
+  -->
+  <defs>
+    <linearGradient id="bg" x1="160" y1="112" x2="864" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F6CBD"/>
+      <stop offset="1" stop-color="#0A9D8F"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="212" y1="176" x2="776" y2="848" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#073B4C" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="220" fill="url(#bg)"/>
+  <rect x="104" y="104" width="816" height="816" rx="188" fill="url(#glow)"/>
+
+  <g transform="translate(212 212)" filter="url(#shadow)">
+    <rect x="68" y="92" width="500" height="404" rx="84" fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M164 28v136" fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M472 28v136" fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M68 236h204" fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="444" cy="444" r="168" fill="#FFFFFF"/>
+    <circle cx="444" cy="444" r="128" fill="#0A7FB0"/>
+    <path d="M444 376v60l50 32" fill="none" stroke="#FFFFFF" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

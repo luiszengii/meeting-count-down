@@ -14,3 +14,4 @@ ADR 表示 Architecture / Decision Record，用于记录技术栈、产品形态
 - [2026-03-30 提升最低 macOS 版本到 14](./2026-03-30-bump-minimum-macos-to-14.md)
 - [2026-03-30 Phase 1 先用设置窗口承载接入向导](./2026-03-30-onboarding-routes-through-settings-window.md)
 - [2026-03-31 CalDAV-only 产品范围收敛](./2026-03-31-caldav-only-product-scope.md)
+- [2026-04-02 Phase 6 先转为无会员手动分发](./2026-04-02-phase-6-manual-distribution-without-paid-membership.md)

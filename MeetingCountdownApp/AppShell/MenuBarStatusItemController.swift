@@ -30,6 +30,27 @@ final class MenuBarStatusItemController {
     /// 避免重复安装同一个状态栏项。
     private var hasInstalledStatusItem = false
 
+    /// 菜单栏静态展示至少需要区分三种体验层级：
+    /// `idle` 只是安静待命，`meetingSoon` 开始强调即将到来的会议，
+    /// `urgent` 则由提醒引擎驱动进入真正的高优先级态。
+    private enum StatusItemVisualState {
+        case idle
+        case meetingSoon
+        case urgent
+    }
+
+    /// AppKit 真正消费的是这一层更靠近绘制的数据。
+    /// 它把领域层的提醒 presentation 再折成“应该怎样看起来”这一层，
+    /// 方便在不污染 ReminderEngine 的前提下收紧菜单栏三态视觉。
+    private struct StatusItemPresentation {
+        let title: String
+        let symbolName: String
+        let visualState: StatusItemVisualState
+        let isHighPriority: Bool
+        let showsCapsuleBackground: Bool
+        let shouldHighlightRed: Bool
+    }
+
     init(
         sourceCoordinator: SourceCoordinator,
         reminderEngine: ReminderEngine,
@@ -151,9 +172,9 @@ final class MenuBarStatusItemController {
         }
 
         let presentation = currentPresentation(at: menuBarPresentationClock.now)
-        let foregroundColor = presentation.shouldHighlightRed ? NSColor.white : NSColor.labelColor
+        let foregroundColor = resolvedForegroundColor(for: presentation)
         let backgroundColor = resolvedBackgroundColor(for: presentation)
-        let titleWeight: NSFont.Weight = presentation.isHighPriority ? .bold : .semibold
+        let titleWeight = resolvedTitleWeight(for: presentation)
 
         button.attributedTitle = statusItemTitle(
             for: presentation.title,
@@ -162,7 +183,7 @@ final class MenuBarStatusItemController {
         )
         button.image = configuredSymbolImage(
             named: presentation.symbolName,
-            weight: presentation.isHighPriority ? .bold : .semibold,
+            weight: titleWeight,
             accessibilityLabel: presentation.title
         )
         button.contentTintColor = foregroundColor
@@ -185,18 +206,70 @@ final class MenuBarStatusItemController {
     }
 
     /// 如果提醒引擎当前没有高优先级 presentation，就退回到协调层原有的普通菜单栏标题。
-    private func currentPresentation(at now: Date) -> ReminderMenuBarAlertPresentation {
-        reminderEngine.state.menuBarAlertPresentation(at: now) ?? ReminderMenuBarAlertPresentation(
+    private func currentPresentation(at now: Date) -> StatusItemPresentation {
+        if let alertPresentation = reminderEngine.state.menuBarAlertPresentation(at: now) {
+            return StatusItemPresentation(
+                title: alertPresentation.title,
+                symbolName: alertPresentation.symbolName,
+                visualState: .urgent,
+                isHighPriority: alertPresentation.isHighPriority,
+                showsCapsuleBackground: alertPresentation.showsCapsuleBackground,
+                shouldHighlightRed: alertPresentation.shouldHighlightRed
+            )
+        }
+
+        if let nextMeeting = sourceCoordinator.state.nextMeeting,
+           nextMeeting.startAt.timeIntervalSince(now) <= 30 * 60 {
+            return StatusItemPresentation(
+                title: sourceCoordinator.menuBarTitle,
+                symbolName: sourceCoordinator.menuBarSymbolName,
+                visualState: .meetingSoon,
+                isHighPriority: false,
+                showsCapsuleBackground: true,
+                shouldHighlightRed: false
+            )
+        }
+
+        return StatusItemPresentation(
             title: sourceCoordinator.menuBarTitle,
             symbolName: sourceCoordinator.menuBarSymbolName,
+            visualState: .idle,
             isHighPriority: false,
             showsCapsuleBackground: false,
             shouldHighlightRed: false
         )
     }
 
+    /// 菜单栏 quiet / soon / urgent 三态会切不同的前景色策略。
+    private func resolvedForegroundColor(for presentation: StatusItemPresentation) -> NSColor {
+        if presentation.shouldHighlightRed {
+            return .white
+        }
+
+        switch presentation.visualState {
+        case .idle:
+            return .labelColor
+        case .meetingSoon:
+            return .controlAccentColor
+        case .urgent:
+            return .labelColor
+        }
+    }
+
+    /// 会前预热态允许稍微加重，但真正的高优先级提醒仍然最重。
+    private func resolvedTitleWeight(for presentation: StatusItemPresentation) -> NSFont.Weight {
+        switch presentation.visualState {
+        case .idle:
+            return .semibold
+        case .meetingSoon:
+            return .bold
+        case .urgent:
+            return presentation.isHighPriority ? .bold : .semibold
+        }
+    }
+
     /// AppKit 只需要一个最终颜色值，不关心这个颜色来自普通态还是红色闪烁态。
-    private func resolvedBackgroundColor(for presentation: ReminderMenuBarAlertPresentation) -> NSColor {
+    private func resolvedBackgroundColor(for presentation: StatusItemPresentation) -> NSColor {
         guard presentation.showsCapsuleBackground else {
             return .clear
         }
@@ -205,7 +278,14 @@ final class MenuBarStatusItemController {
             return .systemRed
         }
 
-        return .labelColor.withAlphaComponent(0.16)
+        switch presentation.visualState {
+        case .idle:
+            return .clear
+        case .meetingSoon:
+            return .controlAccentColor.withAlphaComponent(0.16)
+        case .urgent:
+            return .labelColor.withAlphaComponent(0.16)
+        }
     }
 
     /// SF Symbol 图标仍然沿用系统模板图标，让 `contentTintColor` 统一控制前景色。

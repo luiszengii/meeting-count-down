@@ -43,6 +43,7 @@
 		B4563C746B28080BB2086F6D /* AudioOutputRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD7F45FD85A7D26C9F65EA7 /* AudioOutputRoute.swift */; };
 		B9AC6D48ED8DBC9751C932A1 /* SystemCalendarModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411B32E4F494116427681C2E /* SystemCalendarModels.swift */; };
 		BD42B27D13C82396C7F55DE6 /* StubMeetingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D86CBE28AD8F0838B4D62B /* StubMeetingSource.swift */; };
+		BD9F5E50706005163C372D8F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7A0B45578C38FFA11B87D493 /* Assets.xcassets */; };
 		BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28DD805547510F7DEE9F9CB /* ReminderEngineTests.swift */; };
 		C4C5668DAF91ECD4D3E7EE9B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB44FF575940D623FFD822F /* SettingsView.swift */; };
 		C62CFB42FF685943679356F0 /* DiagnosticCheckers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC234B4B698019FA3938A72A /* DiagnosticCheckers.swift */; };
@@ -91,6 +92,7 @@
 		6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeishuMeetingCountdownApp.swift; sourceTree = "<group>"; };
 		70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenControllerTests.swift; sourceTree = "<group>"; };
 		79A62141776821479D9F3A36 /* NextMeetingSelectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMeetingSelectorTests.swift; sourceTree = "<group>"; };
+		7A0B45578C38FFA11B87D493 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenController.swift; sourceTree = "<group>"; };
 		8A63B3B4A8E497046F57B57F /* SystemCalendarConnectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarConnectionController.swift; sourceTree = "<group>"; };
 		8A9C0B1F3FDD2F2635D422E9 /* SoundProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfile.swift; sourceTree = "<group>"; };
@@ -304,6 +306,7 @@
 		F0F72B1DA87459C97C592CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				7A0B45578C38FFA11B87D493 /* Assets.xcassets */,
 				346D975040199E4F0FFDA9B7 /* PS5 Game Start.flac */,
 			);
 			path = Resources;
@@ -401,6 +404,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BD9F5E50706005163C372D8F /* Assets.xcassets in Resources */,
 				45519A205FC61C998C73CCC1 /* PS5 Game Start.flac in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

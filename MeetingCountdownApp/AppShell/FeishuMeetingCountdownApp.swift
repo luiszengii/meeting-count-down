@@ -40,7 +40,7 @@ struct FeishuMeetingCountdownApp: App {
                 launchAtLoginController: appRuntime.launchAtLoginController,
                 settingsWindowController: appRuntime.settingsWindowController
             )
-                .frame(minWidth: 420, idealWidth: 480, minHeight: 320)
+                .frame(minWidth: 560, idealWidth: 640, minHeight: 420)
                 .padding(20)
         }
     }
