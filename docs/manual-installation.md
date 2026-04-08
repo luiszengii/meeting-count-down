@@ -99,6 +99,8 @@ macOS 对未签名或未 notarize app 的拦截通常会比普通应用更严格
 ./scripts/export-release.sh --signing-identity "Your Local Code Signing Identity"
 ```
 
+如果你还没有本地可用的代码签名 identity，先看 [本地自签名 Code Signing 身份用于手动分发](./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md)。
+
 如果你希望导出一个更像传统 macOS 安装包的测试版 DMG，可以执行：
 
 ```bash

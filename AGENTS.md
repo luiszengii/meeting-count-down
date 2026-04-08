@@ -21,16 +21,30 @@ Feishu Meeting Countdown for macOS
 3. 任何新增核心代码文件，都必须带中文模块级详细注释，目标是帮助后续开发者理解 Swift/macOS 生态、模块边界、状态流和 Apple 框架交互方式。
 4. 任何会改变项目理解成本的工作，都必须同步更新 `docs/`，避免知识只留在聊天记录里。
 5. 文档之间统一使用相对路径 Markdown 链接，逐步形成可浏览、可追踪的文档网络。
+6. 定期做文档健康检查，至少检查过期入口、缺失回链、孤儿文档，以及未进入 `docs/index.md` 的正式文档。
 
 ### `docs/` 目录结构
 
 | 路径 | 用途 | 命名规则 |
 | --- | --- | --- |
+| `docs/index.md` | 全局内容索引；按内容类型收录仓库里的正式文档 | 固定文件 |
 | `docs/README.md` | 文档系统总索引 | 固定文件 |
+| `docs/tooling-artifacts.md` | 正式文档与工具产物的边界说明 | 固定文件 |
 | `docs/dev-logs/` | 每日开发日志 | `YYYY-MM-DD.md`，同一天持续追加 |
 | `docs/pitfalls/` | 踩坑记录与反复推敲的问题 | `kebab-case-title.md` |
 | `docs/adrs/` | 技术/产品形态变动记录 | `YYYY-MM-DD-kebab-case-title.md` |
 | `docs/templates/` | 文档模板与写作入口 | 固定文件名 |
+
+其中 [docs/index.md](docs/index.md) 负责“内容导向”的正式文档全量目录；[docs/dev-logs/](docs/dev-logs/README.md) 负责“时间导向”的变化记录；[docs/tooling-artifacts.md](docs/tooling-artifacts.md) 负责说明哪些材料只是工具产物，不应被误当成正式文档。
+
+### 正式文档与工具产物边界
+
+仓库里的 Markdown 默认分两类：
+
+1. 正式文档：你明确认可、需要长期维护、会影响项目理解和交接的内容。它们进入 `docs/` 主系统或模块级 `AGENTS.md`，并进入 [docs/index.md](docs/index.md)。
+2. 工具产物：由 GSD / review skill / planning 流程生成，用来辅助某次分析、审计或调试的材料，例如 `.planning/`、`UI-REVIEW.md`。它们可以保留在仓库里，但默认不属于正式文档系统。
+
+如果工具产物里有长期有效的知识，不直接把原文件升格为正式入口，而是把结论提炼后迁入 `docs/` 对应位置，例如 `pitfalls/`、`adrs/` 或维护者说明。
 
 ### 目录级 `AGENTS.md` 规则
 
@@ -71,6 +85,7 @@ Feishu Meeting Countdown for macOS
 | 当天有实质性开发推进 | `docs/dev-logs/YYYY-MM-DD.md` |
 | 遇到反复排查、来回推敲、后续大概率还会忘的坑 | `docs/pitfalls/*.md`，并从当天日志链接过去 |
 | 产品形态、接入路径、架构方向、技术栈选择发生变化 | `docs/adrs/*.md` |
+| 新增、移动、归档正式文档 | `docs/index.md` |
 | 新增代码目录 | 该目录下的 `AGENTS.md` |
 | 新增核心代码文件 | 文件内中文模块级详细注释 |
 
