@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// `AppContainer` 是当前 app 的依赖装配入口。
 /// 现在产品已经收敛成 CalDAV 单一路径，因此这里直接组装真实的系统日历桥接、
@@ -76,10 +77,25 @@ enum AppContainer {
         )
 
         let launchAtLoginController = LaunchAtLoginController()
+        settingsWindowController.configureWindowContent {
+            SettingsView(
+                sourceCoordinator: sourceCoordinator,
+                systemCalendarConnectionController: systemCalendarConnectionController,
+                reminderEngine: reminderEngine,
+                reminderPreferencesController: reminderPreferencesController,
+                soundProfileLibraryController: soundProfileLibraryController,
+                launchAtLoginController: launchAtLoginController
+            )
+                .frame(minWidth: 680, minHeight: 540)
+        }
+        settingsSceneOpenController.register { [weak settingsWindowController] in
+            settingsWindowController?.requestWindowActivation()
+        }
         let menuBarPresentationClock = MenuBarPresentationClock()
         let menuBarStatusItemController = MenuBarStatusItemController(
             sourceCoordinator: sourceCoordinator,
             reminderEngine: reminderEngine,
+            reminderPreferencesController: reminderPreferencesController,
             settingsWindowController: settingsWindowController,
             settingsSceneOpenController: settingsSceneOpenController,
             menuBarPresentationClock: menuBarPresentationClock

@@ -16,7 +16,7 @@ final class FeishuMeetingCountdownAppDelegate: NSObject, NSApplicationDelegate {
 
 /// `FeishuMeetingCountdownApp` 是当前 macOS 菜单栏应用的总入口。
 /// 它只负责声明场景和绑定全局状态对象，不在这里承载任何接入逻辑。
-/// 入口把系统日历读取、提醒调度和设置窗口状态一起注入菜单栏与设置页，
+/// 入口把系统日历读取、提醒调度和设置窗口状态一起注入菜单栏与手动设置窗口，
 /// 确保 UI 只消费聚合后的统一状态。
 @main
 struct FeishuMeetingCountdownApp: App {
@@ -25,23 +25,44 @@ struct FeishuMeetingCountdownApp: App {
     private var appDelegate
 
     /// `body` 是 SwiftUI `App` 的场景声明入口。
-    /// 菜单栏入口已经改由 AppKit delegate 安装；SwiftUI 这里只保留设置窗口场景。
+    /// 菜单栏入口已经改由 AppKit delegate 安装；真正可缩放的设置窗口则由
+    /// `SettingsWindowController` 手动创建。这里保留一个最小 `Settings` scene，
+    /// 只是为了继续拥有系统级设置命令挂载点，不再依赖它提供真实窗口。
     var body: some Scene {
         let appRuntime = appDelegate.appRuntime
 
-        /// 设置窗口与菜单栏共享同一份协调层和提醒层状态，避免两个窗口各自维护不同的运行态。
         Settings {
-            SettingsView(
-                sourceCoordinator: appRuntime.sourceCoordinator,
-                systemCalendarConnectionController: appRuntime.systemCalendarConnectionController,
-                reminderEngine: appRuntime.reminderEngine,
-                reminderPreferencesController: appRuntime.reminderPreferencesController,
-                soundProfileLibraryController: appRuntime.soundProfileLibraryController,
-                launchAtLoginController: appRuntime.launchAtLoginController,
-                settingsWindowController: appRuntime.settingsWindowController
-            )
-                .frame(minWidth: 560, idealWidth: 640, minHeight: 420)
-                .padding(20)
+            EmptyView()
         }
+        .commands {
+            SettingsWindowCommands(
+                reminderPreferencesController: appRuntime.reminderPreferencesController,
+                openSettingsAction: {
+                    appRuntime.settingsWindowController.requestWindowActivation()
+                }
+            )
+        }
+    }
+}
+
+/// app 菜单里的 `Settings…` / `Cmd+,` 同样要走手动设置窗口，
+/// 否则会重新落回系统 `Settings` scene，导致窗口行为再次被锁死。
+private struct SettingsWindowCommands: Commands {
+    @ObservedObject var reminderPreferencesController: ReminderPreferencesController
+    let openSettingsAction: () -> Void
+
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button(commandTitle) {
+                openSettingsAction()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
+    }
+
+    private var commandTitle: String {
+        reminderPreferencesController.reminderPreferences.interfaceLanguage == .english
+            ? "Settings…"
+            : "设置…"
     }
 }

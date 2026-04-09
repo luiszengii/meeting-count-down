@@ -2,38 +2,40 @@ import AppKit
 import SwiftUI
 
 /// `SettingsWindowController` 专门记录 SwiftUI `Settings` scene 背后的那一扇真实 `NSWindow`。
-/// 菜单栏应用不能自己重造设置窗口，否则会偏离 SwiftUI 官方支持的打开方式；
-/// 这里的职责只是等设置页真正挂到窗口上之后，缓存窗口引用并把它提到前台。
+/// 之前这里依赖系统 `Settings` scene 提供真实窗口，但那条链路仍然会把窗口行为锁成
+/// 系统偏好样式，导致我们后续追加的 `.resizable` 和最小尺寸约束无法真正生效。
+/// 现在控制器改为自己创建并持有一扇 `NSWindow`，这样菜单栏应用就能稳定得到
+/// 一扇可前置、可缩放、可复用的设置窗口。
 @MainActor
 final class SettingsWindowController {
-    /// 这里必须是弱引用，避免控制器反过来强持有窗口，打乱 AppKit 的窗口生命周期。
-    private weak var settingsWindow: NSWindow?
-    /// 当用户显式要求打开设置，但窗口还没真正创建出来时，先记住这次前置请求。
-    /// 等 SwiftUI 设置场景把真实 `NSWindow` 注册进来后，只消费一次这次请求。
-    private var shouldActivateOnNextRegistration = false
+    /// 设置窗口允许收缩到的最小内容尺寸。
+    /// 这里的宽高会和 SwiftUI 根视图的最小尺寸保持一致，避免一边允许缩小、一边布局已经塌陷。
+    private static let minimumWindowSize = NSSize(width: 680, height: 540)
+    /// 首次创建设置窗口时使用的默认内容尺寸。
+    /// 这个值刻意略大于最小尺寸，让响应式卡片布局在第一次打开时就有舒展空间。
+    private static let defaultWindowSize = NSSize(width: 920, height: 700)
 
-    /// 当设置页解析出自己所在的 `NSWindow` 后，把它登记到控制器里，供菜单栏入口复用。
-    func register(window: NSWindow) {
-        settingsWindow = window
+    /// 手动创建的设置窗口需要由控制器自己强持有，否则关闭后会被提前释放。
+    private var settingsWindow: NSWindow?
+    /// 设置页 SwiftUI 根视图由壳层装配阶段提供，控制器只负责在真正需要时懒创建窗口。
+    private var makeRootView: (() -> AnyView)?
 
-        guard shouldActivateOnNextRegistration else {
-            return
-        }
-
-        shouldActivateOnNextRegistration = false
-        activateKnownWindow()
+    /// 壳层装配完成后，把设置页根视图的构造闭包登记进来。
+    /// 这里不提前创建窗口，避免菜单栏 app 一启动就弹出设置页。
+    func configureWindowContent<Content: View>(
+        @ViewBuilder _ content: @escaping () -> Content
+    ) {
+        makeRootView = { AnyView(content()) }
     }
 
     /// 用户显式要求打开设置窗口时统一走这里。
-    /// 如果窗口已经存在，就立刻前置；如果窗口还没准备好，就把这次前置请求挂起到下一次注册。
+    /// 如果窗口还没创建，就先按当前登记的 SwiftUI 内容懒创建一扇，再统一前置。
     func requestWindowActivation() {
-        guard settingsWindow != nil else {
-            shouldActivateOnNextRegistration = true
+        guard let settingsWindow = ensureWindow() else {
             return
         }
 
-        shouldActivateOnNextRegistration = false
-        activateKnownWindow()
+        activate(window: settingsWindow)
     }
 
     /// 把已经存在的设置窗口拉到最前面。
@@ -43,36 +45,55 @@ final class SettingsWindowController {
             return
         }
 
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        settingsWindow.orderFrontRegardless()
-        settingsWindow.makeKeyAndOrderFront(nil)
-    }
-}
-
-/// `SettingsWindowAccessor` 借助一个极轻量的 `NSViewRepresentable` 拿到宿主 `NSWindow`。
-/// SwiftUI 视图默认拿不到窗口对象，所以需要插入一个 AppKit 子视图，再在下一轮主线程里读取 `view.window`。
-struct SettingsWindowAccessor: NSViewRepresentable {
-    /// 解析到窗口后的回调由设置页提供，便于把窗口登记到共享控制器中。
-    let onResolveWindow: (NSWindow) -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        resolveWindow(for: view)
-        return view
+        activate(window: settingsWindow)
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
-        resolveWindow(for: nsView)
-    }
-
-    /// `view.window` 在 `makeNSView` 当下通常还是 `nil`，因此需要推迟到下一轮主线程再读取。
-    private func resolveWindow(for view: NSView) {
-        DispatchQueue.main.async {
-            guard let window = view.window else {
-                return
-            }
-
-            onResolveWindow(window)
+    /// 如果窗口还不存在，就用当前登记的根视图真正创建一扇。
+    /// 这样菜单栏和 app 菜单都不需要关心窗口生命周期细节，只要请求打开即可。
+    private func ensureWindow() -> NSWindow? {
+        if let settingsWindow {
+            return settingsWindow
         }
+
+        guard let makeRootView else {
+            return nil
+        }
+
+        let hostingController = NSHostingController(rootView: makeRootView())
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: Self.defaultWindowSize),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentViewController = hostingController
+        window.isReleasedWhenClosed = false
+        window.setContentSize(Self.defaultWindowSize)
+        window.center()
+        configureAppearance(for: window)
+        settingsWindow = window
+        return window
+    }
+
+    /// 前置手动窗口时统一走同一条路径，避免后续不同入口各自设置一套激活顺序。
+    private func activate(window: NSWindow) {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        window.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    /// 设置窗口本身也需要更接近参考图里的半透明浮层。
+    /// 这里统一把 titlebar 透明化，并允许窗口背景透出内容视图自己的玻璃底板。
+    private func configureAppearance(for window: NSWindow) {
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.toolbarStyle = .unifiedCompact
+        window.isMovableByWindowBackground = true
+        window.tabbingMode = .disallowed
+        window.contentMinSize = Self.minimumWindowSize
+        window.setFrameAutosaveName("MeetingCountdown.SettingsWindow")
     }
 }

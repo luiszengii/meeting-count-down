@@ -95,7 +95,8 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler,
             reminderPreferences: ReminderPreferences(
-                isMuted: true
+                isMuted: true,
+                interfaceLanguage: .simplifiedChinese
             )
         )
 
@@ -124,7 +125,10 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler,
             audioOutputRouteProvider: routeProvider,
-            reminderPreferences: ReminderPreferences(playSoundOnlyWhenHeadphonesConnected: true)
+            reminderPreferences: ReminderPreferences(
+                playSoundOnlyWhenHeadphonesConnected: true,
+                interfaceLanguage: .simplifiedChinese
+            )
         )
 
         await engine.reconcile(with: readyState(nextMeeting: meeting(id: "speaker", now: now, offsetSeconds: 30)))
@@ -148,7 +152,8 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler,
             reminderPreferences: ReminderPreferences(
-                globalReminderEnabled: false
+                globalReminderEnabled: false,
+                interfaceLanguage: .simplifiedChinese
             )
         )
 

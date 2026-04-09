@@ -26,6 +26,7 @@
 		66D922920448C6C423981DF3 /* SettingsSceneOpenController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */; };
 		6AC08E6B218E5EEB68C49548 /* SettingsSceneOpenControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */; };
 		7238928744EFEB29EB2C746A /* ReminderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */; };
+		7EC32AC7335445C203A3D3FF /* GlassUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AE6E7DD9E61646D1E54858F /* GlassUI.swift */; };
 		81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */; };
 		8C113D0D214E22A3D593B4E6 /* FeishuMeetingCountdownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */; };
 		8FF7DC94E8902C3465A02CB0 /* AppRefreshController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C222E5FE9F387BE53A9B74C /* AppRefreshController.swift */; };
@@ -88,6 +89,7 @@
 		5D222E1EB98EB2C80DA37E1E /* SystemCalendarBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarBridgeTests.swift; sourceTree = "<group>"; };
 		668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngine.swift; sourceTree = "<group>"; };
 		6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileLibraryController.swift; sourceTree = "<group>"; };
+		6AE6E7DD9E61646D1E54858F /* GlassUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassUI.swift; sourceTree = "<group>"; };
 		6C222E5FE9F387BE53A9B74C /* AppRefreshController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRefreshController.swift; sourceTree = "<group>"; };
 		6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeishuMeetingCountdownApp.swift; sourceTree = "<group>"; };
 		70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenControllerTests.swift; sourceTree = "<group>"; };
@@ -281,6 +283,7 @@
 				6C222E5FE9F387BE53A9B74C /* AppRefreshController.swift */,
 				1EC530C79CB8AFC603615014 /* AppRuntime.swift */,
 				6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */,
+				6AE6E7DD9E61646D1E54858F /* GlassUI.swift */,
 				C9AF9C74D784B315E50F901E /* LaunchAtLoginController.swift */,
 				02E35285E19D5F099F9FDF69 /* MenuBarContentView.swift */,
 				CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */,
@@ -441,6 +444,7 @@
 				C62CFB42FF685943679356F0 /* DiagnosticCheckers.swift in Sources */,
 				B172F6148DCB4468092F6839 /* DiagnosticsState.swift in Sources */,
 				8C113D0D214E22A3D593B4E6 /* FeishuMeetingCountdownApp.swift in Sources */,
+				7EC32AC7335445C203A3D3FF /* GlassUI.swift in Sources */,
 				94FC139015D66E6070C02F8A /* LaunchAtLoginController.swift in Sources */,
 				81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */,
 				3B071A07E4619D85C7CE5888 /* MeetingSource.swift in Sources */,

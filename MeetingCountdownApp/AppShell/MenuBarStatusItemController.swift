@@ -9,14 +9,20 @@ import SwiftUI
 final class MenuBarStatusItemController {
     /// 胶囊提醒态需要显式限制最大宽度，避免长标题把状态栏按钮撑得过宽后出现奇怪的垂直挤压。
     private static let maxCapsuleStatusItemLength: CGFloat = 220
+    /// 菜单弹层当前由固定尺寸的控制面板承载。
+    /// 这里显式记录尺寸，避免安装 `NSHostingController` 时为了取 `fittingSize`
+    /// 强行触发布局，进而撞上 AppKit 的递归布局警告。
+    private static let popoverContentSize = NSSize(width: 324, height: 270)
 
     /// 会议读取状态仍然来自唯一的协调层。
     private let sourceCoordinator: SourceCoordinator
     /// 提醒命中态和倒计时秒数仍然只认提醒引擎的聚合状态。
     private let reminderEngine: ReminderEngine
-    /// 设置窗口前台化仍然通过共享控制器统一完成。
+    /// 当前界面语言跟随偏好控制器变化，菜单栏按钮和弹层都要一起刷新。
+    private let reminderPreferencesController: ReminderPreferencesController
+    /// 设置窗口现在由共享控制器手动创建和前台化。
     private let settingsWindowController: SettingsWindowController
-    /// SwiftUI 官方 `Settings` 打开动作需要单独桥接给 AppKit 菜单栏控制器使用。
+    /// 打开设置动作仍然走统一桥接器，方便菜单栏和 app 菜单共用同一条打开链路。
     private let settingsSceneOpenController: SettingsSceneOpenController
     /// 秒级倒计时和闪烁节奏继续共用现有展示时钟。
     private let menuBarPresentationClock: MenuBarPresentationClock
@@ -54,18 +60,21 @@ final class MenuBarStatusItemController {
     init(
         sourceCoordinator: SourceCoordinator,
         reminderEngine: ReminderEngine,
+        reminderPreferencesController: ReminderPreferencesController,
         settingsWindowController: SettingsWindowController,
         settingsSceneOpenController: SettingsSceneOpenController,
         menuBarPresentationClock: MenuBarPresentationClock
     ) {
         self.sourceCoordinator = sourceCoordinator
         self.reminderEngine = reminderEngine
+        self.reminderPreferencesController = reminderPreferencesController
         self.settingsWindowController = settingsWindowController
         self.settingsSceneOpenController = settingsSceneOpenController
         self.menuBarPresentationClock = menuBarPresentationClock
         self.popover = NSPopover()
         self.popover.behavior = .transient
         self.popover.animates = true
+        self.popover.appearance = NSAppearance(named: .vibrantLight)
 
         bindPresentationUpdates()
     }
@@ -123,30 +132,31 @@ final class MenuBarStatusItemController {
         button.cell?.lineBreakMode = .byTruncatingTail
     }
 
-    /// 浮层里的内容仍然复用 SwiftUI 视图，只是改成显式注入“打开设置”动作，
-    /// 同时补一层 `openSettings` 官方动作登记，避免继续依赖过时的 AppKit selector。
+    /// 浮层里的内容仍然复用 SwiftUI 视图，只是现在不再需要依赖 SwiftUI 环境里的
+    /// `openSettings` 动作；菜单栏只拿一个显式注入的打开设置闭包即可。
     private func configurePopover() {
         let rootView = MenuBarContentView(
             sourceCoordinator: sourceCoordinator,
-            settingsSceneOpenController: settingsSceneOpenController,
+            reminderPreferencesController: reminderPreferencesController,
             openSettingsAction: { [weak self] in
                 self?.openSettingsWindow()
             }
         )
         let hostingController = NSHostingController(rootView: rootView)
-        hostingController.view.frame = NSRect(x: 0, y: 0, width: 320, height: 280)
-        hostingController.view.layoutSubtreeIfNeeded()
+        hostingController.view.frame = NSRect(origin: .zero, size: Self.popoverContentSize)
         popover.contentViewController = hostingController
-        popover.contentSize = hostingController.view.fittingSize
+        popover.contentSize = Self.popoverContentSize
     }
 
-    /// 设置窗口仍然由 SwiftUI `Settings` scene 真正创建。
-    /// 这里的职责只是触发官方动作，并尽量把已经存在的窗口提到最前面。
+    /// 菜单栏入口只负责触发统一的设置窗口打开动作；
+    /// 真正的窗口创建和单例复用都交给 `SettingsWindowController`。
     private func openSettingsWindow() {
         closePopover()
-        settingsWindowController.requestWindowActivation()
         NSApplication.shared.activate(ignoringOtherApps: true)
-        settingsSceneOpenController.openSettingsIfAvailable()
+
+        if !settingsSceneOpenController.openSettingsIfAvailable() {
+            settingsWindowController.requestWindowActivation()
+        }
     }
 
     /// 统一监听三类会影响菜单栏按钮展示的状态：
@@ -162,6 +172,13 @@ final class MenuBarStatusItemController {
             self?.updateStatusItemAppearance()
         }
         .store(in: &cancellables)
+
+        reminderPreferencesController.$reminderPreferences
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateStatusItemAppearance()
+            }
+            .store(in: &cancellables)
     }
 
     /// 把纯值 presentation 转成 AppKit 按钮样式。
@@ -207,7 +224,7 @@ final class MenuBarStatusItemController {
 
     /// 如果提醒引擎当前没有高优先级 presentation，就退回到协调层原有的普通菜单栏标题。
     private func currentPresentation(at now: Date) -> StatusItemPresentation {
-        if let alertPresentation = reminderEngine.state.menuBarAlertPresentation(at: now) {
+        if let alertPresentation = localizedAlertPresentation(at: now) {
             return StatusItemPresentation(
                 title: alertPresentation.title,
                 symbolName: alertPresentation.symbolName,
@@ -221,7 +238,7 @@ final class MenuBarStatusItemController {
         if let nextMeeting = sourceCoordinator.state.nextMeeting,
            nextMeeting.startAt.timeIntervalSince(now) <= 30 * 60 {
             return StatusItemPresentation(
-                title: sourceCoordinator.menuBarTitle,
+                title: localizedMenuBarTitle(at: now),
                 symbolName: sourceCoordinator.menuBarSymbolName,
                 visualState: .meetingSoon,
                 isHighPriority: false,
@@ -231,13 +248,126 @@ final class MenuBarStatusItemController {
         }
 
         return StatusItemPresentation(
-            title: sourceCoordinator.menuBarTitle,
+            title: localizedMenuBarTitle(at: now),
             symbolName: sourceCoordinator.menuBarSymbolName,
             visualState: .idle,
             isHighPriority: false,
             showsCapsuleBackground: false,
             shouldHighlightRed: false
         )
+    }
+
+    private var uiLanguage: AppUILanguage {
+        reminderPreferencesController.reminderPreferences.interfaceLanguage
+    }
+
+    /// 状态栏普通态优先显示倒计时，否则回退到本地化后的短健康标签。
+    private func localizedMenuBarTitle(at now: Date) -> String {
+        if let nextMeeting = sourceCoordinator.state.nextMeeting {
+            return localizedCountdownLine(until: nextMeeting.startAt, now: now)
+        }
+
+        switch sourceCoordinator.state.healthState {
+        case .unconfigured:
+            return localized("未配置", "Setup")
+        case .ready:
+            return localized("就绪", "Ready")
+        case .warning:
+            return localized("注意", "Warn")
+        case .failed:
+            return localized("失败", "Failed")
+        }
+    }
+
+    /// 提醒命中态如果继续直接走领域层默认 presentation，会把中文标题带回状态栏。
+    /// 这里在壳层按同样的状态机规则重新组装一份跟随界面语言的 presentation。
+    private func localizedAlertPresentation(at now: Date) -> ReminderMenuBarAlertPresentation? {
+        switch reminderEngine.state {
+        case let .playing(context, _):
+            let remainingInterval = context.meeting.startAt.timeIntervalSince(now)
+
+            if remainingInterval > 0 {
+                let remainingSeconds = max(1, Int(ceil(remainingInterval)))
+                return ReminderMenuBarAlertPresentation(
+                    title: "\(remainingSeconds)s",
+                    symbolName: "timer.circle.fill",
+                    isHighPriority: true,
+                    showsCapsuleBackground: true,
+                    shouldHighlightRed: shouldHighlightCountdownRed(at: now, remainingSeconds: remainingSeconds)
+                )
+            }
+
+            return ReminderMenuBarAlertPresentation(
+                title: context.meeting.title,
+                symbolName: "exclamationmark.circle.fill",
+                isHighPriority: true,
+                showsCapsuleBackground: true,
+                shouldHighlightRed: false
+            )
+
+        case let .triggeredSilently(_, _, reason):
+            switch reason {
+            case .userMuted:
+                return ReminderMenuBarAlertPresentation(
+                    title: localized("静音开会", "Muted"),
+                    symbolName: "bell.slash.circle.fill",
+                    isHighPriority: true,
+                    showsCapsuleBackground: true,
+                    shouldHighlightRed: false
+                )
+            case .outputRoutePolicy:
+                return ReminderMenuBarAlertPresentation(
+                    title: localized("避免外放", "Private Audio"),
+                    symbolName: "speaker.slash.circle.fill",
+                    isHighPriority: true,
+                    showsCapsuleBackground: true,
+                    shouldHighlightRed: false
+                )
+            }
+
+        case .idle, .scheduled, .disabled, .failed:
+            return nil
+        }
+    }
+
+    private func localizedCountdownLine(until date: Date, now: Date) -> String {
+        let interval = max(0, date.timeIntervalSince(now))
+
+        if interval < 60 {
+            return localized("即将开始", "Soon")
+        }
+
+        let totalSeconds = Int(interval.rounded(.up))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+
+        if uiLanguage == .english {
+            if hours > 0 {
+                return minutes == 0 ? "\(hours)h" : "\(hours)h \(minutes)m"
+            }
+
+            return "\(max(1, minutes))m"
+        }
+
+        if hours > 0 {
+            return minutes == 0 ? "\(hours) 小时" : "\(hours) 小时 \(minutes) 分钟"
+        }
+
+        return "\(max(1, minutes)) 分钟"
+    }
+
+    private func shouldHighlightCountdownRed(at now: Date, remainingSeconds: Int) -> Bool {
+        guard remainingSeconds <= 10 else {
+            return false
+        }
+
+        let period: TimeInterval = remainingSeconds <= 4 ? 0.5 : 1.0
+        let remainder = now.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period)
+        return remainder < period / 2
+    }
+
+    private func localized(_ chinese: String, _ english: String) -> String {
+        uiLanguage == .english ? english : chinese
     }
 
     /// 菜单栏 quiet / soon / urgent 三态会切不同的前景色策略。

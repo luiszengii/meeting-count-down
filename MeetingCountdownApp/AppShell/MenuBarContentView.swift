@@ -1,133 +1,209 @@
 import AppKit
 import SwiftUI
 
-/// `MenuBarContentView` 现在承担“命令中心”而不是“状态复读机”的角色。
-/// 它会先回答“现在发生了什么”，再给出一条最合适的下一步动作，
-/// 让菜单栏弹层更像真正的 menubar utility，而不是临时调试面板。
+/// `MenuBarContentView` 改成更接近控制中心的结构：
+/// 顶部是当前会议与主操作，中间是倒计时主卡，底部是轻量菜单动作。
+/// 它仍只消费协调层状态，不在这里重写提醒逻辑。
 struct MenuBarContentView: View {
-    /// 菜单内容需要观察会议读取状态。
     @ObservedObject var sourceCoordinator: SourceCoordinator
-    /// 这个桥接控制器专门用来登记 SwiftUI 官方 `openSettings` 动作，
-    /// 让外层的 `NSStatusItem` 控制器也能通过同一条官方路径打开设置页。
-    let settingsSceneOpenController: SettingsSceneOpenController
-    /// 真正打开设置窗口的动作改成由外部显式注入，方便 `NSStatusItem` 和 SwiftUI 场景共用。
+    @ObservedObject var reminderPreferencesController: ReminderPreferencesController
     let openSettingsAction: () -> Void
 
-    /// SwiftUI 通过 `body` 描述当前菜单内容应该如何由状态渲染出来。
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            headerBlock
-            primaryActionButton
-            secondaryActionRow
-            footerActionRow
+        ZStack {
+            GlassBackdrop()
+
+            VStack(alignment: .leading, spacing: 12) {
+                headerRow
+                heroCard
+                actionList
+            }
+            .padding(12)
         }
-        .padding(16)
-        .frame(width: 320, alignment: .leading)
-        .background(
-            SettingsSceneActionRegistrar(
-                settingsSceneOpenController: settingsSceneOpenController
-            )
-        )
+        .frame(width: 324)
+        .animation(GlassMotion.page, value: heroAnimationKey)
     }
 
-    /// 顶部信息块只保留“当前状态 + 一句上下文”。
-    /// 这里故意不再重复同一句状态，避免把最宝贵的视觉空间浪费在复读上。
+    /// 顶部行保留“会议 + 刷新 + 主操作”三个层级。
     @ViewBuilder
-    private var headerBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+    private var headerRow: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.72))
+
                 Image(systemName: statusSymbolName)
-                    .foregroundStyle(statusAccentColor)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
+            .frame(width: 34, height: 34)
 
+            VStack(alignment: .leading, spacing: 3) {
                 Text(headerTitle)
-                    .font(.headline.weight(.semibold))
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+                    .contentTransition(.opacity)
+
+                Text(headerSubtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .contentTransition(.opacity)
             }
 
-            Text(headerSubtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
 
-            HStack(spacing: 8) {
-                compactBadge(text: connectionBadgeText, color: connectionBadgeColor)
-
-                if sourceCoordinator.state.isRefreshing {
-                    compactBadge(text: "正在刷新", color: .blue)
-                } else if let nextMeeting = sourceCoordinator.state.nextMeeting {
-                    compactBadge(
-                        text: sourceCoordinator.meetingStartLine(for: nextMeeting),
-                        color: .secondary
-                    )
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-    }
-
-    /// 主按钮永远回答“下一步做什么”。
-    /// 它的文案和行为都会随着“无会议 / 有会议 / 未配置 / 刷新失败”而变化。
-    @ViewBuilder
-    private var primaryActionButton: some View {
-        let action = primaryAction
-
-        Button {
-            performPrimaryAction(action)
-        } label: {
-            Label(action.title, systemImage: action.symbolName)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-    }
-
-    /// 次级动作保留真正高频的恢复路径，但视觉上降一级。
-    @ViewBuilder
-    private var secondaryActionRow: some View {
-        HStack(spacing: 10) {
             Button {
                 Task {
                     await sourceCoordinator.refresh(trigger: .manualRefresh)
                 }
             } label: {
-                Label("立即刷新", systemImage: "arrow.clockwise")
-                    .frame(maxWidth: .infinity)
+                Image(systemName: sourceCoordinator.state.isRefreshing ? "arrow.triangle.2.circlepath.circle.fill" : "arrow.clockwise")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22, height: 22)
+                    .rotationEffect(.degrees(sourceCoordinator.state.isRefreshing ? 180 : 0))
+                    .contentTransition(.opacity)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(GlassIconButtonStyle(cornerRadius: 11))
             .disabled(sourceCoordinator.state.isRefreshing)
+            .glassQuietFocus()
+            .animation(.smooth(duration: 0.24), value: sourceCoordinator.state.isRefreshing)
 
             Button {
-                openSettingsWindow()
+                performPrimaryAction(primaryAction)
             } label: {
-                Label("打开设置", systemImage: "gearshape")
-                    .frame(maxWidth: .infinity)
+                Text(primaryAction.title)
+                    .lineLimit(1)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(GlassPillButtonStyle(tone: .primary))
         }
+        .padding(.horizontal, 6)
+        .padding(.top, 2)
     }
 
-    /// 退出动作保留，但明确降级到底部，避免和主操作抢注意力。
+    /// 中央主卡负责承载最重要的状态。
+    /// 有会议时优先显示大号倒计时，没有会议时切成状态说明卡。
     @ViewBuilder
-    private var footerActionRow: some View {
-        HStack {
-            Spacer()
+    private var heroCard: some View {
+        GlassCard(cornerRadius: 20, padding: 0, tintOpacity: 0.28) {
+            VStack(alignment: .leading, spacing: 10) {
+                Group {
+                    if let countdownValue = heroCountdownValue {
+                        Text(countdownValue)
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundStyle(heroCountdownColor)
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .contentTransition(.numericText())
+                    } else {
+                        Text(heroHeadline)
+                            .font(.system(size: 16, weight: .bold))
+                            .lineLimit(2)
+                            .foregroundStyle(Color.primary.opacity(0.94))
+                            .contentTransition(.opacity)
+                    }
+                }
+                .id(heroPrimaryAnimationKey)
+                .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .topLeading)))
 
-            Button(role: .destructive) {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Label("退出", systemImage: "xmark.circle")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(heroSupportingTitle)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .contentTransition(.opacity)
+
+                    Text(heroSupportingSubtitle)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .contentTransition(.opacity)
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .frame(minHeight: 132, alignment: .topLeading)
+        }
+        .animation(GlassMotion.page, value: heroPrimaryAnimationKey)
+    }
+
+    /// 底部动作区改成轻量菜单列表，而不是三个同权重的大按钮。
+    /// 这样主视觉焦点会停留在中间的提醒信息，而不是底部命令。
+    @ViewBuilder
+    private var actionList: some View {
+        GlassPanel(cornerRadius: 20, padding: 0, overlayOpacity: 0.12) {
+            VStack(spacing: 0) {
+                actionRow(
+                    title: localized("打开日历", "Open Calendar"),
+                    symbolName: "calendar",
+                    trailing: sourceCoordinator.state.nextMeeting != nil ? "✓" : nil,
+                    tint: .primary,
+                    action: openCalendarApp
+                )
+
+                divider
+
+                actionRow(
+                    title: localized("偏好设置…", "Preferences..."),
+                    symbolName: "gearshape",
+                    tint: .primary,
+                    action: openSettingsWindow
+                )
+
+                divider
+
+                actionRow(
+                    title: localized("退出倒计时", "Quit Countdown"),
+                    symbolName: "xmark.circle",
+                    tint: .red,
+                    action: {
+                        NSApplication.shared.terminate(nil)
+                    }
+                )
+            }
         }
     }
 
-    /// 当前弹层主标题。
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.16))
+            .frame(height: 1)
+            .padding(.horizontal, 12)
+    }
+
+    private func actionRow(
+        title: String,
+        symbolName: String,
+        trailing: String? = nil,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbolName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(tint.opacity(0.9))
+                    .frame(width: 16)
+
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(tint)
+
+                Spacer()
+
+                if let trailing {
+                    Text(trailing)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(GlassListRowButtonStyle())
+        .glassQuietFocus()
+    }
+
     private var headerTitle: String {
         if let nextMeeting = sourceCoordinator.state.nextMeeting {
             return nextMeeting.title
@@ -135,84 +211,129 @@ struct MenuBarContentView: View {
 
         switch sourceCoordinator.state.healthState {
         case .ready:
-            return "当前暂无可提醒会议"
+            return localized("会议倒计时", "Meeting Countdown")
         case .unconfigured:
-            return "接入尚未完成"
+            return localized("需要完成配置", "Setup Required")
         case .warning:
-            return "同步状态需要关注"
+            return localized("同步需要关注", "Sync Needs Attention")
         case .failed:
-            return "当前无法读取会议"
+            return localized("无法读取会议", "Unable to Read Meetings")
         }
     }
 
-    /// 当前弹层副标题只补一句上下文，不重复主标题。
     private var headerSubtitle: String {
+        if sourceCoordinator.state.isRefreshing {
+            return localized("正在刷新日历…", "Refreshing calendars...")
+        }
+
         if let nextMeeting = sourceCoordinator.state.nextMeeting {
-            return sourceCoordinator.meetingStartLine(for: nextMeeting)
+            return nextMeeting.source.displayName
         }
 
         if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
             return lastErrorMessage
         }
 
-        return sourceCoordinator.state.healthState.summary
+        return localizedHealthStateSummary
     }
 
-    /// 当前头部图标语义。
     private var statusSymbolName: String {
         if sourceCoordinator.state.nextMeeting != nil {
-            return "calendar.badge.clock"
+            return "calendar"
         }
 
         return sourceCoordinator.state.healthState.symbolName
     }
 
-    /// 头部图标强调色。
-    private var statusAccentColor: Color {
+    private var heroHeadline: String {
         switch sourceCoordinator.state.healthState {
         case .ready:
-            return sourceCoordinator.state.nextMeeting == nil ? .secondary : .blue
+            return localized("当前没有即将开始的会议", "No upcoming meeting")
+        case .unconfigured:
+            return localized("先完成日历接入", "Complete calendar setup")
         case .warning:
-            return .orange
-        case .unconfigured, .failed:
-            return .red
+            return localized("检查本地日历同步", "Check local calendar sync")
+        case .failed:
+            return localized("会议读取失败", "Meeting read failed")
         }
     }
 
-    /// 当前连接状态标签，尽量短，方便在小弹层里快速扫读。
-    private var connectionBadgeText: String {
-        switch sourceCoordinator.state.healthState {
-        case .ready(let message), .warning(let message):
-            if let matchedCount = extractLeadingInteger(from: message) {
-                return "已连接 \(matchedCount) 个日历"
+    /// 主卡只有在会议已经接近时才显示 `MM:SS`，
+    /// 远于一小时则退回成标题型状态卡，避免面板长期像秒表一样吵闹。
+    private var heroCountdownValue: String? {
+        guard let nextMeeting = sourceCoordinator.state.nextMeeting else {
+            return nil
+        }
+
+        let interval = nextMeeting.startAt.timeIntervalSinceNow
+        guard interval <= 60 * 60 else {
+            return nil
+        }
+
+        let remainingSeconds = max(0, Int(ceil(interval)))
+        let minutes = remainingSeconds / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private var heroCountdownColor: Color {
+        if let nextMeeting = sourceCoordinator.state.nextMeeting,
+           nextMeeting.startAt.timeIntervalSinceNow <= 60 {
+            return .red
+        }
+
+        return Color(red: 1.0, green: 0.28, blue: 0.25)
+    }
+
+    private var heroSupportingTitle: String {
+        if let nextMeeting = sourceCoordinator.state.nextMeeting {
+            return localized("开始时间 \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))", "Starts at \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))")
+        }
+
+        return primaryAction.subtitleFallback
+    }
+
+    private var heroSupportingSubtitle: String {
+        if let nextMeeting = sourceCoordinator.state.nextMeeting {
+            var parts = [nextMeeting.source.displayName]
+            if nextMeeting.hasVideoConferenceLink {
+                parts.append(localized("视频会议已就绪", "Video Ready"))
             }
-
-            return sourceCoordinator.state.healthState.shortLabel
-
-        case .unconfigured, .failed:
-            return sourceCoordinator.state.healthState.shortLabel
+            return parts.joined(separator: " · ")
         }
+
+        if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
+            return lastErrorMessage
+        }
+
+        return localizedHealthStateSummary
     }
 
-    /// 当前连接状态颜色语义。
-    private var connectionBadgeColor: Color {
-        switch sourceCoordinator.state.healthState {
-        case .ready:
-            return .green
-        case .warning:
-            return .orange
-        case .unconfigured, .failed:
-            return .red
-        }
+    /// 让主卡在“倒计时模式”和“状态说明模式”之间切换时有稳定的动画锚点。
+    private var heroPrimaryAnimationKey: String {
+        heroCountdownValue ?? heroHeadline
     }
 
-    /// 把当前最佳下一步动作压成纯值，避免 UI 结构里散落一堆条件分支。
+    /// 把主卡和顶部标题当前可见内容压成一个 token，便于统一驱动过渡动画。
+    private var heroAnimationKey: String {
+        [
+            heroPrimaryAnimationKey,
+            heroSupportingTitle,
+            heroSupportingSubtitle,
+            headerTitle,
+            headerSubtitle,
+            sourceCoordinator.state.isRefreshing ? "refreshing" : "idle"
+        ].joined(separator: "|")
+    }
+
+    /// 主按钮继续沿用现有业务决策：
+    /// 有链接时优先直达，无链接时回到系统日历，没有会议时进入恢复或配置动作。
     private var primaryAction: PrimaryAction {
         if let nextMeeting = sourceCoordinator.state.nextMeeting {
             if let preferredLink = preferredMeetingLink(for: nextMeeting) {
                 return PrimaryAction(
-                    title: preferredLink.kind == .vc ? "加入会议" : "查看会议详情",
-                    symbolName: preferredLink.kind == .vc ? "video.circle.fill" : "link.circle.fill",
+                    title: preferredLink.kind == .vc ? localized("加入会议", "Join Video") : localized("查看详情", "View Details"),
+                    subtitleFallback: localized("打开下一场会议", "Open the next meeting"),
                     handler: {
                         NSWorkspace.shared.open(preferredLink.url)
                     }
@@ -220,8 +341,8 @@ struct MenuBarContentView: View {
             }
 
             return PrimaryAction(
-                title: "打开“日历”查看安排",
-                symbolName: "calendar",
+                title: localized("打开日历", "Open Calendar"),
+                subtitleFallback: localized("查看已同步事件", "Inspect the synced event"),
                 handler: openCalendarApp
             )
         }
@@ -229,39 +350,29 @@ struct MenuBarContentView: View {
         switch sourceCoordinator.state.healthState {
         case .unconfigured:
             return PrimaryAction(
-                title: "完成接入设置",
-                symbolName: "slider.horizontal.3",
+                title: localized("完成配置", "Complete Setup"),
+                subtitleFallback: localized("授予权限并选择日历", "Grant access and select calendars"),
                 handler: openSettingsWindow
             )
-
-        case .failed:
-            return PrimaryAction(
-                title: "打开“日历”检查同步",
-                symbolName: "calendar",
-                handler: openCalendarApp
-            )
-
         case .warning:
             return PrimaryAction(
-                title: "重新检查同步状态",
-                symbolName: "arrow.clockwise.circle",
+                title: localized("重新检查同步", "Re-check Sync"),
+                subtitleFallback: localized("刷新本地日历状态", "Refresh the local calendar state"),
                 handler: {
                     Task {
                         await sourceCoordinator.refresh(trigger: .manualRefresh)
                     }
                 }
             )
-
-        case .ready:
+        case .failed, .ready:
             return PrimaryAction(
-                title: "打开“日历”检查同步",
-                symbolName: "calendar",
+                title: localized("打开日历", "Open Calendar"),
+                subtitleFallback: localized("检查本地日历源", "Inspect the local calendar source"),
                 handler: openCalendarApp
             )
         }
     }
 
-    /// 当前如果存在视频会议或详情链接，就优先让弹层提供直达入口。
     private func preferredMeetingLink(for meeting: MeetingRecord) -> MeetingLink? {
         if let videoLink = meeting.links.first(where: { $0.kind == .vc }) {
             return videoLink
@@ -274,12 +385,10 @@ struct MenuBarContentView: View {
         return meeting.links.first
     }
 
-    /// 主按钮只负责继续执行纯值里的处理逻辑。
     private func performPrimaryAction(_ action: PrimaryAction) {
         action.handler()
     }
 
-    /// 打开系统日历应用，让用户沿着真实数据源去确认同步是否完成。
     private func openCalendarApp() {
         if let applicationURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") {
             NSWorkspace.shared.openApplication(
@@ -295,59 +404,42 @@ struct MenuBarContentView: View {
         }
     }
 
-    /// 设置按钮只负责把动作继续交给外部。
-    /// 真正的窗口创建和前台化都由壳层控制器统一处理，避免视图自己知道 AppKit 细节。
     private func openSettingsWindow() {
         openSettingsAction()
     }
 
-    /// 从健康状态摘要里提取“已连接 N 个系统日历”的数字，供 badge 复用。
-    private func extractLeadingInteger(from message: String) -> Int? {
-        let digits = message.split(whereSeparator: { !$0.isNumber }).first ?? ""
-        return Int(digits)
+    private var uiLanguage: AppUILanguage {
+        reminderPreferencesController.reminderPreferences.interfaceLanguage
     }
 
-    /// 小尺寸状态标签入口。
-    @ViewBuilder
-    private func compactBadge(text: String, color: Color) -> some View {
-        Text(text)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(color.opacity(0.14))
-            )
-            .foregroundStyle(color)
+    private var localizedHealthStateSummary: String {
+        switch sourceCoordinator.state.healthState {
+        case .unconfigured:
+            return localized("接入尚未完成。请先授权并选择目标日历。", "Setup is incomplete. Grant access and choose a calendar first.")
+        case .ready:
+            return localized("本地日历读取正常。", "The local calendar source is healthy.")
+        case .warning:
+            return localized("本地日历同步仍可使用，但需要关注同步状态。", "The local calendar source is still usable, but its sync state needs attention.")
+        case .failed:
+            return sourceCoordinator.state.lastErrorMessage
+                ?? localized("当前无法正常读取会议。", "The app cannot read meetings right now.")
+        }
     }
+
+    private func localized(_ chinese: String, _ english: String) -> String {
+        uiLanguage == .english ? english : chinese
+    }
+
+    private static let heroTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
 
-/// `PrimaryAction` 把命令面板里唯一的主按钮抽成纯值。
-/// 这样视图可以围绕一个“下一步动作”组织，而不是在按钮结构里散落复杂分支。
 private struct PrimaryAction {
     let title: String
-    let symbolName: String
+    let subtitleFallback: String
     let handler: () -> Void
-}
-
-/// `SettingsSceneActionRegistrar` 是一个零尺寸辅助视图。
-/// 它唯一的职责是在菜单弹层真正进入 SwiftUI 渲染树后，读取环境里的 `openSettings`
-/// 并把这条官方动作登记到共享桥接控制器里，避免 AppKit 层继续走过时的 selector 打开设置。
-private struct SettingsSceneActionRegistrar: View {
-    @Environment(\.openSettings) private var openSettings
-
-    let settingsSceneOpenController: SettingsSceneOpenController
-
-    var body: some View {
-        Color.clear
-            .frame(width: 0, height: 0)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-            .onAppear {
-                let openSettingsAction = openSettings
-                settingsSceneOpenController.register {
-                    openSettingsAction()
-                }
-            }
-    }
 }

@@ -45,7 +45,8 @@ final class PreferencesStoreTests: XCTestCase {
             isMuted: false,
             playSoundOnlyWhenHeadphonesConnected: true,
             onlyForMeetingsWithVideoLink: true,
-            skipDeclinedMeetings: false
+            skipDeclinedMeetings: false,
+            interfaceLanguage: .english
         )
         let lastRefreshAt = Date(timeIntervalSince1970: 1_234_567)
 
@@ -57,6 +58,7 @@ final class PreferencesStoreTests: XCTestCase {
         let bootstrapUserDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
 
         XCTAssertEqual(loadedPreferences, reminderPreferences)
+        XCTAssertEqual(loadedPreferences.interfaceLanguage, .english)
         XCTAssertEqual(loadedLastRefreshAt, lastRefreshAt)
         XCTAssertEqual(
             UserDefaultsPreferencesStore.bootstrapLastSuccessfulRefreshAt(userDefaults: bootstrapUserDefaults),

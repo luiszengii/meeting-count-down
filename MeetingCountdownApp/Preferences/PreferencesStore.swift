@@ -143,7 +143,10 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
             isMuted: userDefaults.object(forKey: Keys.isMuted) as? Bool ?? false,
             playSoundOnlyWhenHeadphonesConnected: userDefaults.object(forKey: Keys.playSoundOnlyWhenHeadphonesConnected) as? Bool ?? false,
             onlyForMeetingsWithVideoLink: userDefaults.object(forKey: Keys.onlyForMeetingsWithVideoLink) as? Bool ?? false,
-            skipDeclinedMeetings: userDefaults.object(forKey: Keys.skipDeclinedMeetings) as? Bool ?? true
+            skipDeclinedMeetings: userDefaults.object(forKey: Keys.skipDeclinedMeetings) as? Bool ?? true,
+            interfaceLanguage: AppUILanguage(
+                rawValue: userDefaults.string(forKey: Keys.interfaceLanguage) ?? AppUILanguage.simplifiedChinese.rawValue
+            ) ?? .simplifiedChinese
         )
     }
 
@@ -163,6 +166,10 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
         userDefaults.set(
             reminderPreferences.skipDeclinedMeetings,
             forKey: Keys.skipDeclinedMeetings
+        )
+        userDefaults.set(
+            reminderPreferences.interfaceLanguage.rawValue,
+            forKey: Keys.interfaceLanguage
         )
     }
 
@@ -249,6 +256,7 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
         static let onlyForMeetingsWithVideoLink =
             "reminder_preferences.only_for_meetings_with_video_link"
         static let skipDeclinedMeetings = "reminder_preferences.skip_declined_meetings"
+        static let interfaceLanguage = "ui_preferences.interface_language"
         static let selectedSystemCalendarIDs = "connection_preferences.selected_system_calendar_ids"
         static let lastSuccessfulRefreshAt = "connection_preferences.last_successful_refresh_at"
         static let soundProfiles = "sound_profiles.imported_profiles"

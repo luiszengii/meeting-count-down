@@ -51,6 +51,7 @@
 | [./dev-logs/2026-04-02.md](./dev-logs/2026-04-02.md) | 秒级倒计时、闪烁提醒态、Settings 打开链路和 `Phase 6` 方向调整 |
 | [./dev-logs/2026-04-03.md](./dev-logs/2026-04-03.md) | DMG 打包、签名前提澄清、App 图标补齐和第一轮 UI 重构 |
 | [./dev-logs/2026-04-08.md](./dev-logs/2026-04-08.md) | 参考 Karpathy 的 LLM Wiki 思路，为项目文档系统补全全局内容索引 |
+| [./dev-logs/2026-04-09.md](./dev-logs/2026-04-09.md) | 修正焦点蓝框、收紧 Overview / Audio 信息结构，并补克制微动效 |
 
 ## Pitfalls
 

@@ -57,17 +57,32 @@ final class LaunchAtLoginController: ObservableObject {
 
     /// 给设置页展示当前注册状态的解释文案。
     var statusSummary: String {
+        statusSummary(for: .simplifiedChinese)
+    }
+
+    /// 开机启动状态同样需要跟随界面语言切换。
+    func statusSummary(for language: AppUILanguage) -> String {
         switch service.status {
         case .enabled:
-            return "开机登录后会自动启动。"
+            return language == .english
+                ? "The app will launch automatically after login."
+                : "开机登录后会自动启动。"
         case .requiresApproval:
-            return "系统已记录开机启动请求，但仍需要你在系统设置里批准。"
+            return language == .english
+                ? "macOS recorded the launch-at-login request, but it still needs approval in System Settings."
+                : "系统已记录开机启动请求，但仍需要你在系统设置里批准。"
         case .notRegistered:
-            return "当前不会在登录后自动启动。"
+            return language == .english
+                ? "The app will not launch automatically after login."
+                : "当前不会在登录后自动启动。"
         case .notFound:
-            return "当前构建无法注册为开机启动项，通常发生在开发期未安装构建。"
+            return language == .english
+                ? "This build cannot register as a login item, which usually happens for an uninstalled development build."
+                : "当前构建无法注册为开机启动项，通常发生在开发期未安装构建。"
         @unknown default:
-            return "无法确认开机启动状态。"
+            return language == .english
+                ? "The launch-at-login status could not be determined."
+                : "无法确认开机启动状态。"
         }
     }
 

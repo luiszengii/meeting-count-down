@@ -85,6 +85,12 @@ final class ReminderPreferencesController: ObservableObject {
         }
     }
 
+    /// 切换当前壳层界面语言。
+    /// 语言变化只影响视图层展示，不需要触发会议重读或提醒重算。
+    func setInterfaceLanguage(_ language: AppUILanguage) async {
+        await updatePreferences(notifyUpstream: false) { $0.interfaceLanguage = language }
+    }
+
     /// 统一保存提醒偏好并在成功后通知上游重算。
     private func updatePreferences(
         notifyUpstream: Bool = true,

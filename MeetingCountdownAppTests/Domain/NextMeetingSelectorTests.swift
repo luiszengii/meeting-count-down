@@ -72,7 +72,8 @@ final class NextMeetingSelectorTests: XCTestCase {
                 isMuted: false,
                 playSoundOnlyWhenHeadphonesConnected: false,
                 onlyForMeetingsWithVideoLink: true,
-                skipDeclinedMeetings: true
+                skipDeclinedMeetings: true,
+                interfaceLanguage: .simplifiedChinese
             )
         )
 

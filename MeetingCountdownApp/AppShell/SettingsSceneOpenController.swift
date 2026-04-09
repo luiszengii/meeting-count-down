@@ -1,21 +1,18 @@
-import SwiftUI
-
-/// `SettingsSceneOpenController` 把 SwiftUI 官方提供的 `openSettings` 动作桥接给壳层控制器。
-/// `NSStatusItem` / `NSPopover` 这条 AppKit 菜单栏链路本身拿不到 SwiftUI 场景环境值，
-/// 因此需要由弹层里的 SwiftUI 视图在渲染时登记一次，再交给状态栏控制器复用。
+/// `SettingsSceneOpenController` 统一桥接“打开设置窗口”的显式动作。
+/// 这轮不再依赖 SwiftUI 官方 `openSettings` 环境值，而是让壳层装配阶段直接登记
+/// 一条手动前置设置窗口的闭包；菜单栏、app 菜单和未来其他入口都复用同一条链路。
 @MainActor
 final class SettingsSceneOpenController {
-    /// 真正创建或唤起 SwiftUI `Settings` scene 的官方动作。
-    /// 这里不直接存 `OpenSettingsAction`，而是存成普通闭包，避免壳层继续感知 SwiftUI 环境类型。
+    /// 真正创建或唤起设置窗口的动作。
     private var openSettingsAction: (() -> Void)?
 
-    /// 菜单弹层解析到官方设置动作后，把最新动作登记进来。
-    /// 之所以允许重复覆盖，是因为 `NSPopover` 内容可能在不同显示周期里被重新挂载。
+    /// 壳层装配阶段把当前最新的打开设置动作登记进来。
+    /// 这里仍然允许覆盖，方便未来如果窗口实现再次切换时保留同一份调用协议。
     func register(action: @escaping () -> Void) {
         openSettingsAction = action
     }
 
-    /// 当状态栏控制器需要打开设置时，统一走这里。
+    /// 当菜单栏或 app 菜单需要打开设置时，统一走这里。
     /// 如果动作还没登记成功，就返回 `false`，交给上层决定是否记录日志或忽略。
     @discardableResult
     func openSettingsIfAvailable() -> Bool {
