@@ -1,0 +1,172 @@
+import SwiftUI
+
+/// 这个文件负责日历接入页。
+/// 它把一次性的 CalDAV 配置步骤和长期维护的系统日历选择拆开，
+/// 避免用户在同一个区域里同时理解“怎么接入”和“现在选了什么”。
+extension SettingsView {
+    var calendarPage: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 22) {
+                calendarSetupPanel
+                    .frame(width: 360)
+
+                calendarSourcePanel
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            VStack(alignment: .leading, spacing: 18) {
+                calendarSetupPanel
+                calendarSourcePanel
+            }
+        }
+    }
+
+    var calendarSetupPanel: some View {
+        GlassPanel(cornerRadius: 30, padding: 20, overlayOpacity: 0.14) {
+            VStack(alignment: .leading, spacing: 18) {
+                pageIntro(
+                    eyebrow: localized("日历接入", "CALENDAR"),
+                    title: localized("连接飞书日历", "Connect Feishu Calendar"),
+                    detail: calendarConfigurationSummaryLine
+                )
+
+                HStack(spacing: 10) {
+                    GlassBadge(
+                        text: isCalendarConfigurationComplete
+                            ? localized("已完成", "Complete")
+                            : localized("待处理", "Needs Setup"),
+                        color: isCalendarConfigurationComplete ? .green : .orange
+                    )
+
+                    Spacer()
+
+                    Button {
+                        Task {
+                            await systemCalendarConnectionController.refreshState()
+                            await sourceCoordinator.refresh(trigger: .manualRefresh)
+                        }
+                    } label: {
+                        Text(localized("重新检查", "Re-check"))
+                    }
+                    .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+                    .disabled(systemCalendarConnectionController.isLoadingState || systemCalendarConnectionController.isRequestingAccess)
+                }
+
+                if !isCalendarConfigurationComplete || isCalendarConfigurationExpanded {
+                    VStack(alignment: .leading, spacing: 12) {
+                        setupStepRow(
+                            title: localized("在飞书里生成 CalDAV 凭证", "Generate CalDAV credentials in Feishu"),
+                            detail: localized("复制用户名、专用密码和服务器地址。", "Copy the username, app password, and server address."),
+                            isComplete: true
+                        )
+                        setupStepRow(
+                            title: localized("在 macOS 日历里添加“其他 CalDAV 账户”", "Add an Other CalDAV Account in macOS Calendar"),
+                            detail: localized("选择“手动”，再粘贴刚才的凭证。", "Choose manual setup, then paste the credentials."),
+                            isComplete: hasAddedCalDAVAccount
+                        )
+                        setupStepRow(
+                            title: localized("授予本应用日历访问权限", "Grant this app calendar access"),
+                            detail: localizedAuthorizationSummary(for: systemCalendarConnectionController.authorizationState),
+                            isComplete: systemCalendarConnectionController.authorizationState == .authorized
+                        )
+                        setupStepRow(
+                            title: localized("选择需要参与提醒的日历", "Select the calendars that should count"),
+                            detail: localizedCalendarSelectionSummary,
+                            isComplete: systemCalendarConnectionController.hasSelectedCalendars
+                        )
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                if isCalendarConfigurationComplete {
+                    Button {
+                        withAnimation(GlassMotion.page) {
+                            isCalendarConfigurationExpanded.toggle()
+                        }
+                    } label: {
+                        Text(isCalendarConfigurationExpanded
+                            ? localized("收起接入步骤", "Hide Setup Steps")
+                            : localized("查看接入步骤", "Show Setup Steps"))
+                    }
+                    .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+                }
+            }
+        }
+    }
+
+    var calendarSourcePanel: some View {
+        GlassPanel(cornerRadius: 30, padding: 20, overlayOpacity: 0.14) {
+            VStack(alignment: .leading, spacing: 18) {
+                pageIntro(
+                    eyebrow: localized("日历列表", "CALENDARS"),
+                    title: localized("选择要提醒的日历", "Choose calendars for reminders"),
+                    detail: localized("只有勾选的日历会参与提醒。", "Only selected calendars will be used for reminders.")
+                )
+
+                HStack(alignment: .center, spacing: 10) {
+                    GlassBadge(
+                        text: localizedAuthorizationBadgeText(for: systemCalendarConnectionController.authorizationState),
+                        color: authorizationBadgeColor(for: systemCalendarConnectionController.authorizationState)
+                    )
+
+                    if let lastLoadedAt = systemCalendarConnectionController.lastLoadedAt {
+                        Text("\(localized("最近检查", "Last checked")) · \(Self.absoluteFormatter.string(from: lastLoadedAt))")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let lastErrorMessage = systemCalendarConnectionController.lastErrorMessage {
+                    warningStrip(lastErrorMessage)
+                }
+
+                switch systemCalendarConnectionController.authorizationState {
+                case .authorized:
+                    if systemCalendarConnectionController.isLoadingState {
+                        ProgressView(localized("正在读取本地日历…", "Reading local calendars..."))
+                            .controlSize(.small)
+                    } else if systemCalendarConnectionController.availableCalendars.isEmpty {
+                        emptyStatePanel(
+                            title: localized("当前还没有可读取的系统日历", "No readable calendars yet"),
+                            detail: localized(
+                                "先确认飞书日历已经同步到 macOS“日历”，再回来刷新。",
+                                "Make sure Feishu Calendar is synced to macOS Calendar, then refresh here."
+                            )
+                        )
+                    } else {
+                        LazyVGrid(columns: responsiveCardColumns(minimum: 260), spacing: 14) {
+                            ForEach(systemCalendarConnectionController.availableCalendars) { calendar in
+                                calendarRow(for: calendar)
+                            }
+                        }
+                    }
+
+                case .notDetermined:
+                    Button {
+                        Task {
+                            await systemCalendarConnectionController.requestCalendarAccess()
+                        }
+                    } label: {
+                        Label(localized("授予日历权限", "Grant Calendar Access"), systemImage: "calendar.badge.plus")
+                    }
+                    .buttonStyle(GlassPillButtonStyle(tone: .primary))
+                    .disabled(systemCalendarConnectionController.isRequestingAccess)
+
+                case .denied, .restricted, .writeOnly, .unknown:
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button {
+                            openCalendarPrivacySettings()
+                        } label: {
+                            Text(localized("打开系统设置", "Open System Settings"))
+                        }
+                        .buttonStyle(GlassPillButtonStyle(tone: .primary))
+
+                        Text(localized("先修复权限问题，再回来重新检查本地日历源。", "Repair the permission first, then come back and re-check the local calendar source."))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
