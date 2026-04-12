@@ -221,7 +221,7 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
         playerNode.stop()
 
         let buffer = makeToneBuffer()
-        await playerNode.scheduleBuffer(buffer, at: nil, options: [.interrupts])
+        playerNode.scheduleBuffer(buffer, at: nil, options: [.interrupts], completionHandler: nil)
         playerNode.play()
     }
 

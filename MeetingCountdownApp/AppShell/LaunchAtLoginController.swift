@@ -13,7 +13,9 @@ final class LaunchAtLoginController: ObservableObject {
     @Published private(set) var lastErrorMessage: String?
 
     /// 当前 app 对应的登录项服务。
-    private let service: SMAppService
+    /// `SMAppService` 本身不是 `Sendable`，但这里始终只在主线程 UI 控制器里使用。
+    /// 把存储属性标成 `nonisolated(unsafe)`，是为了避免 Swift 6 在异步 API 调用时把它误判成跨 actor 发送。
+    nonisolated(unsafe) private let service: SMAppService
 
     init(service: SMAppService = .mainApp, autoRefreshOnStart: Bool = true) {
         self.service = service

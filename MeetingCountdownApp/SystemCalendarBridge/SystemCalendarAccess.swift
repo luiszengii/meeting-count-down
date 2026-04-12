@@ -27,7 +27,9 @@ protocol SystemCalendarAccessing: AnyObject {
 @MainActor
 final class EventKitSystemCalendarAccess: SystemCalendarAccessing {
     /// EventKit 的统一入口对象。
-    private let eventStore: EKEventStore
+    /// `EKEventStore` 会长期跟随这个桥接对象存活，但调用方仍通过 `@MainActor` 入口串行访问它。
+    /// 这里显式使用 `nonisolated(unsafe)`，避免 Swift 6 把异步权限申请误判成跨 actor 发送。
+    nonisolated(unsafe) private let eventStore: EKEventStore
 
     init(eventStore: EKEventStore = EKEventStore()) {
         self.eventStore = eventStore
