@@ -6,7 +6,7 @@ settings:
     SWIFT_VERSION: 6.0
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CURRENT_PROJECT_VERSION: 1
-    MARKETING_VERSION: 0.1.1
+    MARKETING_VERSION: 0.1.2
     CODE_SIGNING_ALLOWED: NO
     CODE_SIGNING_REQUIRED: NO
 targets:
@@ -23,17 +23,16 @@ targets:
         buildPhase: resources
     settings:
       base:
+        APP_DISPLAY_NAME: Feishu Meeting Countdown
         PRODUCT_NAME: FeishuMeetingCountdown
         PRODUCT_BUNDLE_IDENTIFIER: com.luiszeng.meetingcountdown
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Feishu Meeting Countdown
-        INFOPLIST_KEY_LSUIElement: YES
-        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: Feishu Meeting Countdown 需要读取你在 macOS 日历中同步的飞书会议，用来计算下一场会议并在会前提醒。
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Config/FeishuMeetingCountdown-Info.plist
         SUPPORTS_MACCATALYST: NO
       configs:
         Debug:
+          APP_DISPLAY_NAME: Feishu Meeting Countdown Dev
           PRODUCT_BUNDLE_IDENTIFIER: com.luiszeng.meetingcountdown.dev
-          INFOPLIST_KEY_CFBundleDisplayName: Feishu Meeting Countdown Dev
     scheme:
       gatherCoverageData: true
       testTargets:

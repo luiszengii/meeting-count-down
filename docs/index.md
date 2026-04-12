@@ -68,6 +68,7 @@
 | [./pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md](./pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md) | 记录 unsigned DMG 在另一台 Mac 上承接 Calendar 权限失败的根因 |
 | [./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md](./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md) | 记录维护者如何准备本地自签名代码签名身份并接给分发脚本 |
 | [./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md](./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md) | 记录 Debug / Release 共用 bundle id 时，TCC / EventKit 权限会混淆的问题 |
+| [./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md](./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md) | 记录自动生成 `Info.plist` 在 release runner 上丢失 Calendar 权限说明的问题 |
 
 ## 模板
 

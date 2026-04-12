@@ -54,6 +54,24 @@ sign_app_if_requested() {
   fi
 }
 
+validate_calendar_usage_description() {
+  local app_path="$1"
+  local info_plist="$app_path/Contents/Info.plist"
+  local usage_description=""
+
+  if [[ ! -f "$info_plist" ]]; then
+    echo "没有找到 Info.plist: $info_plist" >&2
+    exit 1
+  fi
+
+  usage_description="$(/usr/libexec/PlistBuddy -c 'Print :NSCalendarsFullAccessUsageDescription' "$info_plist" 2>/dev/null || true)"
+
+  if [[ -z "$usage_description" ]]; then
+    echo "导出的 app 缺少 NSCalendarsFullAccessUsageDescription，当前产物不能正常申请 Calendar 权限。" >&2
+    exit 1
+  fi
+}
+
 show_help() {
   cat <<'EOF'
 用法:
@@ -132,6 +150,9 @@ fi
 
 echo "==> 复制 app 到手动分发目录"
 cp -R "$APP_SOURCE_PATH" "$COPIED_APP_PATH"
+
+echo "==> 校验 Calendar 权限说明"
+validate_calendar_usage_description "$COPIED_APP_PATH"
 
 sign_app_if_requested "$COPIED_APP_PATH"
 
