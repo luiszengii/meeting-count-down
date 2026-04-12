@@ -62,6 +62,32 @@ final class SystemCalendarBridgeTests: XCTestCase {
         XCTAssertEqual(controller.selectedCalendarIDs, [])
     }
 
+    /// 验证当持久化里还留着旧日历 ID，但当前系统列表里已经没有这些日历时，
+    /// 控制器会把“原始持久化值”和“当前不可用的旧选择”都保留下来，供诊断页导出。
+    func testConnectionControllerTracksUnavailableStoredSelectionsForDiagnostics() async {
+        let preferencesStore = InMemoryPreferencesStore(
+            selectedSystemCalendarIDs: ["missing-calendar"],
+            hasStoredSelectedSystemCalendarIDs: true
+        )
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [calendar(id: "feishu", title: "飞书日历", suggested: true)]
+        )
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: access,
+            preferencesStore: preferencesStore,
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+
+        XCTAssertEqual(controller.lastLoadedStoredCalendarIDs, ["missing-calendar"])
+        XCTAssertEqual(controller.lastUnavailableStoredCalendarIDs, ["missing-calendar"])
+        XCTAssertEqual(controller.selectedCalendarIDs, [])
+        XCTAssertTrue(controller.hasStoredSelection)
+    }
+
     /// 验证用户切换某个系统日历选择后，会立即写回持久化层。
     func testConnectionControllerPersistsSelectionChanges() async {
         let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])

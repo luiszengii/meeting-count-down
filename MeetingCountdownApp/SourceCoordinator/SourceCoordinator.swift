@@ -170,6 +170,9 @@ final class SourceCoordinator: ObservableObject {
             )
             state.lastErrorMessage = nil
             try? await preferencesStore.saveLastSuccessfulRefreshAt(snapshot.refreshedAt)
+            logger.info(
+                "Refresh succeeded with \(sortedMeetings.count) meeting(s), health=\(snapshot.healthState.shortLabel), nextMeeting=\(state.nextMeeting?.id ?? "none")"
+            )
         } catch let error as MeetingSourceError {
             switch error {
             case .notConfigured:

@@ -42,6 +42,7 @@
 		9D21C498FE78EA8E84C076CB /* SelectableSoundProfileReminderAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE43F0B3837B6BB858AC93C /* SelectableSoundProfileReminderAudioEngine.swift */; };
 		9E195C95548705BCE185246F /* AdvancedPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FE68844BD1999A114D9CD4 /* AdvancedPage.swift */; };
 		9E53DB4BB37696F0550E0BE4 /* MenuBarStatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE290BAC98F94507CC538D90 /* MenuBarStatusItemController.swift */; };
+		A1FA7797611B814CFBDE893C /* CalendarConnectionDiagnosticSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870FA20C7B520F3C9AE23DB9 /* CalendarConnectionDiagnosticSnapshot.swift */; };
 		A2D1B7F8E66FF1EFFD1C9473 /* SoundProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9C0B1F3FDD2F2635D422E9 /* SoundProfile.swift */; };
 		A9A569940CA3C6B96391A0C7 /* SourceCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB554BC93E4A5CD4D5F4D48 /* SourceCoordinatorTests.swift */; };
 		ACA0046E387F16D4868029A4 /* ReminderStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22C240547110028BB783D74 /* ReminderStateTests.swift */; };
@@ -61,6 +62,7 @@
 		E07827B9566EB75B910EE297 /* SoundProfilePreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55D895F109E5D9D4FE749A7 /* SoundProfilePreviewPlayer.swift */; };
 		E29CF28B89883514939F5BE6 /* SystemCalendarBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D222E1EB98EB2C80DA37E1E /* SystemCalendarBridgeTests.swift */; };
 		E848E5203527FD582DE28771 /* RefreshTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E2BC2E27A8551DB11F1EED /* RefreshTrigger.swift */; };
+		F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */; };
 		F2C19904FCBFF380B30F3DF3 /* AudioPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74FD58D73731E1367D6452E1 /* AudioPage.swift */; };
 		F48E4AE2F6AD606FD26FB575 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */; };
 		FB599DAD0BF6136EE4D336FE /* SystemCalendarAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161F70512D2E9A019D854F1E /* SystemCalendarAccess.swift */; };
@@ -108,6 +110,7 @@
 		74FD58D73731E1367D6452E1 /* AudioPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPage.swift; sourceTree = "<group>"; };
 		79A62141776821479D9F3A36 /* NextMeetingSelectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMeetingSelectorTests.swift; sourceTree = "<group>"; };
 		7A0B45578C38FFA11B87D493 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		870FA20C7B520F3C9AE23DB9 /* CalendarConnectionDiagnosticSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticSnapshot.swift; sourceTree = "<group>"; };
 		8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSceneOpenController.swift; sourceTree = "<group>"; };
 		88BCCC992BA06ED1B43211FD /* RemindersPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersPage.swift; sourceTree = "<group>"; };
 		8A63B3B4A8E497046F57B57F /* SystemCalendarConnectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarConnectionController.swift; sourceTree = "<group>"; };
@@ -133,6 +136,7 @@
 		CE290BAC98F94507CC538D90 /* MenuBarStatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusItemController.swift; sourceTree = "<group>"; };
 		CE2D7C9623430AC9CADCCA38 /* FeishuMeetingCountdown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FeishuMeetingCountdown.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecord.swift; sourceTree = "<group>"; };
+		D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticSnapshotTests.swift; sourceTree = "<group>"; };
 		E28DD805547510F7DEE9F9CB /* ReminderEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngineTests.swift; sourceTree = "<group>"; };
 		EE49FFDD6C119F4194958281 /* ReminderPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderPreferences.swift; sourceTree = "<group>"; };
 		F22C240547110028BB783D74 /* ReminderStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderStateTests.swift; sourceTree = "<group>"; };
@@ -228,6 +232,7 @@
 		5BB70F8C55B957F179539F34 /* Diagnostics */ = {
 			isa = PBXGroup;
 			children = (
+				870FA20C7B520F3C9AE23DB9 /* CalendarConnectionDiagnosticSnapshot.swift */,
 				AC234B4B698019FA3938A72A /* DiagnosticCheckers.swift */,
 				B9F7A7849159337A8D5A6F07 /* DiagnosticsState.swift */,
 			);
@@ -302,6 +307,7 @@
 		D749900478B506C5599A3A69 /* Diagnostics */ = {
 			isa = PBXGroup;
 			children = (
+				D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */,
 				060012B9D43327628F3EB740 /* DiagnosticCheckersTests.swift */,
 			);
 			path = Diagnostics;
@@ -451,6 +457,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */,
 				09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */,
 				94747232041240F8669C6993 /* NextMeetingSelectorTests.swift in Sources */,
 				0329D3ACD8A1A220854EE035 /* PreferencesStoreTests.swift in Sources */,
@@ -475,6 +482,7 @@
 				5EE9174C36E6A73A282C8036 /* AppRuntime.swift in Sources */,
 				B4563C746B28080BB2086F6D /* AudioOutputRoute.swift in Sources */,
 				F2C19904FCBFF380B30F3DF3 /* AudioPage.swift in Sources */,
+				A1FA7797611B814CFBDE893C /* CalendarConnectionDiagnosticSnapshot.swift in Sources */,
 				163D266695E119E3BCAD99E9 /* CalendarPage.swift in Sources */,
 				5E251C833627F81C2EF6715D /* Components.swift in Sources */,
 				C62CFB42FF685943679356F0 /* DiagnosticCheckers.swift in Sources */,
@@ -533,7 +541,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Feishu Meeting Countdown";
+				INFOPLIST_KEY_CFBundleDisplayName = "Feishu Meeting Countdown Dev";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Feishu Meeting Countdown 需要读取你在 macOS 日历中同步的飞书会议，用来计算下一场会议并在会前提醒。";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -541,7 +549,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.luiszeng.meetingcountdown;
+				PRODUCT_BUNDLE_IDENTIFIER = com.luiszeng.meetingcountdown.dev;
 				PRODUCT_NAME = FeishuMeetingCountdown;
 				SDKROOT = macosx;
 				SUPPORTS_MACCATALYST = NO;
@@ -613,7 +621,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -679,7 +687,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

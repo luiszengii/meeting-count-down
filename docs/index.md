@@ -67,6 +67,7 @@
 | [./pitfalls/xcodegen-regenerate-project-after-adding-files.md](./pitfalls/xcodegen-regenerate-project-after-adding-files.md) | 记录新增源文件后必须重新生成 Xcode 工程 |
 | [./pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md](./pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md) | 记录 unsigned DMG 在另一台 Mac 上承接 Calendar 权限失败的根因 |
 | [./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md](./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md) | 记录维护者如何准备本地自签名代码签名身份并接给分发脚本 |
+| [./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md](./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md) | 记录 Debug / Release 共用 bundle id 时，TCC / EventKit 权限会混淆的问题 |
 
 ## 模板
 

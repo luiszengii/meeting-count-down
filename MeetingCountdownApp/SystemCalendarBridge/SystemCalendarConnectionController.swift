@@ -10,8 +10,15 @@ final class SystemCalendarConnectionController: ObservableObject {
     @Published private(set) var authorizationState: SystemCalendarAuthorizationState
     /// 当前机器上可见的事件日历候选。
     @Published private(set) var availableCalendars: [SystemCalendarDescriptor]
+    /// 最近一次从持久化里读到的原始日历选择。
+    /// 这里故意保留“原样读取”结果，方便区分“用户曾经选过，但现在这些 ID 已经失效”。
+    @Published private(set) var lastLoadedStoredCalendarIDs: Set<String>
+    /// 最近一次原始持久化选择里，当前系统里已经不存在的日历 ID。
+    @Published private(set) var lastUnavailableStoredCalendarIDs: Set<String>
     /// 当前已选中的系统日历 ID 集合。
     @Published private(set) var selectedCalendarIDs: Set<String>
+    /// 当前是否已经至少有过一次显式保存的系统日历选择。
+    @Published private(set) var hasStoredSelection: Bool
     /// 当前是否正在重新读取系统日历状态。
     @Published private(set) var isLoadingState: Bool
     /// 当前是否正在等待系统权限框返回。
@@ -27,6 +34,8 @@ final class SystemCalendarConnectionController: ObservableObject {
     private let preferencesStore: any PreferencesStore
     /// 独立注入时钟，便于测试。
     private let dateProvider: any DateProviding
+    /// 统一的连接状态日志入口。
+    private let logger: AppLogger
     /// 用于监听系统日历变化的通知中心。
     private let notificationCenter: NotificationCenter
     /// 当配置或系统日历内容发生变化后，应统一通知 app 壳层刷新。
@@ -38,6 +47,7 @@ final class SystemCalendarConnectionController: ObservableObject {
         calendarAccess: any SystemCalendarAccessing,
         preferencesStore: any PreferencesStore,
         dateProvider: any DateProviding,
+        logger: AppLogger = AppLogger(source: "SystemCalendarConnection"),
         notificationCenter: NotificationCenter = .default,
         onCalendarConfigurationChanged: @escaping @MainActor @Sendable (RefreshTrigger) async -> Void = { _ in },
         autoRefreshOnStart: Bool = true
@@ -45,11 +55,15 @@ final class SystemCalendarConnectionController: ObservableObject {
         self.calendarAccess = calendarAccess
         self.preferencesStore = preferencesStore
         self.dateProvider = dateProvider
+        self.logger = logger
         self.notificationCenter = notificationCenter
         self.onCalendarConfigurationChanged = onCalendarConfigurationChanged
         self.authorizationState = calendarAccess.currentAuthorizationState()
         self.availableCalendars = []
+        self.lastLoadedStoredCalendarIDs = []
+        self.lastUnavailableStoredCalendarIDs = []
         self.selectedCalendarIDs = []
+        self.hasStoredSelection = false
         self.isLoadingState = false
         self.isRequestingAccess = false
         self.lastLoadedAt = nil
@@ -67,6 +81,7 @@ final class SystemCalendarConnectionController: ObservableObject {
     /// 重新同步“权限 -> 候选日历 -> 已选日历”的整份状态。
     /// 设置页首次打开、用户点刷新、权限变化或系统日历变化后都走这里。
     func refreshState() async {
+        logger.info("Refreshing system calendar connection state")
         isLoadingState = true
         lastErrorMessage = nil
 
@@ -80,6 +95,7 @@ final class SystemCalendarConnectionController: ObservableObject {
             availableCalendars = []
             selectedCalendarIDs = []
             lastLoadedAt = dateProvider.now()
+            logger.info("System calendar connection stopped at authorization state \(authorizationState.badgeText)")
             return
         }
 
@@ -87,6 +103,11 @@ final class SystemCalendarConnectionController: ObservableObject {
         var storedSelectedIDs = await preferencesStore.loadSelectedSystemCalendarIDs()
         let hasStoredSelection = await preferencesStore.hasStoredSelectedSystemCalendarIDs()
         let availableCalendarIDs = Set(calendars.map(\.id))
+        let unavailableStoredCalendarIDs = storedSelectedIDs.subtracting(availableCalendarIDs)
+        lastLoadedStoredCalendarIDs = storedSelectedIDs
+        lastUnavailableStoredCalendarIDs = unavailableStoredCalendarIDs
+        self.hasStoredSelection = hasStoredSelection
+
         storedSelectedIDs = storedSelectedIDs.intersection(availableCalendarIDs)
 
         if storedSelectedIDs.isEmpty && !hasStoredSelection {
@@ -95,6 +116,8 @@ final class SystemCalendarConnectionController: ObservableObject {
             if !suggestedIDs.isEmpty {
                 storedSelectedIDs = suggestedIDs
                 try? await preferencesStore.saveSelectedSystemCalendarIDs(suggestedIDs)
+                self.hasStoredSelection = true
+                logger.info("Auto-selected \(suggestedIDs.count) suggested system calendars on first authorized load")
             }
         } else {
             try? await preferencesStore.saveSelectedSystemCalendarIDs(storedSelectedIDs)
@@ -103,10 +126,14 @@ final class SystemCalendarConnectionController: ObservableObject {
         availableCalendars = calendars
         selectedCalendarIDs = storedSelectedIDs
         lastLoadedAt = dateProvider.now()
+        logger.info(
+            "System calendar connection state ready: available=\(calendars.count), stored=\(lastLoadedStoredCalendarIDs.count), unavailableStored=\(lastUnavailableStoredCalendarIDs.count), effectiveSelected=\(selectedCalendarIDs.count)"
+        )
     }
 
     /// 用户显式点击按钮后才触发 EventKit 权限申请。
     func requestCalendarAccess() async {
+        logger.info("Requesting system calendar access from user action")
         isRequestingAccess = true
         lastErrorMessage = nil
 
@@ -118,10 +145,12 @@ final class SystemCalendarConnectionController: ObservableObject {
             authorizationState = try await calendarAccess.requestReadAccess()
             await refreshState()
             await onCalendarConfigurationChanged(.manualRefresh)
+            logger.info("Calendar access request completed with state \(authorizationState.badgeText)")
         } catch {
             lastErrorMessage = error.localizedDescription
             authorizationState = calendarAccess.currentAuthorizationState()
             await onCalendarConfigurationChanged(.manualRefresh)
+            logger.error("Calendar access request failed: \(error.localizedDescription)")
         }
     }
 
@@ -136,8 +165,12 @@ final class SystemCalendarConnectionController: ObservableObject {
         }
 
         selectedCalendarIDs = updatedSelection
+        lastLoadedStoredCalendarIDs = updatedSelection
+        lastUnavailableStoredCalendarIDs = []
+        hasStoredSelection = true
         try? await preferencesStore.saveSelectedSystemCalendarIDs(updatedSelection)
         await onCalendarConfigurationChanged(.manualRefresh)
+        logger.info("Updated system calendar selection to \(updatedSelection.count) calendar(s)")
     }
 
     /// 当前是否已经至少选中一条系统日历。

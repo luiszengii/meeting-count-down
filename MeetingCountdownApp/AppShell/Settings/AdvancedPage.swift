@@ -89,25 +89,52 @@ extension SettingsView {
                     pageIntro(
                         eyebrow: localized("诊断", "DIAGNOSTICS"),
                         title: localized("诊断信息", "Diagnostics"),
-                        detail: localized("这里会显示数据源和提醒状态。", "See data source and reminder details here.")
+                        detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
                     )
 
                     Spacer(minLength: 0)
 
-                    Button {
-                        Task {
-                            await sourceCoordinator.refresh(trigger: .manualRefresh)
+                    VStack(alignment: .trailing, spacing: 8) {
+                        HStack(spacing: 10) {
+                            Button {
+                                Task {
+                                    await sourceCoordinator.refresh(trigger: .manualRefresh)
+                                }
+                            } label: {
+                                Text(localized("立即刷新", "Refresh Now"))
+                            }
+                            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+                            .disabled(sourceCoordinator.state.isRefreshing)
+
+                            Button {
+                                copyCalendarConnectionDiagnosticReport()
+                                didCopyCalendarDiagnostics = true
+
+                                Task { @MainActor in
+                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                    didCopyCalendarDiagnostics = false
+                                }
+                            } label: {
+                                Text(localized("复制诊断信息", "Copy Diagnostics"))
+                            }
+                            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                         }
-                    } label: {
-                        Text(localized("立即刷新", "Refresh Now"))
+
+                        if didCopyCalendarDiagnostics {
+                            Text(localized("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                    .disabled(sourceCoordinator.state.isRefreshing)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(title: localized("当前数据源", "Active Data Source"), value: localized("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar"))
                     infoRow(title: localized("健康状态", "Health State"), value: localizedHealthStateSummary)
+                    infoRow(title: localized("权限状态", "Permission State"), value: localizedAuthorizationSummary(for: systemCalendarConnectionController.authorizationState))
+                    infoRow(title: localized("已保存选择", "Stored Selection"), value: localizedStoredCalendarSelectionSummary)
+                    infoRow(title: localized("可见日历", "Visible Calendars"), value: localizedAvailableCalendarSummary)
+                    infoRow(title: localized("接入调试态", "Setup Debug State"), value: calendarConnectionDiagnosticSnapshot.selectionDebugState)
                     infoRow(title: localized("提醒状态", "Reminder State"), value: localizedReminderStateSummary)
                 }
 

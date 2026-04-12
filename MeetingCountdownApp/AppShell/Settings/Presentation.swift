@@ -46,6 +46,67 @@ extension SettingsView {
         return formatter
     }()
 
+    /// 诊断导出需要显式读取当前 app 元信息，方便区分“本地 Debug 版”和“GitHub Release 版”。
+    var calendarConnectionDiagnosticSnapshot: CalendarConnectionDiagnosticSnapshot {
+        CalendarConnectionDiagnosticSnapshot(
+            generatedAt: Date(),
+            bundleIdentifier: Bundle.main.bundleIdentifier ?? "unknown",
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
+            buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+            authorizationState: systemCalendarConnectionController.authorizationState,
+            healthState: sourceCoordinator.state.healthState,
+            lastSourceErrorMessage: sourceCoordinator.state.lastErrorMessage,
+            lastSourceRefreshAt: sourceCoordinator.state.lastRefreshAt,
+            lastCalendarStateLoadAt: systemCalendarConnectionController.lastLoadedAt,
+            hasStoredCalendarSelection: systemCalendarConnectionController.hasStoredSelection,
+            storedSelectedCalendarIDs: Array(systemCalendarConnectionController.lastLoadedStoredCalendarIDs),
+            unavailableStoredCalendarIDs: Array(systemCalendarConnectionController.lastUnavailableStoredCalendarIDs),
+            effectiveSelectedCalendarIDs: Array(systemCalendarConnectionController.selectedCalendarIDs),
+            availableCalendars: systemCalendarConnectionController.availableCalendars
+        )
+    }
+
+    /// 高级页直接复用这条摘要，避免用户还没复制完整诊断前完全不知道“当前到底卡在哪一层”。
+    var localizedStoredCalendarSelectionSummary: String {
+        if !systemCalendarConnectionController.selectedCalendarIDs.isEmpty {
+            return localized(
+                "当前生效 \(systemCalendarConnectionController.selectedCalendarIDs.count) 个日历。",
+                "\(systemCalendarConnectionController.selectedCalendarIDs.count) calendar(s) are active right now."
+            )
+        }
+
+        if !systemCalendarConnectionController.lastUnavailableStoredCalendarIDs.isEmpty {
+            return localized(
+                "之前保存过的日历当前都不在系统列表里。",
+                "Previously saved calendars are missing from the current system list."
+            )
+        }
+
+        if systemCalendarConnectionController.hasStoredSelection {
+            return localized("用户已经保存过空选择。", "An explicit empty selection was saved.")
+        }
+
+        return localized("还没有保存过日历选择。", "No calendar selection has been saved yet.")
+    }
+
+    /// 让高级页快速展示“到底枚举到了几条系统日历”。
+    var localizedAvailableCalendarSummary: String {
+        let count = systemCalendarConnectionController.availableCalendars.count
+
+        if count == 0 {
+            return localized("当前没有读到任何系统日历。", "No system calendars are readable right now.")
+        }
+
+        return localized("当前读到 \(count) 个系统日历。", "Currently reading \(count) system calendar(s).")
+    }
+
+    /// 把诊断文本复制到系统剪贴板，方便用户直接贴到 issue 或聊天窗口。
+    func copyCalendarConnectionDiagnosticReport() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(calendarConnectionDiagnosticSnapshot.reportText, forType: .string)
+    }
+
     var isReminderPreferenceEditingDisabled: Bool {
         reminderPreferencesController.isLoadingState || reminderPreferencesController.isSavingState
     }

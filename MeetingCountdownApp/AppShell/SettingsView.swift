@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State var isCalendarConfigurationExpanded = true
     @State var hasInitializedCalendarConfigurationExpansion = false
     @State var hoveredSoundProfileID: SoundProfile.ID?
+    @State var didCopyCalendarDiagnostics = false
 
     var body: some View {
         ZStack {
