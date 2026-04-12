@@ -25,7 +25,7 @@
 ## 当前进度快照
 
 - `Phase 0 ~ 5` 已完成：CalDAV-only 收敛、系统日历桥接、下一场会议选择、本地提醒引擎、提醒音频库、菜单栏倒计时与闪烁、刷新策略、同步新鲜度提示和开机启动都已经接入运行时。
-- 当前阶段是 `Phase 6`：重点先转向无会员前提下的手动分发准备，包括 `Release` 构建、`.app` / `.zip` / `.dmg` 导出、首次打开放行说明和用户接入文档。
+- 当前阶段是 `Phase 6`：重点先转向无会员前提下的手动分发准备，包括 `Release` 构建、`.app` / `.zip` / `.dmg` 导出、首次打开放行说明、GitHub Release 和 tag 驱动的自动分发工作流。
 - 如果测试目标包含“另一台 macOS 机器上的 Calendar / EventKit 权限”，当前阶段不能只用 unsigned 安装包下结论；详见 [unsigned DMG 在另一台 Mac 上无法稳定承接 Calendar 权限](./pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md)。
 - 如果维护者准备使用 `--signing-identity` 导出带稳定身份的测试包，但还没有本地可用的签名证书，先看 [本地自签名 Code Signing 身份用于手动分发](./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md)。
 - `Developer ID` 签名、notarization、DMG / Sparkle 自动更新暂时不再作为当前阻塞项，详见 [2026-04-02 Phase 6 先转为无会员手动分发](./adrs/2026-04-02-phase-6-manual-distribution-without-paid-membership.md)。

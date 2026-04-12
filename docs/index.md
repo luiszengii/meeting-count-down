@@ -52,6 +52,9 @@
 | [./dev-logs/2026-04-03.md](./dev-logs/2026-04-03.md) | DMG 打包、签名前提澄清、App 图标补齐和第一轮 UI 重构 |
 | [./dev-logs/2026-04-08.md](./dev-logs/2026-04-08.md) | 参考 Karpathy 的 LLM Wiki 思路，为项目文档系统补全全局内容索引 |
 | [./dev-logs/2026-04-09.md](./dev-logs/2026-04-09.md) | 修正焦点蓝框、收紧 Overview / Audio 信息结构，并补克制微动效 |
+| [./dev-logs/2026-04-10.md](./dev-logs/2026-04-10.md) | 拆分 SettingsView 大文件，降低设置页后续维护成本 |
+| [./dev-logs/2026-04-12.md](./dev-logs/2026-04-12.md) | 落地 GitHub Release 发布脚本、tag 自动发布 workflow 与签名 secrets 接入 |
+| [./dev-logs/2026-04-13.md](./dev-logs/2026-04-13.md) | 修复 keychain 自动探测并完成 GitHub Release 签名 secrets 的真实配置 |
 
 ## Pitfalls
 
@@ -96,4 +99,6 @@
 | [../MeetingCountdownAppTests/ReminderEngine/AGENTS.md](../MeetingCountdownAppTests/ReminderEngine/AGENTS.md) | 提醒引擎测试边界说明 |
 | [../MeetingCountdownAppTests/SourceCoordinator/AGENTS.md](../MeetingCountdownAppTests/SourceCoordinator/AGENTS.md) | 协调层测试边界说明 |
 | [../MeetingCountdownAppTests/SystemCalendarBridge/AGENTS.md](../MeetingCountdownAppTests/SystemCalendarBridge/AGENTS.md) | 系统日历桥接测试边界说明 |
+| [../.github/AGENTS.md](../.github/AGENTS.md) | GitHub 平台配置与 Release 自动化入口说明 |
+| [../.github/workflows/AGENTS.md](../.github/workflows/AGENTS.md) | GitHub Actions workflow 触发与 secrets 约定说明 |
 | [../scripts/AGENTS.md](../scripts/AGENTS.md) | 分发与导出脚本说明 |

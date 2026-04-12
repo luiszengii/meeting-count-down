@@ -61,7 +61,7 @@
 - 工程规格文件为 [project.yml](./project.yml)，用于生成并维护原生 Xcode 工程
 - App 源码根目录为 [MeetingCountdownApp](./MeetingCountdownApp)
 - 单元测试根目录为 [MeetingCountdownAppTests](./MeetingCountdownAppTests)
-- 当前开发阶段已经推进到 `Phase 6`：`Phase 0 ~ 5` 的 CalDAV-only、提醒引擎、设置偏好与运行策略主体已经落地；当前先聚焦无会员前提下的手动分发准备，包括 `Release` 构建、`.app` / `.zip` / `.dmg` 导出、首次打开放行说明和对外接入文档
+- 当前开发阶段已经推进到 `Phase 6`：`Phase 0 ~ 5` 的 CalDAV-only、提醒引擎、设置偏好与运行策略主体已经落地；当前先聚焦无会员前提下的手动分发准备，包括 `Release` 构建、`.app` / `.zip` / `.dmg` 导出、首次打开放行说明、GitHub Release 和 tag 驱动的自动分发工作流
 - `Developer ID` 签名、Apple notarization、DMG 和 Sparkle 自动更新暂时延后到未来预算允许时再恢复推进；当前目标是先让愿意手动放行 app 的测试用户能实际安装和使用
 - 当前文档路线已经切换为 CalDAV-only，后续代码实现也应继续向单一路线收敛
 - 本地提醒引擎已经接入运行时：会根据“下一场会议”建立单条活动提醒，并把提醒状态展示到菜单栏和设置页
@@ -85,7 +85,7 @@
 
 ## 手动分发
 
-当前版本面向小范围测试用户的手动分发说明见 [docs/manual-installation.md](./docs/manual-installation.md)。如果你是仓库维护者，可以执行 [scripts/export-release.sh](./scripts/export-release.sh) 生成默认 unsigned `Release` app 和 zip 包，或执行 [scripts/create-dmg.sh](./scripts/create-dmg.sh) 生成一个简易测试版 DMG；如果测试目标包含“另一台机器上的 Calendar / EventKit 权限”，请改用脚本里的 `--signing-identity` 导出带稳定签名身份的包，详见 [unsigned DMG 在另一台 Mac 上无法稳定承接 Calendar 权限](./docs/pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md)。
+当前版本面向小范围测试用户的手动分发说明见 [docs/manual-installation.md](./docs/manual-installation.md)。如果你是仓库维护者，可以执行 [scripts/export-release.sh](./scripts/export-release.sh) 生成默认 unsigned `Release` app 和 zip 包，执行 [scripts/create-dmg.sh](./scripts/create-dmg.sh) 生成一个简易测试版 DMG，或执行 [scripts/release-gh.sh](./scripts/release-gh.sh) 基于 `v1.2.3` 这类 tag 创建 / 更新 GitHub Release。仓库现在也提供了 tag 驱动的 GitHub Actions release workflow；如果测试目标包含“另一台机器上的 Calendar / EventKit 权限”，请优先使用带稳定签名身份的发布链路，详见 [unsigned DMG 在另一台 Mac 上无法稳定承接 Calendar 权限](./docs/pitfalls/unsigned-dmg-calendar-permission-on-other-mac.md)。
 
 ## 仓库说明
 

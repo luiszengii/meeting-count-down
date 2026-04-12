@@ -119,6 +119,22 @@ macOS 对未签名或未 notarize app 的拦截通常会比普通应用更严格
 - `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.zip`
 - `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.dmg`
 
+如果你希望把当前版本直接发布到 GitHub Release，并把本地生成的 `.zip` / `.dmg` 作为 release assets 上传，可以执行：
+
+```bash
+./scripts/release-gh.sh --tag v0.1.0 --signing-identity "Your Local Code Signing Identity"
+```
+
+仓库里的 GitHub Actions 也已经支持在推送 `v1.2.3` 这类 tag 时自动执行同样的 release 上传流程；它会要求仓库已配置签名相关 GitHub secrets，并默认校验 tag 版本与 `project.yml` 里的 `MARKETING_VERSION` 一致。
+
+如果你希望直接把当前本机已有的代码签名 identity 写成 GitHub Release workflow 所需的四个 secrets，可以执行：
+
+```bash
+./scripts/configure-release-secrets.sh --signing-identity "Your Local Code Signing Identity"
+```
+
+这个脚本会在本机导出 `.p12` 并调用 `gh secret set`；如果 macOS 弹出“允许导出私钥”的钥匙串授权框，需要在本机确认一次。
+
 如果只想先确认脚本入口是否正常，可以执行：
 
 ```bash

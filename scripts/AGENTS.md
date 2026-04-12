@@ -11,6 +11,8 @@
 ## 包含内容
 
 - 本地 `Release` 构建与导出脚本。
+- GitHub Release 创建与上传辅助脚本。
+- GitHub Release workflow 所需 secrets 的导出与写入辅助脚本。
 - 未来如果需要，也可以继续放不依赖付费签名链路的辅助脚本，例如清理构建产物、生成手动分发包、打印当前版本信息。
 
 ## 关键依赖
@@ -26,7 +28,7 @@
 
 ## 阅读入口
 
-先读 [export-release.sh](./export-release.sh)。如果后续这里新增更多脚本，优先看文件头注释和参数约定，再看具体实现。
+先读 [export-release.sh](./export-release.sh)、[release-gh.sh](./release-gh.sh) 和 [configure-release-secrets.sh](./configure-release-secrets.sh)。如果后续这里新增更多脚本，优先看文件头注释和参数约定，再看具体实现。
 
 ## 开发注意事项
 
