@@ -5,23 +5,10 @@ import SwiftUI
 /// 降低用户在一个大面板里反复来回扫描的成本。
 extension SettingsView {
     var remindersPage: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 22) {
-                remindersHeroPanel
-                    .frame(width: 330)
-
-                VStack(alignment: .leading, spacing: 18) {
-                    reminderPolicyPanel
-                    reminderEligibilityPanel
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            VStack(alignment: .leading, spacing: 18) {
-                remindersHeroPanel
-                reminderPolicyPanel
-                reminderEligibilityPanel
-            }
+        VStack(alignment: .leading, spacing: 18) {
+            remindersHeroPanel
+            reminderPolicyPanel
+            reminderEligibilityPanel
         }
     }
 

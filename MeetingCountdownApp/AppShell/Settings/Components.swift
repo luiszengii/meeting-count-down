@@ -21,30 +21,30 @@ extension SettingsView {
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
             }
-            .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
         }
         .animation(GlassMotion.page, value: "\(title)|\(value)|\(detail)")
     }
 
     /// 行式开关用来承接提醒和高级设置，避免每个开关都变成一张卡。
     func preferenceToggleRow(title: String, detail: String, isOn: Binding<Bool>) -> some View {
-        HStack(alignment: .center, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.system(size: 15, weight: .bold))
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 18) {
+                preferenceToggleText(title: title, detail: detail)
 
-                Text(detail)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 16)
+
+                preferenceToggleControl(isOn: isOn)
             }
 
-            Spacer()
+            VStack(alignment: .leading, spacing: 12) {
+                preferenceToggleText(title: title, detail: detail)
 
-            Toggle("", isOn: isOn)
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .disabled(isReminderPreferenceEditingDisabled)
+                HStack {
+                    Spacer()
+                    preferenceToggleControl(isOn: isOn)
+                }
+            }
         }
     }
 
@@ -115,17 +115,51 @@ extension SettingsView {
     }
 
     func infoRow(title: String, value: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 16) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 128, alignment: .leading)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 128, alignment: .leading)
 
-            Text(value)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.primary)
+                Text(value)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.secondary)
+
+                Text(value)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// 开关行的文字区单独抽出来，避免横排和竖排两套布局重复一份文案结构。
+    func preferenceToggleText(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 15, weight: .bold))
+
+            Text(detail)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// 开关本身保持统一样式，布局变化时只移动位置，不改交互和禁用规则。
+    func preferenceToggleControl(isOn: Binding<Bool>) -> some View {
+        Toggle("", isOn: isOn)
+            .toggleStyle(.switch)
+            .labelsHidden()
+            .disabled(isReminderPreferenceEditingDisabled)
     }
 
     func sectionEyebrow(_ text: String) -> some View {

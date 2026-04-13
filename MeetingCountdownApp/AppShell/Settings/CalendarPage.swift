@@ -5,90 +5,126 @@ import SwiftUI
 /// 避免用户在同一个区域里同时理解“怎么接入”和“现在选了什么”。
 extension SettingsView {
     var calendarPage: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 22) {
-                calendarSetupPanel
-                    .frame(width: 360)
+        VStack(alignment: .leading, spacing: 18) {
+            calendarSetupPanel
 
-                calendarSourcePanel
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            if !isCalendarConfigurationComplete || isCalendarConfigurationExpanded {
+                calendarStepsPanel
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            VStack(alignment: .leading, spacing: 18) {
-                calendarSetupPanel
-                calendarSourcePanel
-            }
+            calendarSourcePanel
         }
     }
 
     var calendarSetupPanel: some View {
         GlassPanel(cornerRadius: 30, padding: 20, overlayOpacity: 0.14) {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 pageIntro(
                     eyebrow: localized("日历接入", "CALENDAR"),
                     title: localized("连接飞书日历", "Connect Feishu Calendar"),
                     detail: calendarConfigurationSummaryLine
                 )
 
-                HStack(spacing: 10) {
-                    GlassBadge(
-                        text: isCalendarConfigurationComplete
-                            ? localized("已完成", "Complete")
-                            : localized("待处理", "Needs Setup"),
-                        color: isCalendarConfigurationComplete ? .green : .orange
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: 14) {
+                        calendarSetupStatusBlock
+                        Spacer(minLength: 12)
+                        calendarSetupActions
+                    }
+                    .frame(minWidth: 760, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        calendarSetupStatusBlock
+                        calendarSetupActions
+                    }
+                }
+            }
+        }
+    }
+
+    /// 接入总览只回答“现在接好了没有”，具体步骤单独放到下一张卡里。
+    var calendarSetupStatusBlock: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                GlassBadge(
+                    text: isCalendarConfigurationComplete
+                        ? localized("已完成", "Complete")
+                        : localized("待处理", "Needs Setup"),
+                    color: isCalendarConfigurationComplete ? .green : .orange
+                )
+
+                GlassBadge(
+                    text: localizedAuthorizationBadgeText(for: systemCalendarConnectionController.authorizationState),
+                    color: authorizationBadgeColor(for: systemCalendarConnectionController.authorizationState)
+                )
+            }
+
+            Text(localizedCalendarSelectionSummary)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// 接入摘要卡把维护动作放在一起，避免状态和步骤说明互相挤压。
+    var calendarSetupActions: some View {
+        HStack(spacing: 10) {
+            Button {
+                Task {
+                    await systemCalendarConnectionController.refreshState()
+                    await sourceCoordinator.refresh(trigger: .manualRefresh)
+                }
+            } label: {
+                Text(localized("重新检查", "Re-check"))
+            }
+            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+            .disabled(systemCalendarConnectionController.isLoadingState || systemCalendarConnectionController.isRequestingAccess)
+
+            if isCalendarConfigurationComplete {
+                Button {
+                    withAnimation(GlassMotion.page) {
+                        isCalendarConfigurationExpanded.toggle()
+                    }
+                } label: {
+                    Text(isCalendarConfigurationExpanded
+                        ? localized("收起接入步骤", "Hide Setup Steps")
+                        : localized("查看接入步骤", "Show Setup Steps"))
+                }
+                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+            }
+        }
+    }
+
+    var calendarStepsPanel: some View {
+        GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
+            VStack(alignment: .leading, spacing: 16) {
+                pageIntro(
+                    eyebrow: localized("接入步骤", "SETUP STEPS"),
+                    title: localized("按这四步检查连接", "Check the connection in four steps"),
+                    detail: localized("首次配置时照着做；日后排查也优先看这里。", "Use these steps for first-time setup and future troubleshooting.")
+                )
+
+                VStack(alignment: .leading, spacing: 12) {
+                    setupStepRow(
+                        title: localized("在飞书里生成 CalDAV 凭证", "Generate CalDAV credentials in Feishu"),
+                        detail: localized("复制用户名、专用密码和服务器地址。", "Copy the username, app password, and server address."),
+                        isComplete: true
                     )
-
-                    Spacer()
-
-                    Button {
-                        Task {
-                            await systemCalendarConnectionController.refreshState()
-                            await sourceCoordinator.refresh(trigger: .manualRefresh)
-                        }
-                    } label: {
-                        Text(localized("重新检查", "Re-check"))
-                    }
-                    .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                    .disabled(systemCalendarConnectionController.isLoadingState || systemCalendarConnectionController.isRequestingAccess)
-                }
-
-                if !isCalendarConfigurationComplete || isCalendarConfigurationExpanded {
-                    VStack(alignment: .leading, spacing: 12) {
-                        setupStepRow(
-                            title: localized("在飞书里生成 CalDAV 凭证", "Generate CalDAV credentials in Feishu"),
-                            detail: localized("复制用户名、专用密码和服务器地址。", "Copy the username, app password, and server address."),
-                            isComplete: true
-                        )
-                        setupStepRow(
-                            title: localized("在 macOS 日历里添加“其他 CalDAV 账户”", "Add an Other CalDAV Account in macOS Calendar"),
-                            detail: localized("选择“手动”，再粘贴刚才的凭证。", "Choose manual setup, then paste the credentials."),
-                            isComplete: hasAddedCalDAVAccount
-                        )
-                        setupStepRow(
-                            title: localized("授予本应用日历访问权限", "Grant this app calendar access"),
-                            detail: localizedAuthorizationSummary(for: systemCalendarConnectionController.authorizationState),
-                            isComplete: systemCalendarConnectionController.authorizationState == .authorized
-                        )
-                        setupStepRow(
-                            title: localized("选择需要参与提醒的日历", "Select the calendars that should count"),
-                            detail: localizedCalendarSelectionSummary,
-                            isComplete: systemCalendarConnectionController.hasSelectedCalendars
-                        )
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                if isCalendarConfigurationComplete {
-                    Button {
-                        withAnimation(GlassMotion.page) {
-                            isCalendarConfigurationExpanded.toggle()
-                        }
-                    } label: {
-                        Text(isCalendarConfigurationExpanded
-                            ? localized("收起接入步骤", "Hide Setup Steps")
-                            : localized("查看接入步骤", "Show Setup Steps"))
-                    }
-                    .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+                    setupStepRow(
+                        title: localized("在 macOS 日历里添加“其他 CalDAV 账户”", "Add an Other CalDAV Account in macOS Calendar"),
+                        detail: localized("选择“手动”，再粘贴刚才的凭证。", "Choose manual setup, then paste the credentials."),
+                        isComplete: hasAddedCalDAVAccount
+                    )
+                    setupStepRow(
+                        title: localized("授予本应用日历访问权限", "Grant this app calendar access"),
+                        detail: localizedAuthorizationSummary(for: systemCalendarConnectionController.authorizationState),
+                        isComplete: systemCalendarConnectionController.authorizationState == .authorized
+                    )
+                    setupStepRow(
+                        title: localized("选择需要参与提醒的日历", "Select the calendars that should count"),
+                        detail: localizedCalendarSelectionSummary,
+                        isComplete: systemCalendarConnectionController.hasSelectedCalendars
+                    )
                 }
             }
         }
@@ -134,7 +170,7 @@ extension SettingsView {
                             )
                         )
                     } else {
-                        LazyVGrid(columns: responsiveCardColumns(minimum: 260), spacing: 14) {
+                        LazyVGrid(columns: responsiveCardColumns(minimum: 320, maximum: 420), spacing: 14) {
                             ForEach(systemCalendarConnectionController.availableCalendars) { calendar in
                                 calendarRow(for: calendar)
                             }

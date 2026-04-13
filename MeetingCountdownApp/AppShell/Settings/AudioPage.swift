@@ -5,22 +5,9 @@ import SwiftUI
 /// 但通过拆到单独文件，避免音频相关逻辑继续淹没其他 tab。
 extension SettingsView {
     var audioPage: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 22) {
-                    audioHeroPanel
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    countdownOverrideSection
-                        .frame(width: 320)
-                }
-
-                VStack(alignment: .leading, spacing: 18) {
-                    audioHeroPanel
-                    countdownOverrideSection
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 18) {
+            audioHeroPanel
+            countdownOverrideSection
             soundLibraryPanel
         }
     }
@@ -55,6 +42,7 @@ extension SettingsView {
                         .buttonStyle(GlassPillButtonStyle(tone: .primary))
                         .disabled(isSoundProfileEditingDisabled)
                     }
+                    .frame(minWidth: 780, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: 14) {
                         pageIntro(

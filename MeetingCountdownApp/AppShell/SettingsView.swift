@@ -26,14 +26,14 @@ struct SettingsView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 24) {
                     header
                     tabBar
                     tabContent
                 }
-                .frame(maxWidth: 1_180, alignment: .leading)
-                .padding(.horizontal, 28)
-                .padding(.vertical, 26)
+                .frame(maxWidth: 1_040, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 22)
                 .frame(maxWidth: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

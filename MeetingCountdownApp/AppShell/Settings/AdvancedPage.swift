@@ -4,37 +4,41 @@ import SwiftUI
 /// 这里承接语言、同步和诊断等低频维护项，使它们不再和高频设置混在一起。
 extension SettingsView {
     var advancedPage: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 22) {
-                    languagePanel
-                        .frame(width: 260)
-
-                    syncPanel
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                VStack(alignment: .leading, spacing: 18) {
-                    languagePanel
-                    syncPanel
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 18) {
+            languagePanel
+            syncPanel
             diagnosticsPanel
         }
     }
 
     var languagePanel: some View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
-            VStack(alignment: .leading, spacing: 16) {
-                pageIntro(
-                    eyebrow: localized("语言", "LANGUAGE"),
-                    title: localized("界面语言", "Language"),
-                    detail: localized("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
-                )
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 16) {
+                    pageIntro(
+                        eyebrow: localized("语言", "LANGUAGE"),
+                        title: localized("界面语言", "Language"),
+                        detail: localized("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
+                    )
 
-                GlassSegmentedTabs(selection: interfaceLanguageBinding) { language in
-                    language.optionLabel
+                    Spacer(minLength: 12)
+
+                    GlassSegmentedTabs(selection: interfaceLanguageBinding) { language in
+                        language.optionLabel
+                    }
+                }
+                .frame(minWidth: 760, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    pageIntro(
+                        eyebrow: localized("语言", "LANGUAGE"),
+                        title: localized("界面语言", "Language"),
+                        detail: localized("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
+                    )
+
+                    GlassSegmentedTabs(selection: interfaceLanguageBinding) { language in
+                        language.optionLabel
+                    }
                 }
             }
         }
@@ -85,46 +89,28 @@ extension SettingsView {
     var diagnosticsPanel: some View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .top, spacing: 16) {
-                    pageIntro(
-                        eyebrow: localized("诊断", "DIAGNOSTICS"),
-                        title: localized("诊断信息", "Diagnostics"),
-                        detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
-                    )
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 16) {
+                        pageIntro(
+                            eyebrow: localized("诊断", "DIAGNOSTICS"),
+                            title: localized("诊断信息", "Diagnostics"),
+                            detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
+                        )
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
 
-                    VStack(alignment: .trailing, spacing: 8) {
-                        HStack(spacing: 10) {
-                            Button {
-                                Task {
-                                    await sourceCoordinator.refresh(trigger: .manualRefresh)
-                                }
-                            } label: {
-                                Text(localized("立即刷新", "Refresh Now"))
-                            }
-                            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                            .disabled(sourceCoordinator.state.isRefreshing)
+                        diagnosticsActions
+                    }
+                    .frame(minWidth: 780, alignment: .leading)
 
-                            Button {
-                                copyCalendarConnectionDiagnosticReport()
-                                didCopyCalendarDiagnostics = true
+                    VStack(alignment: .leading, spacing: 14) {
+                        pageIntro(
+                            eyebrow: localized("诊断", "DIAGNOSTICS"),
+                            title: localized("诊断信息", "Diagnostics"),
+                            detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
+                        )
 
-                                Task { @MainActor in
-                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                    didCopyCalendarDiagnostics = false
-                                }
-                            } label: {
-                                Text(localized("复制诊断信息", "Copy Diagnostics"))
-                            }
-                            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                        }
-
-                        if didCopyCalendarDiagnostics {
-                            Text(localized("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
+                        diagnosticsActions
                     }
                 }
 
@@ -145,6 +131,42 @@ extension SettingsView {
                 if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
                     warningStrip(lastErrorMessage)
                 }
+            }
+        }
+    }
+
+    /// 诊断动作在宽窄布局里都复用同一组按钮和复制反馈，避免两套逻辑漂移。
+    var diagnosticsActions: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            HStack(spacing: 10) {
+                Button {
+                    Task {
+                        await sourceCoordinator.refresh(trigger: .manualRefresh)
+                    }
+                } label: {
+                    Text(localized("立即刷新", "Refresh Now"))
+                }
+                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+                .disabled(sourceCoordinator.state.isRefreshing)
+
+                Button {
+                    copyCalendarConnectionDiagnosticReport()
+                    didCopyCalendarDiagnostics = true
+
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        didCopyCalendarDiagnostics = false
+                    }
+                } label: {
+                    Text(localized("复制诊断信息", "Copy Diagnostics"))
+                }
+                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+            }
+
+            if didCopyCalendarDiagnostics {
+                Text(localized("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
         }
     }

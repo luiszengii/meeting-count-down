@@ -124,6 +124,87 @@ extension SettingsView {
         )
     }
 
+    /// 概览页头部不再强调“这是设置页”，而是强调“系统当前处于什么状态”。
+    var localizedOverviewPageTitle: String {
+        localized("会议提醒概览", "Meeting Reminder Overview")
+    }
+
+    var localizedOverviewPageSubtitle: String {
+        localized(
+            "管理日历连接、提醒状态、音频播放与同步健康度。",
+            "Manage calendar connection, reminder status, audio playback, and sync health."
+        )
+    }
+
+    /// 头部第一枚 badge 优先表达“系统整体是否可用”。
+    var localizedOverviewHealthBadgeText: String {
+        if sourceCoordinator.state.isRefreshing {
+            return localized("正在同步", "Syncing")
+        }
+
+        switch sourceCoordinator.state.healthState {
+        case .ready:
+            return localized("运行正常", "Running Normally")
+        case .warning:
+            return localized("需要留意", "Needs Attention")
+        case .failed:
+            return localized("读取失败", "Read Failed")
+        case .unconfigured:
+            return localized("等待完成设置", "Setup Needed")
+        }
+    }
+
+    var overviewHealthBadgeColor: Color {
+        if sourceCoordinator.state.isRefreshing {
+            return .blue
+        }
+
+        switch sourceCoordinator.state.healthState {
+        case .ready:
+            return .green
+        case .warning, .unconfigured:
+            return .orange
+        case .failed:
+            return .red
+        }
+    }
+
+    var localizedOverviewConnectionBadgeText: String {
+        hasAddedCalDAVAccount
+            ? localized("CalDAV 已连接", "CalDAV Connected")
+            : localized("等待连接 CalDAV", "Connect CalDAV")
+    }
+
+    var localizedOverviewAuthorizationBadgeText: String {
+        switch systemCalendarConnectionController.authorizationState {
+        case .authorized:
+            return localized("已授权访问日历", "Calendar Access Granted")
+        case .notDetermined:
+            return localized("等待授权访问日历", "Calendar Access Needed")
+        case .denied:
+            return localized("日历访问被拒绝", "Calendar Access Denied")
+        case .restricted:
+            return localized("日历访问受限", "Calendar Access Restricted")
+        case .writeOnly:
+            return localized("当前只有写入权限", "Write-only Calendar Access")
+        case .unknown:
+            return localized("日历权限状态未知", "Calendar Access Unknown")
+        }
+    }
+
+    var localizedOverviewSyncBadgeText: String {
+        if sourceCoordinator.state.isRefreshing {
+            return localized("正在同步本地日历", "Syncing Local Calendar")
+        }
+
+        guard let lastRefreshAt = sourceCoordinator.state.lastRefreshAt else {
+            return localized("尚未同步成功", "No Successful Sync Yet")
+        }
+
+        let elapsedDescription = localizedElapsedDescription(Date().timeIntervalSince(lastRefreshAt))
+        return localized("\(elapsedDescription)前同步成功", "Synced \(elapsedDescription) ago")
+    }
+
     var selectedCalendarDetailLine: String {
         if systemCalendarConnectionController.hasSelectedCalendars {
             return localized("这些日历会参与提醒。", "These calendars are used for reminders.")
@@ -233,12 +314,10 @@ extension SettingsView {
 
         let elapsed = Date().timeIntervalSince(lastRefreshAt)
         let elapsedDescription = localizedElapsedDescription(elapsed)
-
-        if elapsed <= 10 * 60 {
-            return localized("\(elapsedDescription)前更新过。", "Updated \(elapsedDescription) ago.")
-        }
-
-        return localized("上次更新是 \(elapsedDescription) 前。", "Last updated \(elapsedDescription) ago.")
+        return localized(
+            "最近一次同步成功于 \(localizedLastRefreshLine)（\(elapsedDescription)前）。",
+            "The last successful sync finished at \(localizedLastRefreshLine) (\(elapsedDescription) ago)."
+        )
     }
 
     var localizedSyncFreshnessBadgeText: String {
@@ -259,67 +338,83 @@ extension SettingsView {
     var localizedHealthStateSummary: String {
         switch sourceCoordinator.state.healthState {
         case .unconfigured:
-            return localized("还没完成日历设置。", "Calendar setup is incomplete.")
+            return localized("还需要完成日历连接后才能开始提醒。", "Complete calendar setup before reminders can run.")
         case .ready:
-            return localized("一切正常，正在等待下一场会议。", "Everything looks good. Waiting for the next meeting.")
+            if sourceCoordinator.state.nextMeeting != nil {
+                return localized("当前无异常，下一场会议将按计划提醒。", "Everything is healthy. The next meeting will be reminded as planned.")
+            }
+
+            return localized("当前无异常，正在等待新的会议。", "Everything is healthy. Waiting for the next meeting.")
         case .warning:
-            return localized("还能继续使用，但同步需要留意。", "Still usable, but sync needs attention.")
+            return localized("当前还能继续使用，但同步状态需要留意。", "The app is still usable, but sync needs attention.")
         case .failed:
             return sourceCoordinator.state.lastErrorMessage
-                ?? localized("现在读不到会议。", "Can't read meetings right now.")
+                ?? localized("当前无法读取会议。", "The app can't read meetings right now.")
         }
     }
 
     var localizedReminderStateSummary: String {
         switch reminderEngine.state {
         case .idle:
-            return localized("暂无提醒", "No active reminder")
-        case let .scheduled(context):
-            return localized("《\(context.meeting.title)》已安排提醒", "Reminder set for “\(context.meeting.title)”")
+            return localized("当前没有待触发的提醒", "No reminder is waiting to trigger")
+        case .scheduled:
+            return localized("下一次提醒已安排", "The next reminder is scheduled")
         case let .playing(context, _):
             if context.triggeredImmediately {
-                return localized("《\(context.meeting.title)》已开始倒计时", "Countdown started for “\(context.meeting.title)”")
+                return localized("提醒已立即开始执行", "The reminder started immediately")
             }
 
-            return localized("《\(context.meeting.title)》倒计时中", "Countdown running for “\(context.meeting.title)”")
-        case let .triggeredSilently(context, _, reason):
+            return localized("提醒正在执行倒计时", "The reminder countdown is running")
+        case let .triggeredSilently(_, _, reason):
             switch reason {
             case .userMuted:
-                return localized("《\(context.meeting.title)》已静默提醒", "“\(context.meeting.title)” was triggered silently")
+                return localized("提醒已触发，但当前为静音模式", "The reminder was triggered, but mute mode is on")
             case .outputRoutePolicy:
-                return localized("《\(context.meeting.title)》未播放声音", "“\(context.meeting.title)” stayed silent")
+                return localized("提醒已触发，但当前不会播放声音", "The reminder was triggered, but sound playback is blocked")
             }
         case .disabled:
-            return localized("提醒已关闭", "Reminders are off")
+            return localized("本地提醒已关闭", "Local reminders are turned off")
         case .failed:
-            return localized("提醒异常", "Reminder error")
+            return localized("提醒当前不可用", "Reminders are currently unavailable")
         }
     }
 
     var localizedReminderStateDetailLine: String {
         switch reminderEngine.state {
         case .idle:
-            return localized("当前没有需要执行的提醒。", "There is no reminder to run right now.")
+            return localized("当前没有正在等待触发的提醒任务。", "There is no reminder waiting to trigger right now.")
         case let .scheduled(context):
-            return localized("\(Self.absoluteFormatter.string(from: context.triggerAt)) 触发，倒计时 \(context.countdownSeconds) 秒。", "Triggers at \(Self.absoluteFormatter.string(from: context.triggerAt)) with a \(context.countdownSeconds)-second countdown.")
+            return localizedScheduledReminderLine(for: context)
         case let .playing(context, startedAt):
             if context.triggeredImmediately {
-                return localized("已经来不及等待，所以在 \(Self.absoluteFormatter.string(from: startedAt)) 立即开始提醒。", "The meeting was too close, so the reminder started immediately at \(Self.absoluteFormatter.string(from: startedAt)).")
+                return localized(
+                    "距离会议已经太近，因此在 \(Self.absoluteFormatter.string(from: startedAt)) 立即开始提醒，倒计时持续 \(context.countdownSeconds) 秒。",
+                    "The meeting was too close, so the reminder started immediately at \(Self.absoluteFormatter.string(from: startedAt)) and will run for \(context.countdownSeconds) seconds."
+                )
             }
 
-            return localized("已在 \(Self.absoluteFormatter.string(from: startedAt)) 开始播放提醒。", "Reminder playback started at \(Self.absoluteFormatter.string(from: startedAt)).")
+            return localized(
+                "已在 \(Self.absoluteFormatter.string(from: startedAt)) 开始提醒，当前倒计时持续 \(context.countdownSeconds) 秒。",
+                "The reminder started at \(Self.absoluteFormatter.string(from: startedAt)) and the countdown lasts \(context.countdownSeconds) seconds."
+            )
         case let .triggeredSilently(_, triggeredAt, reason):
             switch reason {
             case .userMuted:
-                return localized("\(Self.absoluteFormatter.string(from: triggeredAt)) 已触发，但当前是静音模式。", "Triggered at \(Self.absoluteFormatter.string(from: triggeredAt)), but mute mode is on.")
+                return localized(
+                    "提醒已在 \(Self.absoluteFormatter.string(from: triggeredAt)) 触发，但当前是静音模式，因此不会播放声音。",
+                    "The reminder was triggered at \(Self.absoluteFormatter.string(from: triggeredAt)), but mute mode is on, so no sound will play."
+                )
             case .outputRoutePolicy(let routeName):
-                return localized("\(Self.absoluteFormatter.string(from: triggeredAt)) 已触发，但“\(routeName)”不会播放声音。", "Triggered at \(Self.absoluteFormatter.string(from: triggeredAt)), but “\(routeName)” won't play sound.")
+                return localized(
+                    "提醒已在 \(Self.absoluteFormatter.string(from: triggeredAt)) 触发，但当前输出“\(routeName)”不满足播放策略，因此不会播放声音。",
+                    "The reminder was triggered at \(Self.absoluteFormatter.string(from: triggeredAt)), but the current output “\(routeName)” doesn't satisfy the playback policy."
+                )
             }
         case .disabled:
-            return localized("提醒已关闭，不会创建新的提醒。", "Reminders are off, so no new reminder will be created.")
+            return localized("本地提醒已关闭，因此不会为下一场会议创建新的提醒。", "Local reminders are turned off, so the next meeting won't get a new reminder.")
         case .failed:
             return sourceCoordinator.state.lastErrorMessage
-                ?? localized("提醒现在不可用。", "Reminders aren't working right now.")
+                ?? localized("提醒当前不可用，可能无法按计划触发。", "Reminders are unavailable right now, so they may not trigger as planned.")
         }
     }
 
@@ -475,6 +570,378 @@ extension SettingsView {
     func localizedJoinActionTitle(for meeting: MeetingRecord) -> String {
         localized(meeting.hasVideoConferenceLink ? "加入会议" : "打开事件", meeting.hasVideoConferenceLink ? "Join Video" : "Open Event")
     }
+
+    /// 当前倒计时秒数会同时影响 Overview 展示、提醒页文案和音频页说明。
+    var effectiveCountdownSeconds: Int {
+        if let overrideSeconds = reminderPreferencesController.reminderPreferences.countdownOverrideSeconds, overrideSeconds > 0 {
+            return overrideSeconds
+        }
+
+        if let selectedSoundProfile = soundProfileLibraryController.selectedSoundProfile {
+            return max(1, Int(ceil(selectedSoundProfile.duration)))
+        }
+
+        return 1
+    }
+
+    var effectiveCountdownDurationLine: String {
+        localizedDurationLine(for: TimeInterval(effectiveCountdownSeconds))
+    }
+
+    /// Overview 里需要把当前提醒上下文抽出来判断是不是已经为下一场会议建好提醒。
+    var currentScheduledReminderContext: ScheduledReminderContext? {
+        switch reminderEngine.state {
+        case let .scheduled(context),
+             let .playing(context, _),
+             let .triggeredSilently(context, _, _):
+            return context
+        case .idle, .disabled, .failed:
+            return nil
+        }
+    }
+
+    func isReminderContext(_ context: ScheduledReminderContext, for meeting: MeetingRecord) -> Bool {
+        context.meeting.id == meeting.id && context.meeting.startAt == meeting.startAt
+    }
+
+    /// Overview 主卡把开始时间表达成“今天 / 明天 / 日期 + 时间”的组合，更贴近用户视角。
+    func localizedMeetingScheduleLine(for meeting: MeetingRecord) -> String {
+        localizedDateHeadline(for: meeting.startAt)
+    }
+
+    func localizedDateHeadline(for date: Date) -> String {
+        let timeLine = Self.absoluteFormatter.string(from: date)
+        let calendar = Calendar.current
+
+        if calendar.isDateInToday(date) {
+            return localized("今天 \(timeLine)", "Today \(timeLine)")
+        }
+
+        if calendar.isDateInTomorrow(date) {
+            return localized("明天 \(timeLine)", "Tomorrow \(timeLine)")
+        }
+
+        if calendar.isDateInYesterday(date) {
+            return localized("昨天 \(timeLine)", "Yesterday \(timeLine)")
+        }
+
+        let month = calendar.component(.month, from: date)
+        let day = calendar.component(.day, from: date)
+
+        if uiLanguage == .english {
+            return "\(Self.englishMonthSymbols[max(0, min(11, month - 1))]) \(day), \(timeLine)"
+        }
+
+        let currentYear = calendar.component(.year, from: Date())
+        let year = calendar.component(.year, from: date)
+
+        if year == currentYear {
+            return "\(month)月\(day)日 \(timeLine)"
+        }
+
+        return "\(year)年\(month)月\(day)日 \(timeLine)"
+    }
+
+    func localizedMeetingCountdownHeadline(for meeting: MeetingRecord) -> String {
+        let interval = max(0, meeting.startAt.timeIntervalSinceNow)
+
+        guard interval >= 60 else {
+            return localized("距离开始不到 1 分钟", "Starts in less than 1 minute")
+        }
+
+        return localized(
+            "距离开始还有 \(localizedFutureDurationDescription(interval))",
+            "Starts in \(localizedFutureDurationDescription(interval))"
+        )
+    }
+
+    func localizedScheduledReminderLine(for context: ScheduledReminderContext) -> String {
+        let leadTime = localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt)
+
+        if context.triggeredImmediately {
+            return localized(
+                "距离会议已经太近，因此会立即开始提醒，倒计时持续 \(context.countdownSeconds) 秒。",
+                "The meeting is too close, so the reminder starts immediately and the countdown lasts \(context.countdownSeconds) seconds."
+            )
+        }
+
+        return localized(
+            "将在会议开始前 \(leadTime) 触发提醒，倒计时持续 \(context.countdownSeconds) 秒。",
+            "The reminder will trigger \(leadTime) before the meeting and the countdown lasts \(context.countdownSeconds) seconds."
+        )
+    }
+
+    func localizedLeadTimeDescription(triggerAt: Date, meetingStartAt: Date) -> String {
+        localizedDurationLine(for: max(1, meetingStartAt.timeIntervalSince(triggerAt)))
+    }
+
+    func localizedFutureDurationDescription(_ interval: TimeInterval) -> String {
+        let totalMinutes = max(1, Int(ceil(interval / 60)))
+
+        if uiLanguage == .english {
+            guard totalMinutes >= 60 else {
+                return totalMinutes == 1 ? "1 minute" : "\(totalMinutes) minutes"
+            }
+
+            let hours = totalMinutes / 60
+            let minutes = totalMinutes % 60
+
+            if minutes == 0 {
+                return hours == 1 ? "1 hour" : "\(hours) hours"
+            }
+
+            return "\(hours) hours \(minutes) minutes"
+        }
+
+        guard totalMinutes >= 60 else {
+            return "\(totalMinutes) 分钟"
+        }
+
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        if minutes == 0 {
+            return "\(hours) 小时"
+        }
+
+        return "\(hours) 小时 \(minutes) 分钟"
+    }
+
+    var localizedOverviewReminderStatusTitle: String {
+        reminderPreferencesController.reminderPreferences.globalReminderEnabled
+            ? localized("已开启", "Enabled")
+            : localized("已关闭", "Disabled")
+    }
+
+    var localizedOverviewTriggerModeTitle: String {
+        guard reminderPreferencesController.reminderPreferences.globalReminderEnabled else {
+            return localized("当前不会触发提醒", "No reminder will be triggered")
+        }
+
+        if let context = currentScheduledReminderContext {
+            if context.triggeredImmediately {
+                return localized("已立即开始提醒", "Triggered immediately")
+            }
+
+            return localized(
+                "会前 \(localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt))",
+                "\(localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt)) before start"
+            )
+        }
+
+        return localized("会前 \(effectiveCountdownDurationLine)", "\(effectiveCountdownDurationLine) before start")
+    }
+
+    var localizedOverviewSyncResultTitle: String {
+        switch syncFreshnessStatus {
+        case .passed:
+            return localized("成功", "Successful")
+        case .warning:
+            return localized("需要留意", "Needs Attention")
+        case .failed:
+            return localized("失败", "Failed")
+        case .pending:
+            return localized("同步中", "Syncing")
+        case .idle:
+            return localized("尚未同步", "Not Synced Yet")
+        }
+    }
+
+    var localizedOverviewAudioStatusTitle: String {
+        if !reminderPreferencesController.reminderPreferences.globalReminderEnabled {
+            return localized("不会播放", "Playback Off")
+        }
+
+        if reminderPreferencesController.reminderPreferences.isMuted {
+            return localized("静音模式", "Muted")
+        }
+
+        if reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected {
+            return localized("仅耳机播放", "Headphones Only")
+        }
+
+        return localized("正常播放", "Audible")
+    }
+
+    var localizedOverviewAudioStatusDetail: String {
+        if !reminderPreferencesController.reminderPreferences.globalReminderEnabled {
+            return localized("本地提醒关闭后，不会播放提醒音频。", "Reminder audio won't play while local reminders are turned off.")
+        }
+
+        if reminderPreferencesController.reminderPreferences.isMuted {
+            return localized("提醒触发后仍会静默执行，不会播放声音。", "Reminders will still trigger silently, but no sound will play.")
+        }
+
+        if reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected {
+            return localized("当前只会在耳机或私密输出设备上播放提醒音频。", "Reminder audio will play only on headphones or other private listening outputs.")
+        }
+
+        return localized("当前未处于静音或播放策略拦截状态。", "The app isn't currently blocked by mute mode or playback policy.")
+    }
+
+    var localizedOverviewPermissionStatusTitle: String {
+        switch systemCalendarConnectionController.authorizationState {
+        case .authorized:
+            return localized("已授权", "Granted")
+        case .notDetermined:
+            return localized("等待授权", "Needs Access")
+        case .denied:
+            return localized("已拒绝", "Denied")
+        case .restricted:
+            return localized("受限", "Restricted")
+        case .writeOnly:
+            return localized("仅写入", "Write-only")
+        case .unknown:
+            return localized("未知", "Unknown")
+        }
+    }
+
+    var localizedOverviewPermissionDetail: String {
+        switch systemCalendarConnectionController.authorizationState {
+        case .authorized:
+            return localized("应用可以正常读取日历事件。", "The app can read calendar events normally.")
+        case .notDetermined:
+            return localized("完成授权后，应用才能读取并提醒会议。", "The app needs calendar access before it can read and remind meetings.")
+        case .denied:
+            return localized("请先在系统设置中允许访问日历。", "Allow calendar access in System Settings first.")
+        case .restricted:
+            return localized("当前设备限制了日历访问权限。", "Calendar access is currently restricted by the device.")
+        case .writeOnly:
+            return localized("当前只有写入权限，无法读取已有会议。", "The app only has write access, so it can't read existing meetings.")
+        case .unknown:
+            return localized("当前还无法确认日历权限状态。", "The app can't confirm the calendar permission state right now.")
+        }
+    }
+
+    var localizedOverviewActiveCalendarsTitle: String {
+        let count = systemCalendarConnectionController.selectedCalendarIDs.count
+
+        if count == 0 {
+            return localized("尚未选择日历", "No Calendars Selected")
+        }
+
+        return localized("已选择 \(count) 个日历", "\(count) Calendar(s) Selected")
+    }
+
+    var localizedSelectedCalendarNamesDetail: String {
+        let selectedNames = selectedCalendarDisplayNames
+
+        guard !selectedNames.isEmpty else {
+            return localized("当前还没有日历参与提醒。", "No calendars are currently participating in reminders.")
+        }
+
+        return localized(
+            "当前参与提醒的日历：\(selectedNames.joined(separator: "、"))",
+            "Calendars currently used for reminders: \(selectedNames.joined(separator: ", "))"
+        )
+    }
+
+    var selectedCalendarDisplayNames: [String] {
+        let selectedIDs = systemCalendarConnectionController.selectedCalendarIDs
+        let names = systemCalendarConnectionController.availableCalendars
+            .filter { selectedIDs.contains($0.id) }
+            .map(\.title)
+
+        if !names.isEmpty {
+            return Array(names.prefix(3))
+        }
+
+        if selectedIDs.isEmpty {
+            return []
+        }
+
+        return [localized("\(selectedIDs.count) 个已保存日历", "\(selectedIDs.count) saved calendar(s)")]
+    }
+
+    var localizedOverviewAppStatusTitle: String {
+        switch sourceCoordinator.state.healthState {
+        case .ready:
+            return sourceCoordinator.state.nextMeeting == nil
+                ? localized("等待新的会议", "Waiting for Meetings")
+                : localized("等待下一场会议", "Waiting for the Next Meeting")
+        case .unconfigured:
+            return localized("等待完成设置", "Setup Needed")
+        case .warning:
+            return localized("同步需要留意", "Sync Needs Attention")
+        case .failed:
+            return localized("需要修复读取问题", "Read Issue Detected")
+        }
+    }
+
+    var localizedOverviewAppStatusDetail: String {
+        switch sourceCoordinator.state.healthState {
+        case .ready:
+            return localized("所有关键检查均已通过。", "All key checks are currently passing.")
+        case .unconfigured:
+            return localized("完成日历连接和授权后，系统才会开始提醒。", "The app will start reminding only after calendar setup and permission are complete.")
+        case .warning:
+            return localized("提醒链路还能继续使用，但建议尽快检查同步。", "Reminders can still run, but it's a good idea to inspect sync soon.")
+        case .failed:
+            return sourceCoordinator.state.lastErrorMessage
+                ?? localized("当前无法确认下一场会议。", "The app can't confirm the next meeting right now.")
+        }
+    }
+
+    var localizedOverviewIssueTitle: String {
+        if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
+            return lastErrorMessage
+        }
+
+        if case .failed = reminderEngine.state {
+            return localized("提醒当前不可用", "Reminders are unavailable")
+        }
+
+        switch systemCalendarConnectionController.authorizationState {
+        case .denied:
+            return localized("当前无法读取日历权限", "Calendar access is currently denied")
+        case .restricted:
+            return localized("当前设备限制了日历访问", "Calendar access is restricted")
+        default:
+            break
+        }
+
+        switch syncFreshnessStatus {
+        case .failed:
+            return localized("最近一次同步没有成功完成", "The latest sync did not finish successfully")
+        case .warning:
+            return localized("最近一次同步有些偏旧", "The latest sync looks a little stale")
+        case .idle, .pending, .passed:
+            break
+        }
+
+        return localized("当前无异常", "No Issues Right Now")
+    }
+
+    var localizedOverviewIssueDetail: String {
+        if sourceCoordinator.state.lastErrorMessage != nil {
+            return localized("建议先去“高级”查看诊断信息，再决定下一步处理方式。", "Open Advanced and inspect diagnostics before deciding what to do next.")
+        }
+
+        if case .failed = reminderEngine.state {
+            return localized("建议先去“提醒”页检查开关和倒计时设置，再到“高级”查看诊断信息。", "Check reminder settings first, then inspect diagnostics in Advanced.")
+        }
+
+        switch systemCalendarConnectionController.authorizationState {
+        case .denied, .restricted, .writeOnly:
+            return localized("先修复日历权限后，会议读取和提醒才能恢复正常。", "Repair calendar access first so meeting reading and reminders can return to normal.")
+        default:
+            break
+        }
+
+        switch syncFreshnessStatus {
+        case .failed, .warning:
+            return localized("可以先立即同步一次；如果问题持续，再去“高级”查看诊断信息。", "Try syncing again first. If the issue continues, inspect diagnostics in Advanced.")
+        case .idle, .pending, .passed:
+            break
+        }
+
+        return localized("如果后续出现权限、同步或音频问题，这里会优先展示修复入口。", "If permission, sync, or audio issues appear later, this area will show the fastest recovery path first.")
+    }
+
+    private static let englishMonthSymbols = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ]
 
     func responsiveCardColumns(minimum: CGFloat, maximum: CGFloat = 360) -> [GridItem] {
         [
