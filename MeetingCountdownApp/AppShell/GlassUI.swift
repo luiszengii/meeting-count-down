@@ -388,8 +388,12 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
                     }
                 } label: {
                     Text(title(item))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(selection.wrappedValue == item ? Color.primary : Color.secondary)
+                        .font(.system(size: 12, weight: selection.wrappedValue == item ? .bold : .semibold))
+                        .foregroundStyle(
+                            selection.wrappedValue == item
+                                ? Color.primary.opacity(0.96)
+                                : Color.secondary.opacity(0.9)
+                        )
                         .padding(.horizontal, 15)
                         .padding(.vertical, 8)
                         .background {
@@ -402,11 +406,12 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
 
                                 if selection.wrappedValue == item {
                                     Capsule(style: .continuous)
-                                        .fill(Color.white.opacity(0.72))
+                                        .fill(Color.white.opacity(0.82))
                                         .overlay(
                                             Capsule(style: .continuous)
-                                                .strokeBorder(Color.white.opacity(0.38), lineWidth: 1)
+                                                .strokeBorder(Color.white.opacity(0.5), lineWidth: 1)
                                         )
+                                        .shadow(color: Color.black.opacity(0.08), radius: 8, y: 1)
                                         .matchedGeometryEffect(
                                             id: "glass-segmented-selection",
                                             in: selectionBackgroundNamespace

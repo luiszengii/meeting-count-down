@@ -23,6 +23,8 @@ final class SystemCalendarConnectionController: ObservableObject {
     @Published private(set) var isLoadingState: Bool
     /// 当前是否正在等待系统权限框返回。
     @Published private(set) var isRequestingAccess: Bool
+    /// 当前日历勾选结果的自动保存反馈状态。
+    @Published private(set) var selectionPersistenceState: CalendarSelectionPersistenceState
     /// 最近一次状态刷新时间。
     @Published private(set) var lastLoadedAt: Date?
     /// 最近一次可读错误。
@@ -42,6 +44,8 @@ final class SystemCalendarConnectionController: ObservableObject {
     private let onCalendarConfigurationChanged: @MainActor @Sendable (RefreshTrigger) async -> Void
     /// `EKEventStoreChanged` 监听 token。
     private var eventStoreChangedObserver: NSObjectProtocol?
+    /// “已保存”提示需要自动消失，因此控制器自己持有一个可取消任务。
+    private var selectionPersistenceResetTask: Task<Void, Never>?
 
     init(
         calendarAccess: any SystemCalendarAccessing,
@@ -66,6 +70,7 @@ final class SystemCalendarConnectionController: ObservableObject {
         self.hasStoredSelection = false
         self.isLoadingState = false
         self.isRequestingAccess = false
+        self.selectionPersistenceState = .idle
         self.lastLoadedAt = nil
         self.lastErrorMessage = nil
 
@@ -94,6 +99,7 @@ final class SystemCalendarConnectionController: ObservableObject {
         guard authorizationState.allowsReading else {
             availableCalendars = []
             selectedCalendarIDs = []
+            selectionPersistenceState = .idle
             lastLoadedAt = dateProvider.now()
             logger.info("System calendar connection stopped at authorization state \(authorizationState.badgeText)")
             return
@@ -125,6 +131,7 @@ final class SystemCalendarConnectionController: ObservableObject {
 
         availableCalendars = calendars
         selectedCalendarIDs = storedSelectedIDs
+        selectionPersistenceState = .idle
         lastLoadedAt = dateProvider.now()
         logger.info(
             "System calendar connection state ready: available=\(calendars.count), stored=\(lastLoadedStoredCalendarIDs.count), unavailableStored=\(lastUnavailableStoredCalendarIDs.count), effectiveSelected=\(selectedCalendarIDs.count)"
@@ -164,13 +171,13 @@ final class SystemCalendarConnectionController: ObservableObject {
             updatedSelection.remove(calendarID)
         }
 
-        selectedCalendarIDs = updatedSelection
-        lastLoadedStoredCalendarIDs = updatedSelection
-        lastUnavailableStoredCalendarIDs = []
-        hasStoredSelection = true
-        try? await preferencesStore.saveSelectedSystemCalendarIDs(updatedSelection)
-        await onCalendarConfigurationChanged(.manualRefresh)
-        logger.info("Updated system calendar selection to \(updatedSelection.count) calendar(s)")
+        await persistCalendarSelection(updatedSelection)
+    }
+
+    /// 批量覆盖当前选中的系统日历集合。
+    /// “全选 / 清空”会直接走这里，和单项勾选共享同一套自动保存反馈与失败回滚规则。
+    func setSelectedCalendarIDs(_ calendarIDs: Set<String>) async {
+        await persistCalendarSelection(calendarIDs)
     }
 
     /// 当前是否已经至少选中一条系统日历。
@@ -200,5 +207,61 @@ final class SystemCalendarConnectionController: ObservableObject {
                 await self?.handleEventStoreChangedNotification()
             }
         }
+    }
+
+    /// 统一处理日历选择的乐观更新、持久化、成功提示和失败回滚。
+    private func persistCalendarSelection(_ updatedSelection: Set<String>) async {
+        let previousSelection = selectedCalendarIDs
+        let previousStoredSelection = lastLoadedStoredCalendarIDs
+        let previousUnavailableSelection = lastUnavailableStoredCalendarIDs
+        let previousHasStoredSelection = hasStoredSelection
+
+        guard updatedSelection != previousSelection
+            || previousStoredSelection != updatedSelection
+            || !previousHasStoredSelection else {
+            return
+        }
+
+        cancelSelectionPersistenceResetTask()
+        selectionPersistenceState = .saving
+        selectedCalendarIDs = updatedSelection
+        lastLoadedStoredCalendarIDs = updatedSelection
+        lastUnavailableStoredCalendarIDs = []
+        hasStoredSelection = true
+
+        do {
+            try await preferencesStore.saveSelectedSystemCalendarIDs(updatedSelection)
+            selectionPersistenceState = .saved
+            await onCalendarConfigurationChanged(.manualRefresh)
+            scheduleSelectionPersistenceReset()
+            logger.info("Updated system calendar selection to \(updatedSelection.count) calendar(s)")
+        } catch {
+            selectedCalendarIDs = previousSelection
+            lastLoadedStoredCalendarIDs = previousStoredSelection
+            lastUnavailableStoredCalendarIDs = previousUnavailableSelection
+            hasStoredSelection = previousHasStoredSelection
+            selectionPersistenceState = .failed(message: "未能更新日历选择，已恢复到上一次保存状态")
+            logger.error("Failed to persist system calendar selection: \(error.localizedDescription)")
+        }
+    }
+
+    /// “已保存”提示是短暂反馈，过一小段时间后回到空闲态即可。
+    private func scheduleSelectionPersistenceReset() {
+        selectionPersistenceResetTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+
+            guard let self, self.selectionPersistenceState == .saved else {
+                return
+            }
+
+            self.selectionPersistenceState = .idle
+            self.selectionPersistenceResetTask = nil
+        }
+    }
+
+    /// 新的保存动作开始前，要先取消前一个“自动清空提示”任务，避免旧任务把新状态抹掉。
+    private func cancelSelectionPersistenceResetTask() {
+        selectionPersistenceResetTask?.cancel()
+        selectionPersistenceResetTask = nil
     }
 }

@@ -55,6 +55,7 @@
 | [./dev-logs/2026-04-10.md](./dev-logs/2026-04-10.md) | 拆分 SettingsView 大文件，降低设置页后续维护成本 |
 | [./dev-logs/2026-04-12.md](./dev-logs/2026-04-12.md) | 落地 GitHub Release 发布脚本、tag 自动发布 workflow 与签名 secrets 接入 |
 | [./dev-logs/2026-04-13.md](./dev-logs/2026-04-13.md) | 修复 keychain 自动探测并完成 GitHub Release 签名 secrets 的真实配置 |
+| [./dev-logs/2026-04-14.md](./dev-logs/2026-04-14.md) | 收敛提醒 tab 的状态摘要、时间参数和音频页入口职责 |
 
 ## Pitfalls
 

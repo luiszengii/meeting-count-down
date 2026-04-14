@@ -113,6 +113,38 @@ final class SystemCalendarBridgeTests: XCTestCase {
         XCTAssertEqual(storedCalendarIDs, ["feishu", "personal"])
     }
 
+    /// 验证自动保存失败时，控制器会回滚到上一次成功保存的日历选择，
+    /// 避免 UI 停在一个看似已生效、实际上没有写入持久化层的假状态。
+    func testConnectionControllerRollsBackSelectionWhenPersistenceFails() async {
+        let preferencesStore = FailingSelectionPreferencesStore(
+            fallback: InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])
+        )
+        let access = StubSystemCalendarAccess(
+            authorizationState: .authorized,
+            calendars: [
+                calendar(id: "feishu", title: "飞书日历", suggested: true),
+                calendar(id: "personal", title: "个人", suggested: false)
+            ]
+        )
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: access,
+            preferencesStore: preferencesStore,
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+        await controller.setCalendarSelection(calendarID: "personal", isSelected: true)
+        let storedCalendarIDs = await preferencesStore.loadSelectedSystemCalendarIDs()
+
+        XCTAssertEqual(controller.selectedCalendarIDs, ["feishu"])
+        XCTAssertEqual(storedCalendarIDs, ["feishu"])
+        XCTAssertEqual(
+            controller.selectionPersistenceState,
+            .failed(message: "未能更新日历选择，已恢复到上一次保存状态")
+        )
+    }
+
     /// 验证系统日历数据源在未选择任何日历时，会保持未配置状态而不是误判成失败。
     func testSystemCalendarMeetingSourceReturnsUnconfiguredWithoutSelection() async {
         let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: [])
@@ -253,3 +285,60 @@ private struct FixedDateProvider: DateProviding {
         currentDate
     }
 }
+
+/// 这个测试 actor 会在保存日历选择时故意抛错，
+/// 让我们验证控制器的乐观更新和失败回滚是否保持一致。
+actor FailingSelectionPreferencesStore: PreferencesStore {
+    private let fallback: InMemoryPreferencesStore
+
+    init(fallback: InMemoryPreferencesStore) {
+        self.fallback = fallback
+    }
+
+    func loadReminderPreferences() async -> ReminderPreferences {
+        await fallback.loadReminderPreferences()
+    }
+
+    func saveReminderPreferences(_ reminderPreferences: ReminderPreferences) async throws {
+        try await fallback.saveReminderPreferences(reminderPreferences)
+    }
+
+    func loadSelectedSystemCalendarIDs() async -> Set<String> {
+        await fallback.loadSelectedSystemCalendarIDs()
+    }
+
+    func saveSelectedSystemCalendarIDs(_ identifiers: Set<String>) async throws {
+        throw PersistenceFailure()
+    }
+
+    func hasStoredSelectedSystemCalendarIDs() async -> Bool {
+        await fallback.hasStoredSelectedSystemCalendarIDs()
+    }
+
+    func loadLastSuccessfulRefreshAt() async -> Date? {
+        await fallback.loadLastSuccessfulRefreshAt()
+    }
+
+    func saveLastSuccessfulRefreshAt(_ date: Date?) async throws {
+        try await fallback.saveLastSuccessfulRefreshAt(date)
+    }
+
+    func loadSoundProfiles() async -> [SoundProfile] {
+        await fallback.loadSoundProfiles()
+    }
+
+    func saveSoundProfiles(_ soundProfiles: [SoundProfile]) async throws {
+        try await fallback.saveSoundProfiles(soundProfiles)
+    }
+
+    func loadSelectedSoundProfileID() async -> String? {
+        await fallback.loadSelectedSoundProfileID()
+    }
+
+    func saveSelectedSoundProfileID(_ soundProfileID: String?) async throws {
+        try await fallback.saveSelectedSoundProfileID(soundProfileID)
+    }
+}
+
+/// 用一个稳定的错误类型驱动失败分支，避免测试依赖系统错误文案。
+private struct PersistenceFailure: Error {}

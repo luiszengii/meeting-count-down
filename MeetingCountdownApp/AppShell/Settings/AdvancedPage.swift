@@ -47,21 +47,32 @@ extension SettingsView {
     var syncPanel: some View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 18) {
-                pageIntro(
-                    eyebrow: localized("同步与启动", "SYNC"),
-                    title: localized("同步和开机启动", "Sync and Launch"),
-                    detail: localizedSyncFreshnessSummary
-                )
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 16) {
+                        pageIntro(
+                            eyebrow: localized("系统", "SYSTEM"),
+                            title: localized("同步和开机启动", "Sync and Launch"),
+                            detail: localizedAdvancedSyncPanelDetail
+                        )
 
-                HStack(alignment: .center, spacing: 10) {
-                    GlassBadge(text: localizedSyncFreshnessBadgeText, color: diagnosticBadgeColor(for: syncFreshnessStatus))
+                        Spacer(minLength: 0)
 
-                    Text("\(localized("最近成功读取", "Last Successful Read")) · \(localizedLastRefreshLine)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        syncActions
+                    }
+                    .frame(minWidth: 780, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        pageIntro(
+                            eyebrow: localized("系统", "SYSTEM"),
+                            title: localized("同步和开机启动", "Sync and Launch"),
+                            detail: localizedAdvancedSyncPanelDetail
+                        )
+
+                        syncActions
+                    }
                 }
 
-                infoRow(title: localized("新鲜度摘要", "Freshness Summary"), value: localizedSyncFreshnessSummary)
+                infoRow(title: localized("上次同步", "Last Sync"), value: localizedAdvancedLastSyncValue)
 
                 preferenceDivider
 
@@ -94,7 +105,7 @@ extension SettingsView {
                         pageIntro(
                             eyebrow: localized("诊断", "DIAGNOSTICS"),
                             title: localized("诊断信息", "Diagnostics"),
-                            detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
+                            detail: localizedAdvancedDiagnosticsPanelDetail
                         )
 
                         Spacer(minLength: 0)
@@ -107,7 +118,7 @@ extension SettingsView {
                         pageIntro(
                             eyebrow: localized("诊断", "DIAGNOSTICS"),
                             title: localized("诊断信息", "Diagnostics"),
-                            detail: localized("这里会显示数据源、日历接入状态和可导出的排查信息。", "See data source, calendar setup, and exportable debug details here.")
+                            detail: localizedAdvancedDiagnosticsPanelDetail
                         )
 
                         diagnosticsActions
@@ -116,17 +127,10 @@ extension SettingsView {
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(title: localized("当前数据源", "Active Data Source"), value: localized("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar"))
-                    infoRow(title: localized("健康状态", "Health State"), value: localizedHealthStateSummary)
-                    infoRow(title: localized("权限状态", "Permission State"), value: localizedAuthorizationSummary(for: systemCalendarConnectionController.authorizationState))
-                    infoRow(title: localized("已保存选择", "Stored Selection"), value: localizedStoredCalendarSelectionSummary)
-                    infoRow(title: localized("可见日历", "Visible Calendars"), value: localizedAvailableCalendarSummary)
-                    infoRow(title: localized("接入调试态", "Setup Debug State"), value: calendarConnectionDiagnosticSnapshot.selectionDebugState)
-                    infoRow(title: localized("提醒状态", "Reminder State"), value: localizedReminderStateSummary)
+                    infoRow(title: localized("接入模式", "Connection Mode"), value: localized("CalDAV 单一路径", "CalDAV Only"))
+                    infoRow(title: localized("可见日历", "Visible Calendars"), value: localizedVisibleCalendarCountValue)
+                    infoRow(title: localized("连接诊断", "Connection Diagnosis"), value: localizedCalendarConnectionDiagnosticSummary)
                 }
-
-                Text(localizedReminderStateDetailLine)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
 
                 if let lastErrorMessage = sourceCoordinator.state.lastErrorMessage {
                     warningStrip(lastErrorMessage)
@@ -135,33 +139,34 @@ extension SettingsView {
         }
     }
 
+    /// 同步动作留在系统行为卡，避免“立即同步”继续和诊断导出混在一起。
+    var syncActions: some View {
+        Button {
+            Task {
+                await sourceCoordinator.refresh(trigger: .manualRefresh)
+            }
+        } label: {
+            Text(localized("立即同步", "Sync Now"))
+        }
+        .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+        .disabled(sourceCoordinator.state.isRefreshing)
+    }
+
     /// 诊断动作在宽窄布局里都复用同一组按钮和复制反馈，避免两套逻辑漂移。
     var diagnosticsActions: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            HStack(spacing: 10) {
-                Button {
-                    Task {
-                        await sourceCoordinator.refresh(trigger: .manualRefresh)
-                    }
-                } label: {
-                    Text(localized("立即刷新", "Refresh Now"))
-                }
-                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                .disabled(sourceCoordinator.state.isRefreshing)
+            Button {
+                copyCalendarConnectionDiagnosticReport()
+                didCopyCalendarDiagnostics = true
 
-                Button {
-                    copyCalendarConnectionDiagnosticReport()
-                    didCopyCalendarDiagnostics = true
-
-                    Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                        didCopyCalendarDiagnostics = false
-                    }
-                } label: {
-                    Text(localized("复制诊断信息", "Copy Diagnostics"))
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    didCopyCalendarDiagnostics = false
                 }
-                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
+            } label: {
+                Text(localized("复制诊断信息", "Copy Diagnostics"))
             }
+            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
 
             if didCopyCalendarDiagnostics {
                 Text(localized("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))

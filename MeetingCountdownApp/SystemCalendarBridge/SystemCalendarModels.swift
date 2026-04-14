@@ -57,6 +57,25 @@ enum SystemCalendarAuthorizationState: Equatable, Sendable {
     }
 }
 
+/// `CalendarSelectionPersistenceState` 描述设置页里“日历勾选已自动保存到哪一步”。
+/// UI 会基于这份状态展示“正在保存 / 已保存 / 保存失败”，
+/// 而不是再自己猜测异步写入是否已经完成。
+enum CalendarSelectionPersistenceState: Equatable, Sendable {
+    case idle
+    case saving
+    case saved
+    case failed(message: String)
+
+    /// 统一判断当前是不是还在保存过程中，方便 UI 禁用重复触发的动作。
+    var isSaving: Bool {
+        if case .saving = self {
+            return true
+        }
+
+        return false
+    }
+}
+
 /// `SystemCalendarDescriptor` 描述一条可选的系统日历。
 /// Phase 2 会把它展示在设置页的多选列表里，并根据 `isSuggestedByDefault` 做默认预选。
 struct SystemCalendarDescriptor: Identifiable, Equatable, Sendable {

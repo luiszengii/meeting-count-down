@@ -79,8 +79,8 @@ final class LaunchAtLoginController: ObservableObject {
                 : "当前不会在登录后自动启动。"
         case .notFound:
             return language == .english
-                ? "This build cannot register as a login item, which usually happens for an uninstalled development build."
-                : "当前构建无法注册为开机启动项，通常发生在开发期未安装构建。"
+                ? "Launch at login isn't available for the current installation."
+                : "当前安装方式暂不支持开机启动。"
         @unknown default:
             return language == .english
                 ? "The launch-at-login status could not be determined."

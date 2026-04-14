@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State var isPresentingSoundImporter = false
     @State var selectedTab: SettingsTab = .overview
     @State var isCalendarConfigurationExpanded = true
+    @State var calendarSearchQuery = ""
     @State var hasInitializedCalendarConfigurationExpansion = false
     @State var hoveredSoundProfileID: SoundProfile.ID?
     @State var didCopyCalendarDiagnostics = false
