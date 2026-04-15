@@ -79,8 +79,8 @@ final class SettingsPresentationTests: XCTestCase {
         )
         let soundProfileLibraryController = SoundProfileLibraryController(
             preferencesStore: preferencesStore,
-            assetStore: StubSoundProfileAssetStore(),
-            previewPlayer: StubSoundProfilePreviewPlayer(),
+            assetStore: SettingsPresentationStubSoundProfileAssetStore(),
+            previewPlayer: SettingsPresentationStubSoundProfilePreviewPlayer(),
             autoRefreshOnStart: false
         )
         let reminderEngine = ReminderEngine(
@@ -167,7 +167,7 @@ private final class StubSystemCalendarAccess: SystemCalendarAccessing {
 }
 
 /// 展示态测试不关心真实音频文件，因此资产存储层只返回最小可用的默认音频。
-private actor StubSoundProfileAssetStore: SoundProfileAssetManaging {
+private actor SettingsPresentationStubSoundProfileAssetStore: SoundProfileAssetManaging {
     func bundledDefaultProfile() async -> SoundProfile {
         SoundProfile.bundledDefault(duration: 1)
     }
@@ -185,7 +185,7 @@ private actor StubSoundProfileAssetStore: SoundProfileAssetManaging {
 
 /// 试听播放器在这些测试里不会真的被调用，因此保留空实现即可。
 @MainActor
-private final class StubSoundProfilePreviewPlayer: SoundProfilePreviewPlaying {
+private final class SettingsPresentationStubSoundProfilePreviewPlayer: SoundProfilePreviewPlaying {
     func playPreview(of soundProfile: SoundProfile) async throws {}
 
     func stopPreview() async {}

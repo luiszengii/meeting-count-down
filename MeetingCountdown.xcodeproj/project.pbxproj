@@ -12,6 +12,7 @@
 		07F2A2BFA3D36D127972EC55 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159EBB5E23B95125073E1B9 /* PreferencesStore.swift */; };
 		09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060012B9D43327628F3EB740 /* DiagnosticCheckersTests.swift */; };
 		0AC8890F86D334C2ABA050CC /* ReminderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400F5E610E4CB38FC22FA221 /* ReminderState.swift */; };
+		0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */; };
 		163D266695E119E3BCAD99E9 /* CalendarPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D91BFCEE716B62B4BF0DA2 /* CalendarPage.swift */; };
 		1655E15D790C5648C01905EC /* NextMeetingSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36AE16EAB5592B16A910AFEB /* NextMeetingSelector.swift */; };
 		1C9D72A36A07AF9550298543 /* ReminderPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE49FFDD6C119F4194958281 /* ReminderPreferences.swift */; };
@@ -99,6 +100,7 @@
 		4D33FE3B2AF0502DBBE1C910 /* MeetingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingSource.swift; sourceTree = "<group>"; };
 		4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		4FE43F0B3837B6BB858AC93C /* SelectableSoundProfileReminderAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableSoundProfileReminderAudioEngine.swift; sourceTree = "<group>"; };
+		59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPresentationTests.swift; sourceTree = "<group>"; };
 		5D222E1EB98EB2C80DA37E1E /* SystemCalendarBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarBridgeTests.swift; sourceTree = "<group>"; };
 		61D91BFCEE716B62B4BF0DA2 /* CalendarPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPage.swift; sourceTree = "<group>"; };
 		668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngine.swift; sourceTree = "<group>"; };
@@ -289,6 +291,7 @@
 		CB89145FE191D29FF04E62E8 /* AppShell */ = {
 			isa = PBXGroup;
 			children = (
+				59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */,
 				70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */,
 			);
 			path = AppShell;
@@ -464,6 +467,7 @@
 				BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */,
 				ACA0046E387F16D4868029A4 /* ReminderStateTests.swift in Sources */,
 				D02C06C468AD048A059B9A07 /* SelectableSoundProfileReminderAudioEngineTests.swift in Sources */,
+				0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */,
 				6AC08E6B218E5EEB68C49548 /* SettingsSceneOpenControllerTests.swift in Sources */,
 				04047189B27507D4B11E5421 /* SoundProfileLibraryControllerTests.swift in Sources */,
 				A9A569940CA3C6B96391A0C7 /* SourceCoordinatorTests.swift in Sources */,
@@ -620,7 +624,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -686,7 +690,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
