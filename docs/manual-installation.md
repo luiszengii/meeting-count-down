@@ -1,6 +1,6 @@
 # 手动安装与首次打开放行说明
 
-这份文档面向当前 `Phase 6` 的小范围测试用户。当前安装包仍然是“未 notarize”的手动分发版本，所以安装体验不会像 App Store 或 `Developer ID` 签名应用那样顺滑。目标不是掩盖这件事，而是先把“怎样最快跑通”讲清楚，再把 signed / unsigned 的边界和维护者导出方式放到后面。
+这份文档面向当前 `Phase 7` 的小范围测试用户。当前安装包仍然是“未 notarize”的手动分发版本，所以安装体验不会像 App Store 或 `Developer ID` 签名应用那样顺滑。目标不是掩盖这件事，而是先把“怎样最快跑通”讲清楚，再把 signed / unsigned 的边界和维护者导出方式放到后面。
 
 ## 最快安装路径
 
@@ -30,7 +30,7 @@
 
 ## 安装包形态
 
-当前建议分发这三种形态中的任意一种：
+当前建议分发这三种形态中的任意一种；其中 zip / DMG 会额外区分 `universal` 和 `arm64`：
 
 1. `FeishuMeetingCountdown.app`
 2. `FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.zip`
@@ -93,6 +93,20 @@ macOS 对未签名或未 notarize app 的拦截通常会比普通应用更严格
 ./scripts/export-release.sh
 ```
 
+默认会同时导出两套 app / zip：
+
+- `build/manual-release/universal/FeishuMeetingCountdown.app`
+- `build/manual-release/arm64/FeishuMeetingCountdown.app`
+- `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-universal-<signed|unsigned>.zip`
+- `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-arm64-<signed|unsigned>.zip`
+
+如果你只想导出其中一种架构，可以显式传 `--arch`：
+
+```bash
+./scripts/export-release.sh --arch universal
+./scripts/export-release.sh --arch arm64
+```
+
 如果你要导出一个适合“另一台 macOS 机器上验证 Calendar / EventKit 权限”的测试包，请显式传入稳定签名身份：
 
 ```bash
@@ -107,6 +121,13 @@ macOS 对未签名或未 notarize app 的拦截通常会比普通应用更严格
 ./scripts/create-dmg.sh
 ```
 
+默认会继续为 `universal` 和 `arm64` 两套 app 各生成一个 DMG；如果只想导出其中一个架构，也可以显式传：
+
+```bash
+./scripts/create-dmg.sh --arch universal
+./scripts/create-dmg.sh --arch arm64
+```
+
 如果你希望 DMG 里的 app 也带稳定签名身份，可以执行：
 
 ```bash
@@ -115,7 +136,8 @@ macOS 对未签名或未 notarize app 的拦截通常会比普通应用更严格
 
 脚本会产出：
 
-- `build/manual-release/FeishuMeetingCountdown.app`
+- `build/manual-release/universal/FeishuMeetingCountdown.app`
+- `build/manual-release/arm64/FeishuMeetingCountdown.app`
 - `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.zip`
 - `build/manual-release/FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.dmg`
 

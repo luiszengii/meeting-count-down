@@ -193,7 +193,8 @@ final class MenuBarStatusItemController {
         let backgroundColor = resolvedBackgroundColor(for: presentation)
         let titleWeight = resolvedTitleWeight(for: presentation)
 
-        button.attributedTitle = statusItemTitle(
+        applyStatusItemTitle(
+            to: button,
             for: presentation.title,
             color: foregroundColor,
             weight: titleWeight
@@ -203,6 +204,8 @@ final class MenuBarStatusItemController {
             weight: titleWeight,
             accessibilityLabel: presentation.title
         )
+        /// 不设置 `contentTintColor` 时，template symbol 会交回系统菜单栏统一渲染。
+        /// 这对深色菜单栏、副屏灰态和未来系统外观变化都更稳；只有红色提醒态需要我们显式指定白色。
         button.contentTintColor = foregroundColor
         button.imagePosition = .imageLeading
         button.toolTip = presentation.title
@@ -370,20 +373,14 @@ final class MenuBarStatusItemController {
         uiLanguage == .english ? english : chinese
     }
 
-    /// 菜单栏 quiet / soon / urgent 三态会切不同的前景色策略。
-    private func resolvedForegroundColor(for presentation: StatusItemPresentation) -> NSColor {
+    /// 菜单栏图标和文字默认交给系统渲染，才能在深色菜单栏和副屏灰态下跟其他状态栏 app 保持一致。
+    /// 只有红色闪烁态有自定义背景色，因此需要显式把前景色压成白色。
+    private func resolvedForegroundColor(for presentation: StatusItemPresentation) -> NSColor? {
         if presentation.shouldHighlightRed {
             return .white
         }
 
-        switch presentation.visualState {
-        case .idle:
-            return .labelColor
-        case .meetingSoon:
-            return .controlAccentColor
-        case .urgent:
-            return .labelColor
-        }
+        return nil
     }
 
     /// 会前预热态允许稍微加重，但真正的高优先级提醒仍然最重。
@@ -434,11 +431,33 @@ final class MenuBarStatusItemController {
         return image
     }
 
-    /// 给状态栏标题补上显式的单行截断样式，避免长标题在系统压缩布局时尝试换行。
+    /// 普通态用 `button.title + button.font`，让 AppKit 自己决定菜单栏前景色。
+    /// 如果走 `attributedTitle` 并显式写入 `.labelColor`，副屏菜单栏和深色菜单栏就可能失去系统的自动白色/灰色模板渲染。
+    private func applyStatusItemTitle(
+        to button: NSStatusBarButton,
+        for title: String,
+        color: NSColor?,
+        weight: NSFont.Weight
+    ) {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: weight)
+        guard let color else {
+            button.font = font
+            button.title = title
+            return
+        }
+
+        button.attributedTitle = statusItemTitle(
+            for: title,
+            color: color,
+            font: font
+        )
+    }
+
+    /// 给显式前景色的状态栏标题补上单行截断样式，避免长标题在系统压缩布局时尝试换行。
     private func statusItemTitle(
         for title: String,
         color: NSColor,
-        weight: NSFont.Weight
+        font: NSFont
     ) -> NSAttributedString {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = .byTruncatingTail
@@ -446,7 +465,7 @@ final class MenuBarStatusItemController {
         return NSAttributedString(
             string: title,
             attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: weight),
+                .font: font,
                 .foregroundColor: color,
                 .paragraphStyle: paragraphStyle
             ]

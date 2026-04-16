@@ -57,6 +57,7 @@
 | [./dev-logs/2026-04-13.md](./dev-logs/2026-04-13.md) | 修复 keychain 自动探测并完成 GitHub Release 签名 secrets 的真实配置 |
 | [./dev-logs/2026-04-14.md](./dev-logs/2026-04-14.md) | 收敛提醒 tab 的状态摘要、时间参数和音频页入口职责 |
 | [./dev-logs/2026-04-15.md](./dev-logs/2026-04-15.md) | 升版到 `0.1.3` 并重新走 tag 驱动的 Release 发布链路 |
+| [./dev-logs/2026-04-16.md](./dev-logs/2026-04-16.md) | 确认 `Phase 6` 完成、清理工作区并把顶层文档切换到 `Phase 7` 口径 |
 
 ## Pitfalls
 

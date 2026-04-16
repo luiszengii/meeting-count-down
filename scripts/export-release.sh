@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 这个脚本用于在“无开发者会员、无正式签名”的前提下，
-# 从当前 Xcode 工程导出一个可手动分发的 Release 版 app 和 zip 包。
-# 它的目标不是替代正式发布流程，而是稳定产出给小范围测试用户使用的安装包。
+# 从当前 Xcode 工程导出可手动分发的 Release 版 app 和 zip 包。
+# 默认会同时产出 Universal 与 Apple Silicon-only 两套资产，
+# 方便维护者在“兼容性”和“更小包体”之间按测试对象选择。
 
 set -euo pipefail
 
@@ -13,19 +14,76 @@ CONFIGURATION="Release"
 DERIVED_DATA_DIR="$ROOT_DIR/build/DerivedData"
 OUTPUT_DIR="$ROOT_DIR/build/manual-release"
 APP_NAME="FeishuMeetingCountdown.app"
-APP_SOURCE_PATH="$DERIVED_DATA_DIR/Build/Products/$CONFIGURATION/$APP_NAME"
 VERSION="$(sed -n 's/^ *MARKETING_VERSION: *//p' "$ROOT_DIR/project.yml" | head -n 1)"
 BUILD_NUMBER="$(sed -n 's/^ *CURRENT_PROJECT_VERSION: *//p' "$ROOT_DIR/project.yml" | head -n 1)"
-COPIED_APP_PATH="$OUTPUT_DIR/$APP_NAME"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
+ARCH_SELECTOR="all"
+
+selected_arch_variants() {
+  case "$ARCH_SELECTOR" in
+    all)
+      echo "universal arm64"
+      ;;
+    universal|arm64)
+      echo "$ARCH_SELECTOR"
+      ;;
+    *)
+      echo "未知架构选择: $ARCH_SELECTOR" >&2
+      exit 1
+      ;;
+  esac
+}
+
+xcode_archs_for_variant() {
+  local arch_variant="$1"
+
+  case "$arch_variant" in
+    universal)
+      echo "arm64 x86_64"
+      ;;
+    arm64)
+      echo "arm64"
+      ;;
+    *)
+      echo "未知架构变体: $arch_variant" >&2
+      exit 1
+      ;;
+  esac
+}
 
 package_suffix_for_app() {
   local app_path="$1"
 
-  if codesign --verify --deep --strict "$app_path" >/dev/null 2>&1; then
+  # 这里判断的是“是否存在稳定代码签名身份”，而不是“当前文件系统状态下是否通过 strict 校验”。
+  # FinderInfo 之类的本机元数据可能让 strict verify 暂时失败，但不等于产物已经退回 unsigned。
+  if codesign -dv "$app_path" >/dev/null 2>&1; then
     echo "signed"
   else
     echo "unsigned"
+  fi
+}
+
+clean_app_metadata() {
+  local app_path="$1"
+
+  if ! command -v xattr >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # FinderInfo、resource fork 和 provenance 这类扩展属性会让 codesign 拒绝签名。
+  # 分发包不需要保留这些本机元数据，因此签名前后统一清理，避免同一份源码在不同机器上表现不一致。
+  xattr -cr "$app_path"
+}
+
+copy_app_without_local_metadata() {
+  local source_path="$1"
+  local destination_path="$2"
+
+  if command -v ditto >/dev/null 2>&1; then
+    ditto --norsrc "$source_path" "$destination_path"
+  else
+    cp -R "$source_path" "$destination_path"
+    clean_app_metadata "$destination_path"
   fi
 }
 
@@ -42,11 +100,14 @@ sign_app_if_requested() {
   fi
 
   echo "==> 使用稳定签名身份重新签名 app"
+  clean_app_metadata "$app_path"
   codesign \
     --force \
     --deep \
     --sign "$SIGNING_IDENTITY" \
     "$app_path"
+
+  clean_app_metadata "$app_path"
 
   if ! codesign --verify --deep --strict "$app_path" >/dev/null 2>&1; then
     echo "codesign 校验失败，签名后的 app 不可用于分发。" >&2
@@ -72,21 +133,113 @@ validate_calendar_usage_description() {
   fi
 }
 
+detected_arch_label_for_app() {
+  local app_path="$1"
+  local binary_path="$app_path/Contents/MacOS/FeishuMeetingCountdown"
+  local app_archs=""
+
+  if command -v lipo >/dev/null 2>&1 && [[ -f "$binary_path" ]]; then
+    app_archs="$(lipo -archs "$binary_path")"
+    if [[ "$app_archs" == *"arm64"* && "$app_archs" == *"x86_64"* ]]; then
+      echo "universal"
+      return 0
+    elif [[ -n "$app_archs" ]]; then
+      echo "${app_archs// /-}"
+      return 0
+    fi
+  fi
+
+  echo "unknown"
+}
+
+build_variant() {
+  local arch_variant="$1"
+  local xcode_archs
+  local variant_derived_data_dir
+  local app_source_path
+  local variant_output_dir
+  local copied_app_path
+  local detected_arch_label
+  local package_suffix
+  local zip_basename
+  local zip_path
+
+  xcode_archs="$(xcode_archs_for_variant "$arch_variant")"
+  variant_derived_data_dir="$DERIVED_DATA_DIR/$arch_variant"
+  app_source_path="$variant_derived_data_dir/Build/Products/$CONFIGURATION/$APP_NAME"
+  variant_output_dir="$OUTPUT_DIR/$arch_variant"
+  copied_app_path="$variant_output_dir/$APP_NAME"
+
+  echo "==> 开始构建 $arch_variant Release app"
+  xcodebuild \
+    -project "$PROJECT_PATH" \
+    -scheme "$SCHEME_NAME" \
+    -configuration "$CONFIGURATION" \
+    -derivedDataPath "$variant_derived_data_dir" \
+    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_REQUIRED=NO \
+    ONLY_ACTIVE_ARCH=NO \
+    "ARCHS=$xcode_archs" \
+    clean build
+
+  if [[ ! -d "$app_source_path" ]]; then
+    echo "构建完成后没有找到 app: $app_source_path" >&2
+    exit 1
+  fi
+
+  echo "==> 复制 $arch_variant app 到手动分发目录"
+  mkdir -p "$variant_output_dir"
+  rm -rf "$copied_app_path"
+  copy_app_without_local_metadata "$app_source_path" "$copied_app_path"
+
+  echo "==> 校验 Calendar 权限说明"
+  validate_calendar_usage_description "$copied_app_path"
+
+  sign_app_if_requested "$copied_app_path"
+
+  detected_arch_label="$(detected_arch_label_for_app "$copied_app_path")"
+  if [[ "$detected_arch_label" != "$arch_variant" ]]; then
+    echo "架构校验失败：期望 $arch_variant，实际 $detected_arch_label。" >&2
+    exit 1
+  fi
+
+  package_suffix="$(package_suffix_for_app "$copied_app_path")"
+  zip_basename="FeishuMeetingCountdown-${VERSION:-0.1.0}-build${BUILD_NUMBER:-0}-${detected_arch_label}-${package_suffix}"
+  zip_path="$OUTPUT_DIR/${zip_basename}.zip"
+
+  echo "==> 生成 $arch_variant zip 分发包"
+  rm -f "$zip_path"
+  ditto -c -k --norsrc --keepParent "$copied_app_path" "$zip_path"
+
+  echo "  App: $copied_app_path"
+  echo "  Zip: $zip_path"
+}
+
 show_help() {
   cat <<'EOF'
 用法:
   ./scripts/export-release.sh
+  ./scripts/export-release.sh --arch all
+  ./scripts/export-release.sh --arch universal
+  ./scripts/export-release.sh --arch arm64
   ./scripts/export-release.sh --signing-identity "Your Identity"
 
 说明:
-  1. 使用当前仓库内的 Xcode 工程执行一次 unsigned / ad-hoc Release build
-  2. 把产出的 .app 复制到 build/manual-release/
-  3. 如果传入 --signing-identity，则在复制后的 .app 上补一个稳定代码签名
-  4. 再额外打一个 zip，方便手动分发
+  1. 使用当前仓库内的 Xcode 工程执行 unsigned / ad-hoc Release build
+  2. 默认同时导出 universal 和 arm64 两套 .app
+  3. 把产出的 .app 分别复制到 build/manual-release/<arch>/
+  4. 如果传入 --signing-identity，则在复制后的 .app 上补一个稳定代码签名
+  5. 再分别生成 zip，方便手动分发或上传 GitHub Release
+
+参数:
+  --arch              选择导出架构：all、universal、arm64；默认 all
+  --signing-identity  用于重新签名的稳定代码签名 identity
 
 输出:
-  - build/manual-release/FeishuMeetingCountdown.app
-  - build/manual-release/FeishuMeetingCountdown-<version>-build<build>-<arch>-<signed|unsigned>.zip
+  - build/manual-release/universal/FeishuMeetingCountdown.app
+  - build/manual-release/arm64/FeishuMeetingCountdown.app
+  - build/manual-release/FeishuMeetingCountdown-<version>-build<build>-universal-<signed|unsigned>.zip
+  - build/manual-release/FeishuMeetingCountdown-<version>-build<build>-arm64-<signed|unsigned>.zip
 
 注意:
   - 这是“未 notarize”的手动分发包
@@ -98,6 +251,15 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --arch)
+      if [[ $# -lt 2 ]]; then
+        echo "--arch 需要跟 all、universal 或 arm64。" >&2
+        exit 1
+      fi
+
+      ARCH_SELECTOR="$2"
+      shift 2
+      ;;
     --signing-identity)
       if [[ $# -lt 2 ]]; then
         echo "--signing-identity 需要跟一个签名身份名称。" >&2
@@ -133,57 +295,17 @@ echo "==> 清理旧的手动分发产物"
 rm -rf "$DERIVED_DATA_DIR" "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
-echo "==> 开始构建 unsigned Release app"
-xcodebuild \
-  -project "$PROJECT_PATH" \
-  -scheme "$SCHEME_NAME" \
-  -configuration "$CONFIGURATION" \
-  -derivedDataPath "$DERIVED_DATA_DIR" \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGNING_REQUIRED=NO \
-  clean build
-
-if [[ ! -d "$APP_SOURCE_PATH" ]]; then
-  echo "构建完成后没有找到 app: $APP_SOURCE_PATH" >&2
-  exit 1
-fi
-
-echo "==> 复制 app 到手动分发目录"
-cp -R "$APP_SOURCE_PATH" "$COPIED_APP_PATH"
-
-echo "==> 校验 Calendar 权限说明"
-validate_calendar_usage_description "$COPIED_APP_PATH"
-
-sign_app_if_requested "$COPIED_APP_PATH"
-
-APP_BINARY_PATH="$COPIED_APP_PATH/Contents/MacOS/FeishuMeetingCountdown"
-ARCH_LABEL="unknown"
-PACKAGE_SUFFIX="$(package_suffix_for_app "$COPIED_APP_PATH")"
-
-if command -v lipo >/dev/null 2>&1 && [[ -f "$APP_BINARY_PATH" ]]; then
-  APP_ARCHS="$(lipo -archs "$APP_BINARY_PATH")"
-  if [[ "$APP_ARCHS" == *"arm64"* && "$APP_ARCHS" == *"x86_64"* ]]; then
-    ARCH_LABEL="universal"
-  elif [[ -n "$APP_ARCHS" ]]; then
-    ARCH_LABEL="${APP_ARCHS// /-}"
-  fi
-fi
-
-ZIP_BASENAME="FeishuMeetingCountdown-${VERSION:-0.1.0}-build${BUILD_NUMBER:-0}-${ARCH_LABEL}-${PACKAGE_SUFFIX}"
-ZIP_PATH="$OUTPUT_DIR/${ZIP_BASENAME}.zip"
-
-echo "==> 生成 zip 分发包"
-rm -f "$ZIP_PATH"
-ditto -c -k --keepParent "$COPIED_APP_PATH" "$ZIP_PATH"
+for arch_variant in $(selected_arch_variants); do
+  build_variant "$arch_variant"
+done
 
 echo
 echo "Release 导出完成:"
-echo "  App: $COPIED_APP_PATH"
-echo "  Zip: $ZIP_PATH"
+find "$OUTPUT_DIR" -maxdepth 2 \( -name "$APP_NAME" -o -name 'FeishuMeetingCountdown-*.zip' \) -print | sed 's/^/  /'
 echo
 echo "提醒:"
-if [[ "$PACKAGE_SUFFIX" == "signed" ]]; then
-  echo "  当前产物已带稳定代码签名，但仍未 notarize。"
+if [[ -n "$SIGNING_IDENTITY" ]]; then
+  echo "  当前产物已尝试使用稳定代码签名身份，但仍未 notarize。"
   echo "  测试用户首次打开时，仍可能需要在“系统设置 -> 隐私与安全性”里手动放行。"
 else
   echo "  当前产物未带稳定代码签名。"
