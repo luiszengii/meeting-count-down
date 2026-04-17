@@ -11,6 +11,8 @@ enum GlassMotion {
     static let hover = Animation.snappy(duration: 0.18, extraBounce: 0)
     static let press = Animation.smooth(duration: 0.12)
     static let page = Animation.snappy(duration: 0.24, extraBounce: 0.02)
+    static let segmentedSelection = Animation.snappy(duration: 0.28, extraBounce: 0.02)
+    static let segmentedLabel = Animation.easeInOut(duration: 0.2)
 }
 
 /// 这类装饰型控件不需要接管键盘焦点。
@@ -379,11 +381,17 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
     @Namespace private var selectionBackgroundNamespace
     @State private var hoveredItemID: Selection.ID?
 
+    /// 选中态文字显式压到深灰，而不是继续跟随浅色玻璃背景一起发白，
+    /// 这样在亮色胶囊上能稳定保持对比度。
+    private let selectedLabelColor = Color(red: 0.18, green: 0.2, blue: 0.24)
+    /// 未选中项仍然保留轻一点的灰蓝色，继续维持玻璃面板上的层级。
+    private let unselectedLabelColor = Color(red: 0.9, green: 0.93, blue: 0.97).opacity(0.9)
+
     var body: some View {
         HStack(spacing: 10) {
             ForEach(Array(Selection.allCases), id: \.id) { item in
                 Button {
-                    withAnimation(GlassMotion.page) {
+                    withAnimation(GlassMotion.segmentedSelection) {
                         selection.wrappedValue = item
                     }
                 } label: {
@@ -391,9 +399,10 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
                         .font(.system(size: 12, weight: selection.wrappedValue == item ? .bold : .semibold))
                         .foregroundStyle(
                             selection.wrappedValue == item
-                                ? Color.primary.opacity(0.96)
-                                : Color.secondary.opacity(0.9)
+                                ? selectedLabelColor
+                                : unselectedLabelColor
                         )
+                        .scaleEffect(selection.wrappedValue == item ? 1 : 0.98)
                         .padding(.horizontal, 15)
                         .padding(.vertical, 8)
                         .background {
@@ -416,9 +425,11 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
                                             id: "glass-segmented-selection",
                                             in: selectionBackgroundNamespace
                                         )
+                                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
                                 }
                             }
                         }
+                        .animation(GlassMotion.segmentedLabel, value: selection.wrappedValue == item)
                 }
                 .buttonStyle(.plain)
                 .glassQuietFocus()
@@ -437,5 +448,6 @@ struct GlassSegmentedTabs<Selection: Hashable & CaseIterable & Identifiable>: Vi
                 .strokeBorder(Color.white.opacity(0.24), lineWidth: 1)
         )
         .animation(GlassMotion.hover, value: hoveredItemID)
+        .animation(GlassMotion.segmentedSelection, value: selection.wrappedValue.id)
     }
 }
