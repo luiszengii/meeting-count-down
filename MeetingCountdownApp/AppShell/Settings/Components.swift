@@ -451,7 +451,7 @@ extension SettingsView {
                     : localized("试听", "Preview"))
             }
             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-            .disabled(soundProfileLibraryController.isLoadingState)
+            .disabled(soundProfileLibraryController.loadingState)
 
             if isCurrent {
                 Button {

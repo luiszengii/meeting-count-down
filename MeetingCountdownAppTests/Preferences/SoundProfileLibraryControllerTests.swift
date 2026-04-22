@@ -125,6 +125,26 @@ final class SoundProfileLibraryControllerTests: XCTestCase {
         XCTAssertEqual(callbackCount, 1)
     }
 
+    /// 验证协议默认 `refresh()` 在调用过程中把 `loadingState` 拨到 `true`，
+    /// 调用结束后归位 `false`，且正常完成时 `errorMessage` 为 `nil`。
+    func testRefreshTogglesLoadingStateAndClearsErrorOnSuccess() async {
+        let bundledDefault = SoundProfile.bundledDefault(duration: 2)
+        let controller = SoundProfileLibraryController(
+            preferencesStore: InMemoryPreferencesStore(),
+            assetStore: StubSoundProfileAssetStore(
+                bundledDefault: bundledDefault,
+                importBatch: SoundProfileImportBatch(importedProfiles: [], failures: [])
+            ),
+            previewPlayer: StubSoundProfilePreviewPlayer(),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refresh()
+
+        XCTAssertFalse(controller.loadingState, "loadingState 应在 refresh() 完成后归位 false")
+        XCTAssertNil(controller.errorMessage, "正常完成时 errorMessage 应为 nil")
+    }
+
     /// 构造一条用户上传音频，减少每个测试里重复写样板字段。
     private func importedSoundProfile(id: String, fileName: String, duration: TimeInterval) -> SoundProfile {
         SoundProfile(

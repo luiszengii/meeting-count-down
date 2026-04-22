@@ -73,8 +73,8 @@ extension SettingsView {
                     }
                 }
 
-                if let lastErrorMessage = soundProfileLibraryController.lastErrorMessage {
-                    warningStrip(lastErrorMessage)
+                if let errorMessage = soundProfileLibraryController.errorMessage {
+                    warningStrip(errorMessage)
                 }
             }
         }

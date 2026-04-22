@@ -174,11 +174,11 @@ extension SettingsView {
     }
 
     var isReminderPreferenceEditingDisabled: Bool {
-        reminderPreferencesController.isLoadingState || reminderPreferencesController.isSavingState
+        reminderPreferencesController.loadingState || reminderPreferencesController.isSavingState
     }
 
     var isSoundProfileEditingDisabled: Bool {
-        soundProfileLibraryController.isLoadingState
+        soundProfileLibraryController.loadingState
             || soundProfileLibraryController.isImportingState
             || soundProfileLibraryController.isApplyingState
     }
@@ -773,8 +773,8 @@ extension SettingsView {
             return .connectionFailure(message: sourceCoordinator.state.lastErrorMessage ?? fallbackMessage)
         }
 
-        if let lastErrorMessage = systemCalendarConnectionController.lastErrorMessage {
-            return .connectionFailure(message: lastErrorMessage)
+        if let errorMessage = systemCalendarConnectionController.errorMessage {
+            return .connectionFailure(message: errorMessage)
         }
 
         return .healthy
@@ -1126,7 +1126,7 @@ extension SettingsView {
 
     var shouldShowCalendarUnavailableAlert: Bool {
         systemCalendarConnectionController.authorizationState.allowsReading
-            && !systemCalendarConnectionController.isLoadingState
+            && !systemCalendarConnectionController.loadingState
             && systemCalendarConnectionController.availableCalendars.isEmpty
     }
 

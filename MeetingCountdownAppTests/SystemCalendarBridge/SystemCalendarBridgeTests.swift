@@ -217,6 +217,24 @@ final class SystemCalendarBridgeTests: XCTestCase {
         XCTAssertEqual(meeting.links.first?.kind, .web)
     }
 
+    /// 验证协议默认 `refresh()` 完成后 `loadingState` 归位 `false`，正常完成时 `errorMessage` 为 `nil`。
+    func testRefreshTogglesLoadingStateAndClearsErrorOnSuccess() async {
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: StubSystemCalendarAccess(
+                authorizationState: .authorized,
+                calendars: [calendar(id: "feishu", title: "飞书日历", suggested: true)]
+            ),
+            preferencesStore: InMemoryPreferencesStore(),
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            autoRefreshOnStart: false
+        )
+
+        await controller.refresh()
+
+        XCTAssertFalse(controller.loadingState, "loadingState 应在 refresh() 完成后归位 false")
+        XCTAssertNil(controller.errorMessage, "正常完成时 errorMessage 应为 nil")
+    }
+
     /// 统一生成测试用系统日历描述符。
     private func calendar(id: String, title: String, suggested: Bool) -> SystemCalendarDescriptor {
         SystemCalendarDescriptor(

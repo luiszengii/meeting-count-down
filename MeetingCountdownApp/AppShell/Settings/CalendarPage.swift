@@ -272,7 +272,7 @@ extension SettingsView {
     /// 日历列表按来源分组，并且保持搜索后仍然按同一顺序展示。
     @ViewBuilder
     var calendarGroupList: some View {
-        if systemCalendarConnectionController.isLoadingState {
+        if systemCalendarConnectionController.loadingState {
             GlassPanel(cornerRadius: 24, padding: 18, overlayOpacity: 0.08) {
                 ProgressView(localized("正在读取本地日历…", "Reading local calendars..."))
                     .controlSize(.small)
@@ -410,7 +410,7 @@ extension SettingsView {
             Text(primaryCalendarConnectionActionTitle)
         }
         .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-        .disabled(systemCalendarConnectionController.isLoadingState || systemCalendarConnectionController.isRequestingAccess)
+        .disabled(systemCalendarConnectionController.loadingState || systemCalendarConnectionController.isRequestingAccess)
     }
 
     var calendarSecondaryConnectionAction: some View {
@@ -418,7 +418,7 @@ extension SettingsView {
             Text(secondaryCalendarConnectionActionTitle)
         }
         .buttonStyle(GlassPillButtonStyle(tone: calendarConnectionState == .authorizationRequired ? .primary : .secondary))
-        .disabled(systemCalendarConnectionController.isLoadingState || systemCalendarConnectionController.isRequestingAccess)
+        .disabled(systemCalendarConnectionController.loadingState || systemCalendarConnectionController.isRequestingAccess)
     }
 
     var primaryCalendarConnectionActionTitle: String {
@@ -441,7 +441,7 @@ extension SettingsView {
 
     var isCalendarSelectionInteractionEnabled: Bool {
         systemCalendarConnectionController.authorizationState.allowsReading
-            && !systemCalendarConnectionController.isLoadingState
+            && !systemCalendarConnectionController.loadingState
             && !systemCalendarConnectionController.isRequestingAccess
     }
 

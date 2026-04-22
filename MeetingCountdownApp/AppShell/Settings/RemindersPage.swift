@@ -27,7 +27,7 @@ extension SettingsView {
 
                 reminderStatusSummaryCard
 
-                if reminderPreferencesController.isLoadingState || reminderPreferencesController.isSavingState {
+                if reminderPreferencesController.loadingState || reminderPreferencesController.isSavingState {
                     HStack(spacing: 10) {
                         ProgressView()
                             .controlSize(.small)
@@ -38,8 +38,8 @@ extension SettingsView {
                     }
                 }
 
-                if let lastErrorMessage = reminderPreferencesController.lastErrorMessage {
-                    warningStrip(lastErrorMessage)
+                if let errorMessage = reminderPreferencesController.errorMessage {
+                    warningStrip(errorMessage)
                 }
             }
         }

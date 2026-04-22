@@ -1,23 +1,29 @@
 import Foundation
 
-/// `SoundProfileLibraryController` 负责把“提醒音频列表”的读写、导入、删除和试听收口成设置页可消费的状态对象。
+/// `SoundProfileLibraryController` 负责把"提醒音频列表"的读写、导入、删除和试听收口成设置页可消费的状态对象。
 /// 视图层只负责触发动作，不直接处理文件复制、`UserDefaults` 持久化或试听播放器生命周期。
+///
+/// 遵从 `AsyncStateController`：
+/// - `loadingState` 对应原 `isLoadingState`（首次读取或外部刷新列表时的忙碌标志）。
+/// - `isImportingState` / `isApplyingState` 保留为独立属性（导入和应用时的忙碌标志），
+///   语义上属于独立写入操作，不应合并进 `loadingState`。
+/// - `errorMessage` 对应原 `lastErrorMessage`。
 @MainActor
-final class SoundProfileLibraryController: ObservableObject {
+final class SoundProfileLibraryController: ObservableObject, AsyncStateController {
     /// 当前已经加载到内存里的完整音频列表，包含固定存在的内建默认音频。
     @Published private(set) var soundProfiles: [SoundProfile]
     /// 当前正式提醒真正使用的是哪一条音频。
     @Published private(set) var selectedSoundProfileID: String
-    /// 首次读取或外部刷新列表时的加载状态。
-    @Published private(set) var isLoadingState: Bool
+    /// 首次读取或外部刷新列表时的加载状态。（AsyncStateController.loadingState）
+    @Published var loadingState: Bool
     /// 批量导入用户音频时的忙碌状态。
     @Published private(set) var isImportingState: Bool
     /// 选择当前音频或删除现有音频时的忙碌状态。
     @Published private(set) var isApplyingState: Bool
     /// 当前正在试听的音频 ID；为 `nil` 表示当前没有试听中的项。
     @Published private(set) var currentlyPreviewingSoundProfileID: String?
-    /// 最近一次需要展示给用户的错误。
-    @Published private(set) var lastErrorMessage: String?
+    /// 最近一次需要展示给用户的错误。（AsyncStateController.errorMessage）
+    @Published var errorMessage: String?
 
     /// 非敏感偏好持久化入口。
     private let preferencesStore: any PreferencesStore
@@ -28,7 +34,7 @@ final class SoundProfileLibraryController: ObservableObject {
     /// 当前选中音频变化后，需要通知上游重算提醒。
     private let onSelectedSoundProfileChanged: @MainActor @Sendable () async -> Void
 
-    /// 试听结束后自动把“播放中”按钮收回普通态的补偿任务。
+    /// 试听结束后自动把"播放中"按钮收回普通态的补偿任务。
     private var previewCompletionTask: Task<Void, Never>?
 
     init(
@@ -46,11 +52,11 @@ final class SoundProfileLibraryController: ObservableObject {
         self.onSelectedSoundProfileChanged = onSelectedSoundProfileChanged
         self.soundProfiles = [bundledDefault]
         self.selectedSoundProfileID = bundledDefault.id
-        self.isLoadingState = false
+        self.loadingState = false
         self.isImportingState = false
         self.isApplyingState = false
         self.currentlyPreviewingSoundProfileID = nil
-        self.lastErrorMessage = nil
+        self.errorMessage = nil
 
         if autoRefreshOnStart {
             Task { [weak self] in
@@ -59,20 +65,13 @@ final class SoundProfileLibraryController: ObservableObject {
         }
     }
 
-    /// 当前正式提醒正在使用的音频条目，供设置页展示“当前使用中”状态。
+    /// 当前正式提醒正在使用的音频条目，供设置页展示"当前使用中"状态。
     var selectedSoundProfile: SoundProfile? {
         soundProfiles.first(where: { $0.id == selectedSoundProfileID })
     }
 
-    /// 从真实存储重建音频列表和当前选择。
-    func refresh() async {
-        isLoadingState = true
-        lastErrorMessage = nil
-
-        defer {
-            isLoadingState = false
-        }
-
+    /// 从真实存储重建音频列表和当前选择（`AsyncStateController.performRefresh` 的实现）。
+    func performRefresh() async throws {
         let hydratedState = await loadHydratedState()
         applyHydratedState(hydratedState)
 
@@ -88,7 +87,7 @@ final class SoundProfileLibraryController: ObservableObject {
         }
 
         isImportingState = true
-        lastErrorMessage = nil
+        errorMessage = nil
 
         defer {
             isImportingState = false
@@ -107,13 +106,13 @@ final class SoundProfileLibraryController: ObservableObject {
                     try? await assetStore.deleteImportedSoundProfile(soundProfile)
                 }
 
-                lastErrorMessage = error.localizedDescription
+                errorMessage = error.localizedDescription
                 return
             }
         }
 
         if !importBatch.failures.isEmpty {
-            lastErrorMessage = importBatch.failures
+            errorMessage = importBatch.failures
                 .map { "\($0.fileName)：\($0.message)" }
                 .joined(separator: "\n")
         }
@@ -130,7 +129,7 @@ final class SoundProfileLibraryController: ObservableObject {
         }
 
         isApplyingState = true
-        lastErrorMessage = nil
+        errorMessage = nil
 
         defer {
             isApplyingState = false
@@ -141,7 +140,7 @@ final class SoundProfileLibraryController: ObservableObject {
             selectedSoundProfileID = id
             await onSelectedSoundProfileChanged()
         } catch {
-            lastErrorMessage = error.localizedDescription
+            errorMessage = error.localizedDescription
             applyHydratedState(await loadHydratedState())
         }
     }
@@ -153,7 +152,7 @@ final class SoundProfileLibraryController: ObservableObject {
         }
 
         isApplyingState = true
-        lastErrorMessage = nil
+        errorMessage = nil
 
         let selectionChanged = selectedSoundProfileID == id
         let fallbackSelectedID = selectionChanged ? SoundProfile.bundledDefaultID : selectedSoundProfileID
@@ -177,7 +176,7 @@ final class SoundProfileLibraryController: ObservableObject {
             do {
                 try await assetStore.deleteImportedSoundProfile(soundProfile)
             } catch {
-                lastErrorMessage = error.localizedDescription
+                errorMessage = error.localizedDescription
             }
 
             applyHydratedState(await loadHydratedState())
@@ -186,7 +185,7 @@ final class SoundProfileLibraryController: ObservableObject {
                 await onSelectedSoundProfileChanged()
             }
         } catch {
-            lastErrorMessage = error.localizedDescription
+            errorMessage = error.localizedDescription
             applyHydratedState(await loadHydratedState())
         }
     }
@@ -202,7 +201,7 @@ final class SoundProfileLibraryController: ObservableObject {
             return
         }
 
-        lastErrorMessage = nil
+        errorMessage = nil
         await stopPreview()
 
         do {
@@ -210,14 +209,14 @@ final class SoundProfileLibraryController: ObservableObject {
             currentlyPreviewingSoundProfileID = id
             schedulePreviewCompletion(for: soundProfile)
         } catch {
-            lastErrorMessage = error.localizedDescription
+            errorMessage = error.localizedDescription
             currentlyPreviewingSoundProfileID = nil
         }
     }
 
     /// 让设置页在文件选择器直接报错时，也能把错误展示到统一位置。
     func reportFileImportFailure(_ error: Error) {
-        lastErrorMessage = error.localizedDescription
+        errorMessage = error.localizedDescription
     }
 
     /// 主动停止当前试听中的音频。
@@ -263,7 +262,7 @@ final class SoundProfileLibraryController: ObservableObject {
         }
     }
 
-    /// 试听播放完之后，把行内按钮状态自动收回“播放”。
+    /// 试听播放完之后，把行内按钮状态自动收回"播放"。
     private func schedulePreviewCompletion(for soundProfile: SoundProfile) {
         previewCompletionTask?.cancel()
 
@@ -278,7 +277,7 @@ final class SoundProfileLibraryController: ObservableObject {
         }
     }
 
-    /// 只有当前试听状态仍然对应同一条音频时，才允许自动收回“播放中”状态。
+    /// 只有当前试听状态仍然对应同一条音频时，才允许自动收回"播放中"状态。
     private func finishPreviewIfNeeded(for soundProfileID: String) async {
         guard currentlyPreviewingSoundProfileID == soundProfileID else {
             return
@@ -290,7 +289,7 @@ final class SoundProfileLibraryController: ObservableObject {
 }
 
 /// `HydratedSoundProfileState` 把设置页真正需要的音频列表状态打包成纯值。
-/// 这样控制器里的“加载”和“应用”职责就能保持清晰，不把一堆中间量散落在多个方法之间。
+/// 这样控制器里的"加载"和"应用"职责就能保持清晰，不把一堆中间量散落在多个方法之间。
 private struct HydratedSoundProfileState {
     /// 含内建默认音频的完整列表。
     let soundProfiles: [SoundProfile]
