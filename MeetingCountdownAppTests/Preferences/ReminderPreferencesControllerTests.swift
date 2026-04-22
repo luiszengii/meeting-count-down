@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import XCTest
 @testable import FeishuMeetingCountdown
@@ -34,6 +35,45 @@ final class ReminderPreferencesControllerTests: XCTestCase {
 
         XCTAssertFalse(controller.isSavingState, "isSavingState 应在操作完成后归位 false")
         XCTAssertNotNil(controller.errorMessage, "保存失败时 errorMessage 应被填充")
+    }
+
+    /// 验证成功保存偏好后，控制器会向 `RefreshEventBus` 发布 `.preferencesChanged` 事件。
+    func testSavePreferencesPublishesPreferencesChangedEventOnBus() async {
+        let bus = RefreshEventBus()
+        var receivedTriggers: [RefreshTrigger] = []
+        let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
+
+        let controller = ReminderPreferencesController(
+            preferencesStore: InMemoryPreferencesStore(),
+            refreshEventBus: bus,
+            autoRefreshOnStart: false
+        )
+
+        await controller.refresh()
+        await controller.setGlobalReminderEnabled(!ReminderPreferences.default.globalReminderEnabled)
+
+        XCTAssertEqual(receivedTriggers, [.preferencesChanged], "保存成功后应向总线发布 .preferencesChanged")
+        _ = cancellable
+    }
+
+    /// 验证语言切换（notifyUpstream: false 路径）不会向总线发布事件。
+    func testSetInterfaceLanguageDoesNotPublishEventOnBus() async {
+        let bus = RefreshEventBus()
+        var receivedTriggers: [RefreshTrigger] = []
+        let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
+
+        let controller = ReminderPreferencesController(
+            preferencesStore: InMemoryPreferencesStore(),
+            refreshEventBus: bus,
+            autoRefreshOnStart: false
+        )
+
+        await controller.refresh()
+        // 切换到英文（默认值是 simplifiedChinese），确保偏好值确实发生了变化
+        await controller.setInterfaceLanguage(.english)
+
+        XCTAssertTrue(receivedTriggers.isEmpty, "语言切换不应触发上游刷新信号")
+        _ = cancellable
     }
 }
 

@@ -17,3 +17,5 @@ ADR 表示 Architecture / Decision Record，用于记录技术栈、产品形态
 - [2026-04-02 Phase 6 先转为无会员手动分发](./2026-04-02-phase-6-manual-distribution-without-paid-membership.md)
 - [2026-04-22 提取 GlassUITheme 统一 UI 设计常量](./2026-04-22-glass-ui-theme.md)
 - [2026-04-22 引入 AsyncStateController 协议统一 refresh/loading/error 模板](./2026-04-22-async-state-controller.md)
+- [2026-04-22 将 1742 行 Presentation.swift 拆分为四个主题文件](./2026-04-22-presentation-split.md)
+- [2026-04-22 AppRuntime 内部分组与 RefreshEventBus 事件总线](./2026-04-22-runtime-composition-and-event-bus.md)

@@ -8,6 +8,9 @@ import Foundation
 /// - `isImportingState` / `isApplyingState` 保留为独立属性（导入和应用时的忙碌标志），
 ///   语义上属于独立写入操作，不应合并进 `loadingState`。
 /// - `errorMessage` 对应原 `lastErrorMessage`。
+///
+/// 选中音频变化后改为通过 `RefreshEventBus` 向上游发送 `.preferencesChanged` 信号，
+/// 不再直接持有 `SourceCoordinator` 的弱引用。
 @MainActor
 final class SoundProfileLibraryController: ObservableObject, AsyncStateController {
     /// 当前已经加载到内存里的完整音频列表，包含固定存在的内建默认音频。
@@ -31,8 +34,8 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
     private let assetStore: any SoundProfileAssetManaging
     /// 设置页专用的试听播放器。
     private let previewPlayer: any SoundProfilePreviewPlaying
-    /// 当前选中音频变化后，需要通知上游重算提醒。
-    private let onSelectedSoundProfileChanged: @MainActor @Sendable () async -> Void
+    /// 当前选中音频变化后，通过总线向上游发送 `.preferencesChanged` 信号。
+    private let refreshEventBus: RefreshEventBus?
 
     /// 试听结束后自动把"播放中"按钮收回普通态的补偿任务。
     private var previewCompletionTask: Task<Void, Never>?
@@ -41,7 +44,7 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
         preferencesStore: any PreferencesStore,
         assetStore: any SoundProfileAssetManaging,
         previewPlayer: any SoundProfilePreviewPlaying,
-        onSelectedSoundProfileChanged: @escaping @MainActor @Sendable () async -> Void = {},
+        refreshEventBus: RefreshEventBus? = nil,
         autoRefreshOnStart: Bool = true
     ) {
         let bundledDefault = SoundProfile.bundledDefault(duration: 1)
@@ -49,7 +52,7 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
         self.preferencesStore = preferencesStore
         self.assetStore = assetStore
         self.previewPlayer = previewPlayer
-        self.onSelectedSoundProfileChanged = onSelectedSoundProfileChanged
+        self.refreshEventBus = refreshEventBus
         self.soundProfiles = [bundledDefault]
         self.selectedSoundProfileID = bundledDefault.id
         self.loadingState = false
@@ -138,7 +141,7 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
         do {
             try await preferencesStore.saveSelectedSoundProfileID(id)
             selectedSoundProfileID = id
-            await onSelectedSoundProfileChanged()
+            refreshEventBus?.send(.preferencesChanged)
         } catch {
             errorMessage = error.localizedDescription
             applyHydratedState(await loadHydratedState())
@@ -182,7 +185,7 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
             applyHydratedState(await loadHydratedState())
 
             if selectionChanged {
-                await onSelectedSoundProfileChanged()
+                refreshEventBus?.send(.preferencesChanged)
             }
         } catch {
             errorMessage = error.localizedDescription

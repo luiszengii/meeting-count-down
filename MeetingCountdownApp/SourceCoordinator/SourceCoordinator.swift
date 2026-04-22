@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -52,7 +53,7 @@ final class SourceCoordinator: ObservableObject {
 
     /// 当前唯一活动的数据源。
     private let source: any MeetingSource
-    /// 独立注入选择器，确保“下一场会议规则”可单测、可替换。
+    /// 独立注入选择器，确保”下一场会议规则”可单测、可替换。
     private let nextMeetingSelector: any NextMeetingSelecting
     /// 非敏感偏好持久化入口。
     /// 协调层需要读取它来应用会议过滤规则，并在成功刷新后落最近成功读取时间。
@@ -61,8 +62,13 @@ final class SourceCoordinator: ObservableObject {
     private let dateProvider: any DateProviding
     /// 统一日志入口，方便后续接入真实系统能力时保留可追踪记录。
     private let logger: AppLogger
+    /// 保存 `RefreshEventBus` 的订阅 token，确保订阅生命周期与协调层一致。
+    private var refreshBusCancellable: AnyCancellable?
 
     /// 初始化协调层，并可选择在启动时立即触发一次刷新。
+    ///
+    /// `refreshEventBus` 是可选参数，允许测试场景不传入总线（此时控制器只能通过
+    /// 直接调用 `refresh(trigger:)` 触发刷新，行为与迁移前一致）。
     init(
         source: any MeetingSource,
         nextMeetingSelector: any NextMeetingSelecting,
@@ -70,7 +76,8 @@ final class SourceCoordinator: ObservableObject {
         dateProvider: any DateProviding,
         logger: AppLogger,
         lastSuccessfulRefreshAt: Date? = nil,
-        autoRefreshOnStart: Bool = true
+        autoRefreshOnStart: Bool = true,
+        refreshEventBus: RefreshEventBus? = nil
     ) {
         self.source = source
         self.nextMeetingSelector = nextMeetingSelector
@@ -81,6 +88,18 @@ final class SourceCoordinator: ObservableObject {
             sourceDisplayName: source.descriptor.displayName,
             lastRefreshAt: lastSuccessfulRefreshAt
         )
+
+        if let bus = refreshEventBus {
+            /// 直接在 sink 闭包里 `Task { @MainActor }` 已经保证 `refresh(trigger:)`
+            /// 跑在 main actor 上；不再叠加 `receive(on: RunLoop.main)`，避免在
+            /// 单元测试里事件被卡在主 RunLoop 等不到 pump。
+            refreshBusCancellable = bus.publisher
+                .sink { [weak self] trigger in
+                    Task { @MainActor [weak self] in
+                        await self?.refresh(trigger: trigger)
+                    }
+                }
+        }
 
         if autoRefreshOnStart {
             Task { [weak self] in

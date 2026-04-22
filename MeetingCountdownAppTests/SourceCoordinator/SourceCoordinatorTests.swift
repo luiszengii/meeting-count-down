@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import XCTest
 @testable import FeishuMeetingCountdown
@@ -122,6 +123,39 @@ final class SourceCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.state.healthState, .unconfigured(message: "尚未选择需要纳入提醒的系统日历"))
         XCTAssertEqual(coordinator.state.lastErrorMessage, "尚未选择需要纳入提醒的系统日历")
         XCTAssertNil(coordinator.state.nextMeeting)
+    }
+
+    /// 验证 `RefreshEventBus` 上的事件能触发协调层执行对应触发类型的刷新。
+    /// 这是 T6 引入总线机制后最核心的集成验证：确认订阅链路端到端工作正常。
+    func testRefreshEventBusTriggersRefreshOnCoordinator() async {
+        let now = fixedNow()
+        let bus = RefreshEventBus()
+        let coordinator = SourceCoordinator(
+            source: StubMeetingSource(
+                descriptor: descriptor(),
+                currentHealthState: .ready(message: "系统日历已接入"),
+                sampleMeetings: [meeting(id: "bus-driven", now: now, offsetMinutes: 20)]
+            ),
+            nextMeetingSelector: DefaultNextMeetingSelector(),
+            preferencesStore: InMemoryPreferencesStore(),
+            dateProvider: FixedDateProvider(currentDate: now),
+            logger: AppLogger(source: "SourceCoordinatorTests"),
+            autoRefreshOnStart: false,
+            refreshEventBus: bus
+        )
+
+        // 初始状态：尚未刷新过，没有下一场会议。
+        XCTAssertNil(coordinator.state.nextMeeting, "初始状态应无下一场会议")
+
+        // 通过总线发送刷新事件。sink 内 `Task { @MainActor }` 是脱钩任务，
+        // `Task.yield()` 不会等它完成；用短 sleep + 轮询拿到稳定结果。
+        bus.send(.preferencesChanged)
+        let deadline = Date().addingTimeInterval(1.0)
+        while coordinator.state.nextMeeting == nil && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        }
+
+        XCTAssertEqual(coordinator.state.nextMeeting?.id, "bus-driven", "总线事件应驱动协调层刷新并更新下一场会议")
     }
 
     /// 统一生成测试用源描述符，避免每个测试都重复拼接样板字段。

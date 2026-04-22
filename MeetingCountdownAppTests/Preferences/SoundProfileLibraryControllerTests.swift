@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import XCTest
 @testable import FeishuMeetingCountdown
@@ -100,11 +101,14 @@ final class SoundProfileLibraryControllerTests: XCTestCase {
         XCTAssertNil(controller.currentlyPreviewingSoundProfileID)
     }
 
-    /// 验证切换当前正式提醒音频后，会触发上游刷新回调。
-    func testSelectSoundProfileCallsSelectionChangedCallback() async {
+    /// 验证切换当前正式提醒音频后，会通过 `RefreshEventBus` 向总线发布 `.preferencesChanged` 事件。
+    func testSelectSoundProfilePublishesPreferencesChangedEventOnBus() async {
         let bundledDefault = SoundProfile.bundledDefault(duration: 2)
         let imported = importedSoundProfile(id: "chosen", fileName: "chosen.wav", duration: 8)
-        var callbackCount = 0
+        let bus = RefreshEventBus()
+        var receivedTriggers: [RefreshTrigger] = []
+        let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
+
         let controller = SoundProfileLibraryController(
             preferencesStore: InMemoryPreferencesStore(soundProfiles: [imported]),
             assetStore: StubSoundProfileAssetStore(
@@ -112,9 +116,7 @@ final class SoundProfileLibraryControllerTests: XCTestCase {
                 importBatch: SoundProfileImportBatch(importedProfiles: [], failures: [])
             ),
             previewPlayer: StubSoundProfilePreviewPlayer(),
-            onSelectedSoundProfileChanged: {
-                callbackCount += 1
-            },
+            refreshEventBus: bus,
             autoRefreshOnStart: false
         )
 
@@ -122,7 +124,38 @@ final class SoundProfileLibraryControllerTests: XCTestCase {
         await controller.selectSoundProfile(id: imported.id)
 
         XCTAssertEqual(controller.selectedSoundProfileID, imported.id)
-        XCTAssertEqual(callbackCount, 1)
+        XCTAssertEqual(receivedTriggers, [.preferencesChanged], "选择音频成功后应向总线发布 .preferencesChanged")
+        _ = cancellable
+    }
+
+    /// 验证删除当前正在使用的音频后，会通过 `RefreshEventBus` 向总线发布 `.preferencesChanged` 事件。
+    func testDeleteCurrentSoundProfilePublishesPreferencesChangedEventOnBus() async {
+        let bundledDefault = SoundProfile.bundledDefault(duration: 2)
+        let imported = importedSoundProfile(id: "selected", fileName: "selected.wav", duration: 8)
+        let bus = RefreshEventBus()
+        var receivedTriggers: [RefreshTrigger] = []
+        let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
+
+        let controller = SoundProfileLibraryController(
+            preferencesStore: InMemoryPreferencesStore(
+                soundProfiles: [imported],
+                selectedSoundProfileID: imported.id
+            ),
+            assetStore: StubSoundProfileAssetStore(
+                bundledDefault: bundledDefault,
+                importBatch: SoundProfileImportBatch(importedProfiles: [], failures: [])
+            ),
+            previewPlayer: StubSoundProfilePreviewPlayer(),
+            refreshEventBus: bus,
+            autoRefreshOnStart: false
+        )
+
+        await controller.refresh()
+        await controller.deleteSoundProfile(id: imported.id)
+
+        XCTAssertEqual(controller.selectedSoundProfileID, bundledDefault.id)
+        XCTAssertEqual(receivedTriggers, [.preferencesChanged], "删除当前使用音频后应向总线发布 .preferencesChanged")
+        _ = cancellable
     }
 
     /// 验证协议默认 `refresh()` 在调用过程中把 `loadingState` 拨到 `true`，

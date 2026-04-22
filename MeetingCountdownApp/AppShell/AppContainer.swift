@@ -51,6 +51,10 @@ enum AppContainer {
             preferencesStore: preferencesStore
         )
 
+        // 单例事件总线：由所有生产者控制器共享，SourceCoordinator 订阅以驱动刷新。
+        // 这是 T6 引入的核心架构改变：把分散的闭包回调链替换成统一的 PassthroughSubject 总线。
+        let refreshEventBus = RefreshEventBus()
+
         let sourceCoordinator = SourceCoordinator(
             source: systemCalendarSource,
             nextMeetingSelector: DefaultNextMeetingSelector(),
@@ -58,7 +62,8 @@ enum AppContainer {
             dateProvider: dateProvider,
             logger: AppLogger(source: "SourceCoordinator"),
             lastSuccessfulRefreshAt: UserDefaultsPreferencesStore.bootstrapLastSuccessfulRefreshAt(),
-            autoRefreshOnStart: true
+            autoRefreshOnStart: true,
+            refreshEventBus: refreshEventBus
         )
 
         let reminderEngine = ReminderEngine(
@@ -75,17 +80,13 @@ enum AppContainer {
             calendarAccess: calendarAccess,
             preferencesStore: preferencesStore,
             dateProvider: dateProvider,
-            onCalendarConfigurationChanged: { [weak sourceCoordinator] trigger in
-                await sourceCoordinator?.refresh(trigger: trigger)
-            },
+            refreshEventBus: refreshEventBus,
             autoRefreshOnStart: true
         )
 
         let reminderPreferencesController = ReminderPreferencesController(
             preferencesStore: preferencesStore,
-            onPreferencesChanged: { [weak sourceCoordinator] in
-                await sourceCoordinator?.refresh(trigger: .preferencesChanged)
-            },
+            refreshEventBus: refreshEventBus,
             autoRefreshOnStart: true
         )
 
@@ -93,9 +94,7 @@ enum AppContainer {
             preferencesStore: preferencesStore,
             assetStore: soundProfileAssetStore,
             previewPlayer: soundProfilePreviewPlayer,
-            onSelectedSoundProfileChanged: { [weak sourceCoordinator] in
-                await sourceCoordinator?.refresh(trigger: .preferencesChanged)
-            },
+            refreshEventBus: refreshEventBus,
             autoRefreshOnStart: true
         )
 
@@ -128,17 +127,21 @@ enum AppContainer {
             dateProvider: dateProvider
         )
 
-        return AppRuntime(
+        let core = CoreRuntime(
             sourceCoordinator: sourceCoordinator,
             systemCalendarConnectionController: systemCalendarConnectionController,
             reminderEngine: reminderEngine,
             reminderPreferencesController: reminderPreferencesController,
             soundProfileLibraryController: soundProfileLibraryController,
+            menuBarPresentationClock: menuBarPresentationClock
+        )
+        let shell = ShellRuntime(
             launchAtLoginController: launchAtLoginController,
             settingsWindowController: settingsWindowController,
-            menuBarPresentationClock: menuBarPresentationClock,
             menuBarStatusItemController: menuBarStatusItemController,
             appRefreshController: appRefreshController
         )
+
+        return AppRuntime(core: core, shell: shell)
     }
 }

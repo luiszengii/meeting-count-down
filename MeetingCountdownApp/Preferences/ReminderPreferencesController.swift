@@ -8,6 +8,9 @@ import Foundation
 /// - `isSavingState` 保留为独立属性（写入偏好时的忙碌标志），与 `loadingState` 语义不同，
 ///   因此不合并。视图层同时检查两者来决定是否禁用交互。
 /// - `errorMessage` 对应原 `lastErrorMessage`。
+///
+/// 刷新触发改为通过 `RefreshEventBus` 发布，不再直接持有 `SourceCoordinator` 的弱引用。
+/// 控制器本身只负责向总线发送信号，不感知谁在消费。
 @MainActor
 final class ReminderPreferencesController: ObservableObject, AsyncStateController {
     /// 当前已经加载到内存里的提醒偏好。
@@ -21,16 +24,16 @@ final class ReminderPreferencesController: ObservableObject, AsyncStateControlle
 
     /// 非敏感偏好持久化入口。
     private let preferencesStore: any PreferencesStore
-    /// 每次成功保存提醒偏好后，都要统一通知上游重算当前下一场会议和提醒任务。
-    private let onPreferencesChanged: @MainActor @Sendable () async -> Void
+    /// 每次成功保存提醒偏好后，通过总线通知上游重算当前下一场会议和提醒任务。
+    private let refreshEventBus: RefreshEventBus?
 
     init(
         preferencesStore: any PreferencesStore,
-        onPreferencesChanged: @escaping @MainActor @Sendable () async -> Void = {},
+        refreshEventBus: RefreshEventBus? = nil,
         autoRefreshOnStart: Bool = true
     ) {
         self.preferencesStore = preferencesStore
-        self.onPreferencesChanged = onPreferencesChanged
+        self.refreshEventBus = refreshEventBus
         self.reminderPreferences = .default
         self.loadingState = false
         self.isSavingState = false
@@ -113,7 +116,7 @@ final class ReminderPreferencesController: ObservableObject, AsyncStateControlle
         do {
             try await preferencesStore.saveReminderPreferences(updatedPreferences)
             if notifyUpstream {
-                await onPreferencesChanged()
+                refreshEventBus?.send(.preferencesChanged)
             }
         } catch {
             errorMessage = error.localizedDescription

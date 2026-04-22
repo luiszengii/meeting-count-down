@@ -12,6 +12,9 @@ import Foundation
 /// - `errorMessage` 对应原 `lastErrorMessage`。
 /// - 对外保留 `refreshState()` 入口（供视图层、内部通知回调等调用），
 ///   其实现委托给 `AsyncStateController.refresh()` 协议默认实现。
+///
+/// 日历配置变化后改为通过 `RefreshEventBus` 向上游发送对应的 `RefreshTrigger`，
+/// 不再直接持有 `SourceCoordinator` 的弱引用。
 @MainActor
 final class SystemCalendarConnectionController: ObservableObject, AsyncStateController {
     /// 当前系统日历授权状态。
@@ -48,8 +51,8 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
     private let logger: AppLogger
     /// 用于监听系统日历变化的通知中心。
     private let notificationCenter: NotificationCenter
-    /// 当配置或系统日历内容发生变化后，应统一通知 app 壳层刷新。
-    private let onCalendarConfigurationChanged: @MainActor @Sendable (RefreshTrigger) async -> Void
+    /// 当配置或系统日历内容发生变化后，通过总线向上游发送对应的刷新触发事件。
+    private let refreshEventBus: RefreshEventBus?
     /// `EKEventStoreChanged` 监听 token。
     private var eventStoreChangedObserver: NSObjectProtocol?
     /// "已保存"提示需要自动消失，因此控制器自己持有一个可取消任务。
@@ -61,7 +64,7 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
         dateProvider: any DateProviding,
         logger: AppLogger = AppLogger(source: "SystemCalendarConnection"),
         notificationCenter: NotificationCenter = .default,
-        onCalendarConfigurationChanged: @escaping @MainActor @Sendable (RefreshTrigger) async -> Void = { _ in },
+        refreshEventBus: RefreshEventBus? = nil,
         autoRefreshOnStart: Bool = true
     ) {
         self.calendarAccess = calendarAccess
@@ -69,7 +72,7 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
         self.dateProvider = dateProvider
         self.logger = logger
         self.notificationCenter = notificationCenter
-        self.onCalendarConfigurationChanged = onCalendarConfigurationChanged
+        self.refreshEventBus = refreshEventBus
         self.authorizationState = calendarAccess.currentAuthorizationState()
         self.availableCalendars = []
         self.lastLoadedStoredCalendarIDs = []
@@ -169,12 +172,12 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
         do {
             authorizationState = try await calendarAccess.requestReadAccess()
             await refresh()
-            await onCalendarConfigurationChanged(.manualRefresh)
+            refreshEventBus?.send(.manualRefresh)
             logger.info("Calendar access request completed with state \(authorizationState.badgeText)")
         } catch {
             errorMessage = error.localizedDescription
             authorizationState = calendarAccess.currentAuthorizationState()
-            await onCalendarConfigurationChanged(.manualRefresh)
+            refreshEventBus?.send(.manualRefresh)
             logger.error("Calendar access request failed: \(error.localizedDescription)")
         }
     }
@@ -211,7 +214,7 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
     /// 当系统 Calendar 内容发生变化时，先重载候选列表，再统一通知 app 刷新当前数据源。
     private func handleEventStoreChangedNotification() async {
         await refresh()
-        await onCalendarConfigurationChanged(.systemCalendarChanged)
+        refreshEventBus?.send(.systemCalendarChanged)
     }
 
     /// 统一注册 EventKit 变化监听。
@@ -250,7 +253,7 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
         do {
             try await preferencesStore.saveSelectedSystemCalendarIDs(updatedSelection)
             selectionPersistenceState = .saved
-            await onCalendarConfigurationChanged(.manualRefresh)
+            refreshEventBus?.send(.manualRefresh)
             scheduleSelectionPersistenceReset()
             logger.info("Updated system calendar selection to \(updatedSelection.count) calendar(s)")
         } catch {

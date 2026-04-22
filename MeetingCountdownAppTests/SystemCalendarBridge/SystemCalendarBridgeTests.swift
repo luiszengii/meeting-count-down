@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import XCTest
 @testable import FeishuMeetingCountdown
@@ -233,6 +234,33 @@ final class SystemCalendarBridgeTests: XCTestCase {
 
         XCTAssertFalse(controller.loadingState, "loadingState 应在 refresh() 完成后归位 false")
         XCTAssertNil(controller.errorMessage, "正常完成时 errorMessage 应为 nil")
+    }
+
+    /// 验证用户选择日历后，控制器会通过 `RefreshEventBus` 向总线发布 `.manualRefresh` 事件。
+    func testCalendarSelectionPublishesManualRefreshEventOnBus() async {
+        let bus = RefreshEventBus()
+        var receivedTriggers: [RefreshTrigger] = []
+        let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
+
+        let controller = SystemCalendarConnectionController(
+            calendarAccess: StubSystemCalendarAccess(
+                authorizationState: .authorized,
+                calendars: [
+                    calendar(id: "feishu", title: "飞书日历", suggested: true),
+                    calendar(id: "personal", title: "个人", suggested: false)
+                ]
+            ),
+            preferencesStore: InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"]),
+            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            refreshEventBus: bus,
+            autoRefreshOnStart: false
+        )
+
+        await controller.refreshState()
+        await controller.setCalendarSelection(calendarID: "personal", isSelected: true)
+
+        XCTAssertEqual(receivedTriggers, [.manualRefresh], "日历选择变化后应向总线发布 .manualRefresh")
+        _ = cancellable
     }
 
     /// 统一生成测试用系统日历描述符。
