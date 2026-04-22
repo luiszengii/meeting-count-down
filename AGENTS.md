@@ -61,6 +61,21 @@ Feishu Meeting Countdown for macOS
 
 上层目录只讲定位和边界，下层目录再讲实现细节，避免整棵树到处重复同样内容。
 
+## AI 代理执行约束（Hard Guardrails）
+
+- 禁止 force-push、删除分支、修改仓库 settings 或 GitHub secrets。
+- 禁止把 Apple 开发者账号、签名证书、API token 等 secrets 硬编码进任何源文件、脚本或文档。
+- 提交前必须本地通过单元测试（`xcodebuild test`）；CI 测试失败的 PR 不允许合并。
+- 涉及 `Scripts/`、`SystemCalendarBridge/`、`ReminderEngine/`、`.github/workflows/` 的改动需要人工 review，代理不得自动合并。
+- 任何发布相关改动（version bump、release workflow、签名脚本）必须同步更新对应 ADR 或 dev-log，并由人 cherry-pick 触发 release tag。
+- 当 AGENTS.md 之间出现冲突，以子目录的 AGENTS.md 为准（更靠近代码者优先）。
+
+## 代码签名模型
+
+- 本地开发与 PR CI（`.github/workflows/tests.yml`）使用 `CODE_SIGNING_ALLOWED=NO`，不需要签名身份。
+- Release workflow（`.github/workflows/release.yml`）从 GitHub secrets 导入证书，仅在 push tag `v*.*.*` 时触发。
+- 当前未加入 Apple Developer Program，因此 release artifact 不做 notarization；用户首次打开需要在 macOS “系统设置 → 隐私与安全性” 手动放行。代理不要在文档里假装能直接 ship 到 App Store。
+
 ### 代码注释规则
 
 注释风格统一采用“学习导向的模块级详细注释”，目标读者默认包含“完全不熟悉 Swift 语法和 Apple 框架的人”。注释不是为了装饰，而是为了降低未来阅读门槛。目标密度为：平均每 `8` 到 `10` 行有效代码，至少有 `1` 行真正提供信息量的注释；核心状态流、并发边界、框架交互点可以高于这个密度。
@@ -105,7 +120,7 @@ Feishu Meeting Countdown for macOS
 - `Offline Import`
 - `lark-cli`
 
-历史上曾讨论过多路接入，所以仓库里可能还残留 `ConnectionMode`、`SourceCoordinator`、多模式文案等历史骨架。从 `2026-03-31` 起，这些都视为待收敛的历史遗留，不再作为产品方向继续扩展。
+历史上曾讨论过多路接入，所以仓库里可能还残留 `ConnectionMode`、`SourceCoordinator`、多模式文案等历史骨架。从 `2026-03-31` 起，这些都视为待收敛的历史遗留，不再作为产品方向继续扩展。下一次 schema 调整或 0.2.x release 之前，主线程需要扫一次仓库确认这些骨架已彻底清除。
 
 ## 产品目标
 

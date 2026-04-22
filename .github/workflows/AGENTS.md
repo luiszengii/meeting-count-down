@@ -17,7 +17,13 @@
 
 - 仓库根目录的 [project.yml](../../project.yml) 和 [scripts](../../scripts/AGENTS.md)。
 - macOS GitHub Actions runner。
-- 仓库级 GitHub secrets，例如签名证书、签名 identity 和临时 keychain 密码。
+- 仓库级 GitHub secrets（仅在 release.yml 中使用）：
+  - `MACOS_CERTIFICATE_P12_BASE64`：base64 编码的 .p12 签名证书
+  - `MACOS_CERTIFICATE_PASSWORD`：.p12 证书密码
+  - `MACOS_SIGNING_IDENTITY`：codesign 用的 identity 名称
+  - `MACOS_KEYCHAIN_PASSWORD`：CI 临时 keychain 密码
+- 新增 secret 必须同步更新本文件、release.yml 的校验 step、以及对应 ADR。
+- tests.yml 不允许引用任何 secret，保持纯净的 PR 校验通道。
 
 ## 关键状态 / 数据流
 
