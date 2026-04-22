@@ -1,177 +1,23 @@
 import AppKit
 import SwiftUI
 
-/// 这个文件集中放设置页展示态推导。
-/// 它只做文案、本地化、颜色和轻量展示计算，不改变任何业务规则，
-/// 让页面文件专注布局，减少“视图 + 文案 + 状态解释”混写。
+// MARK: - Residual presentation helpers (2026-04-22 split)
+//
+// 这个文件是 2026-04-22 拆分后的残余部分，包含：
+//   • 跨页面通用的展示态推导（状态摘要、选择状态、日历过滤等）
+//   • 文件级枚举 / 结构体（CalendarConnectionPresentationState、CalendarSourceGroup 等）
+//
+// 已迁出的内容：
+//   • 徽章颜色 / 徽章文案        → SettingsBadgePresentation.swift
+//   • Formatter + 日期时间格式化  → SettingsDateFormatting.swift
+//   • 日历诊断快照构建            → CalendarConnectionDiagnosticsPresenter.swift
+//   • localized() + 语言 Binding  → SettingsLocalizationPresentation.swift
+//
+// 详见 ADR: docs/adrs/2026-04-22-presentation-split.md
+
 extension SettingsView {
-    func authorizationBadgeColor(for state: SystemCalendarAuthorizationState) -> Color {
-        switch state {
-        case .authorized:
-            return .green
-        case .notDetermined:
-            return .orange
-        case .denied, .restricted, .writeOnly:
-            return .red
-        case .unknown:
-            return .secondary
-        }
-    }
 
-    func diagnosticBadgeColor(for status: DiagnosticCheckStatus) -> Color {
-        switch status {
-        case .passed:
-            return .green
-        case .warning:
-            return .orange
-        case .failed:
-            return .red
-        case .idle, .pending:
-            return .secondary
-        }
-    }
-
-    func openCalendarPrivacySettings() {
-        guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") else {
-            return
-        }
-
-        NSWorkspace.shared.open(settingsURL)
-    }
-
-    static let absoluteFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter
-    }()
-
-    /// 诊断导出需要显式读取当前 app 元信息，方便区分“本地 Debug 版”和“GitHub Release 版”。
-    var calendarConnectionDiagnosticSnapshot: CalendarConnectionDiagnosticSnapshot {
-        CalendarConnectionDiagnosticSnapshot(
-            generatedAt: Date(),
-            bundleIdentifier: Bundle.main.bundleIdentifier ?? "unknown",
-            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
-            buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
-            authorizationState: systemCalendarConnectionController.authorizationState,
-            healthState: sourceCoordinator.state.healthState,
-            lastSourceErrorMessage: sourceCoordinator.state.lastErrorMessage,
-            lastSourceRefreshAt: sourceCoordinator.state.lastRefreshAt,
-            lastCalendarStateLoadAt: systemCalendarConnectionController.lastLoadedAt,
-            hasStoredCalendarSelection: systemCalendarConnectionController.hasStoredSelection,
-            storedSelectedCalendarIDs: Array(systemCalendarConnectionController.lastLoadedStoredCalendarIDs),
-            unavailableStoredCalendarIDs: Array(systemCalendarConnectionController.lastUnavailableStoredCalendarIDs),
-            effectiveSelectedCalendarIDs: Array(systemCalendarConnectionController.selectedCalendarIDs),
-            availableCalendars: systemCalendarConnectionController.availableCalendars
-        )
-    }
-
-    /// 高级页直接复用这条摘要，避免用户还没复制完整诊断前完全不知道“当前到底卡在哪一层”。
-    var localizedStoredCalendarSelectionSummary: String {
-        if !systemCalendarConnectionController.selectedCalendarIDs.isEmpty {
-            return localized(
-                "当前生效 \(systemCalendarConnectionController.selectedCalendarIDs.count) 个日历。",
-                "\(systemCalendarConnectionController.selectedCalendarIDs.count) calendar(s) are active right now."
-            )
-        }
-
-        if !systemCalendarConnectionController.lastUnavailableStoredCalendarIDs.isEmpty {
-            return localized(
-                "之前保存过的日历当前都不在系统列表里。",
-                "Previously saved calendars are missing from the current system list."
-            )
-        }
-
-        if systemCalendarConnectionController.hasStoredSelection {
-            return localized("用户已经保存过空选择。", "An explicit empty selection was saved.")
-        }
-
-        return localized("还没有保存过日历选择。", "No calendar selection has been saved yet.")
-    }
-
-    /// 让高级页快速展示“到底枚举到了几条系统日历”。
-    var localizedAvailableCalendarSummary: String {
-        let count = systemCalendarConnectionController.availableCalendars.count
-
-        if count == 0 {
-            return localized("当前没有读到任何系统日历。", "No system calendars are readable right now.")
-        }
-
-        return localized("当前读到 \(count) 个系统日历。", "Currently reading \(count) system calendar(s).")
-    }
-
-    /// 高级页里的“同步和开机启动”只保留低频系统行为，不再复用概览式状态摘要。
-    var localizedAdvancedSyncPanelDetail: String {
-        localized(
-            "查看上次同步，并控制登录后是否自动启动。",
-            "Check the latest sync and control whether the app launches after login."
-        )
-    }
-
-    /// 高级页里的“上次同步”改用更短的事实值，避免在同一张卡里重复“多久之前同步成功”。
-    var localizedAdvancedLastSyncValue: String {
-        guard let lastRefreshAt = sourceCoordinator.state.lastRefreshAt else {
-            return localized("尚未同步", "Not synced yet")
-        }
-
-        return localizedDateHeadline(for: lastRefreshAt)
-    }
-
-    /// 诊断卡只保留其他页面看不到的排障事实和导出动作，不再复读概览摘要。
-    var localizedAdvancedDiagnosticsPanelDetail: String {
-        localized(
-            "只保留排障独有信息，并支持导出完整诊断文本。",
-            "Show only troubleshooting-specific facts and export the full diagnostic report."
-        )
-    }
-
-    /// 高级页的“可见日历”只展示当前枚举结果，不再夹带额外判断文案。
-    var localizedVisibleCalendarCountValue: String {
-        let count = systemCalendarConnectionController.availableCalendars.count
-        return localized("\(count) 个系统日历", "\(count) system calendar(s)")
-    }
-
-    /// “连接诊断”需要把权限、读取失败和选择失配压成一条用户化摘要，而不是直接暴露 debug label。
-    var localizedCalendarConnectionDiagnosticSummary: String {
-        switch systemCalendarConnectionController.authorizationState {
-        case .authorized:
-            break
-        case .notDetermined:
-            return localized("等待授予日历权限", "Calendar access is needed")
-        case .denied:
-            return localized("日历权限被拒绝", "Calendar access was denied")
-        case .restricted:
-            return localized("日历访问受限", "Calendar access is restricted")
-        case .writeOnly:
-            return localized("当前只有写入权限", "Calendar access is write-only")
-        case .unknown:
-            return localized("日历权限状态未知", "Calendar access is unknown")
-        }
-
-        if sourceCoordinator.state.lastErrorMessage != nil {
-            return localized("会议读取出现问题", "Meeting reading has an issue")
-        }
-
-        switch calendarConnectionDiagnosticSnapshot.selectionDebugState {
-        case "ready":
-            return localized("就绪", "Ready")
-        case "stored_selection_missing_from_current_calendar_list":
-            return localized("已保存的日历当前不可用", "Saved calendars are unavailable")
-        case "stored_selection_is_empty":
-            return localized("当前保存的是空选择", "An empty selection is saved")
-        case "selection_not_saved_yet":
-            return localized("尚未保存日历选择", "No calendar selection is saved yet")
-        default:
-            return localized("状态未知", "Unknown")
-        }
-    }
-
-    /// 把诊断文本复制到系统剪贴板，方便用户直接贴到 issue 或聊天窗口。
-    func copyCalendarConnectionDiagnosticReport() {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(calendarConnectionDiagnosticSnapshot.reportText, forType: .string)
-    }
+    // MARK: Reminder editing guard flags
 
     var isReminderPreferenceEditingDisabled: Bool {
         reminderPreferencesController.loadingState || reminderPreferencesController.isSavingState
@@ -183,6 +29,8 @@ extension SettingsView {
             || soundProfileLibraryController.isApplyingState
     }
 
+    // MARK: Sync freshness
+
     var syncFreshnessStatus: DiagnosticCheckStatus {
         SyncFreshnessDiagnostic.status(
             lastSuccessfulRefreshAt: sourceCoordinator.state.lastRefreshAt,
@@ -190,7 +38,9 @@ extension SettingsView {
         )
     }
 
-    /// 概览页头部不再强调“这是设置页”，而是强调“系统当前处于什么状态”。
+    // MARK: Overview page strings
+
+    /// 概览页头部不再强调"这是设置页"，而是强调"系统当前处于什么状态"。
     var localizedOverviewPageTitle: String {
         localized("会议提醒概览", "Meeting Reminder Overview")
     }
@@ -200,75 +50,6 @@ extension SettingsView {
             "管理日历连接、提醒状态、音频播放与同步健康度。",
             "Manage calendar connection, reminder status, audio playback, and sync health."
         )
-    }
-
-    /// 头部第一枚 badge 优先表达“系统整体是否可用”。
-    var localizedOverviewHealthBadgeText: String {
-        if sourceCoordinator.state.isRefreshing {
-            return localized("正在同步", "Syncing")
-        }
-
-        switch sourceCoordinator.state.healthState {
-        case .ready:
-            return localized("运行正常", "Running Normally")
-        case .warning:
-            return localized("需要留意", "Needs Attention")
-        case .failed:
-            return localized("读取失败", "Read Failed")
-        case .unconfigured:
-            return localized("等待完成设置", "Setup Needed")
-        }
-    }
-
-    var overviewHealthBadgeColor: Color {
-        if sourceCoordinator.state.isRefreshing {
-            return .blue
-        }
-
-        switch sourceCoordinator.state.healthState {
-        case .ready:
-            return .green
-        case .warning, .unconfigured:
-            return .orange
-        case .failed:
-            return .red
-        }
-    }
-
-    var localizedOverviewConnectionBadgeText: String {
-        hasAddedCalDAVAccount
-            ? localized("CalDAV 已连接", "CalDAV Connected")
-            : localized("等待连接 CalDAV", "Connect CalDAV")
-    }
-
-    var localizedOverviewAuthorizationBadgeText: String {
-        switch systemCalendarConnectionController.authorizationState {
-        case .authorized:
-            return localized("已授权访问日历", "Calendar Access Granted")
-        case .notDetermined:
-            return localized("等待授权访问日历", "Calendar Access Needed")
-        case .denied:
-            return localized("日历访问被拒绝", "Calendar Access Denied")
-        case .restricted:
-            return localized("日历访问受限", "Calendar Access Restricted")
-        case .writeOnly:
-            return localized("当前只有写入权限", "Write-only Calendar Access")
-        case .unknown:
-            return localized("日历权限状态未知", "Calendar Access Unknown")
-        }
-    }
-
-    var localizedOverviewSyncBadgeText: String {
-        if sourceCoordinator.state.isRefreshing {
-            return localized("正在同步本地日历", "Syncing Local Calendar")
-        }
-
-        guard let lastRefreshAt = sourceCoordinator.state.lastRefreshAt else {
-            return localized("尚未同步成功", "No Successful Sync Yet")
-        }
-
-        let elapsedDescription = localizedElapsedDescription(Date().timeIntervalSince(lastRefreshAt))
-        return localized("\(elapsedDescription)前同步成功", "Synced \(elapsedDescription) ago")
     }
 
     var selectedCalendarDetailLine: String {
@@ -287,20 +68,7 @@ extension SettingsView {
         return localizedHealthStateSummary
     }
 
-    var reminderStatusBadgeColor: Color {
-        switch reminderEngine.state {
-        case .disabled:
-            return .secondary
-        case .failed:
-            return .red
-        case .idle:
-            return .orange
-        case .scheduled:
-            return .green
-        case .playing, .triggeredSilently:
-            return .blue
-        }
-    }
+    // MARK: Sound / countdown line
 
     var currentSoundProfileLine: String {
         if let selectedSoundProfile = soundProfileLibraryController.selectedSoundProfile {
@@ -315,7 +83,7 @@ extension SettingsView {
             ?? localized("默认提醒音效", "Default reminder sound")
     }
 
-    /// 当前提醒链路仍然沿用“提前提醒时长 = 倒计时时长”的语义；
+    /// 当前提醒链路仍然沿用"提前提醒时长 = 倒计时时长"的语义；
     /// 设置页只是把这条规则表达得更像可操作项，而不是长段说明文案。
     var isCountdownFollowingSelectedSound: Bool {
         reminderPreferencesController.reminderPreferences.countdownOverrideSeconds == nil
@@ -337,6 +105,8 @@ extension SettingsView {
         return localized("当前跟随默认提醒音效时长。", "Currently follows the default reminder sound length.")
     }
 
+    // MARK: Reminder page strings
+
     var localizedReminderPageTitle: String {
         localized("提醒", "Reminders")
     }
@@ -346,67 +116,6 @@ extension SettingsView {
             "只看提醒是否会执行、何时开始，以及声音会怎么处理。",
             "Focus on whether reminders will run, when they start, and how sound behaves."
         )
-    }
-
-    var localizedReminderHeaderPrimaryBadgeText: String {
-        reminderPreferencesController.reminderPreferences.globalReminderEnabled
-            ? localized("提醒已开启", "Reminders On")
-            : localized("提醒已关闭", "Reminders Off")
-    }
-
-    var reminderHeaderPrimaryBadgeColor: Color {
-        reminderPreferencesController.reminderPreferences.globalReminderEnabled ? .green : .secondary
-    }
-
-    var localizedReminderHeaderScheduleBadgeText: String {
-        switch reminderEngine.state {
-        case .idle:
-            return localized("当前无待触发提醒", "No Pending Reminder")
-        case .scheduled:
-            return localized("下次提醒已安排", "Next Reminder Scheduled")
-        case .playing:
-            return localized("提醒进行中", "Reminder Running")
-        case let .triggeredSilently(_, _, reason):
-            switch reason {
-            case .userMuted:
-                return localized("已静音触发", "Triggered Silently")
-            case .outputRoutePolicy:
-                return localized("已因播放策略静默", "Muted by Policy")
-            }
-        case .disabled:
-            return localized("提醒未启用", "Reminder Disabled")
-        case .failed:
-            return localized("提醒异常", "Reminder Issue")
-        }
-    }
-
-    var reminderHeaderBadges: [SettingsHeaderBadgeItem] {
-        [
-            SettingsHeaderBadgeItem(text: localizedReminderHeaderPrimaryBadgeText, color: reminderHeaderPrimaryBadgeColor),
-            SettingsHeaderBadgeItem(text: localizedReminderHeaderScheduleBadgeText, color: reminderStatusBadgeColor)
-        ]
-    }
-
-    var reminderStatusSymbolName: String {
-        switch reminderEngine.state {
-        case .idle:
-            return "bell.badge"
-        case .scheduled:
-            return "bell.fill"
-        case .playing:
-            return "timer.circle.fill"
-        case let .triggeredSilently(_, _, reason):
-            switch reason {
-            case .userMuted:
-                return "bell.slash.fill"
-            case .outputRoutePolicy:
-                return "speaker.slash.fill"
-            }
-        case .disabled:
-            return "bell.slash.fill"
-        case .failed:
-            return "exclamationmark.triangle.fill"
-        }
     }
 
     var localizedReminderStatusCardDetail: String {
@@ -496,55 +205,7 @@ extension SettingsView {
         )
     }
 
-    /// 壳层语言影响设置页、菜单栏弹层与状态文案。
-    var uiLanguage: AppUILanguage {
-        reminderPreferencesController.reminderPreferences.interfaceLanguage
-    }
-
-    /// 语言切换只改展示文本，不触发业务层重算。
-    var interfaceLanguageBinding: Binding<AppUILanguage> {
-        Binding(
-            get: { uiLanguage },
-            set: { language in
-                Task {
-                    await reminderPreferencesController.setInterfaceLanguage(language)
-                }
-            }
-        )
-    }
-
-    /// 提醒页用两档模式表达当前时长来源：跟随音频，或固定手动秒数。
-    var reminderCountdownModeBinding: Binding<ReminderCountdownMode> {
-        Binding(
-            get: {
-                isCountdownFollowingSelectedSound ? .followSound : .manual
-            },
-            set: { mode in
-                Task {
-                    switch mode {
-                    case .followSound:
-                        await reminderPreferencesController.setCountdownOverrideSeconds(nil)
-                    case .manual:
-                        await reminderPreferencesController.setCountdownOverrideSeconds(effectiveCountdownSeconds)
-                    }
-                }
-            }
-        )
-    }
-
-    /// 手动模式下沿用现有 `countdownOverrideSeconds` 偏好，不改提醒引擎的调度规则。
-    var manualCountdownSecondsBinding: Binding<Int> {
-        Binding(
-            get: {
-                reminderPreferencesController.reminderPreferences.countdownOverrideSeconds ?? effectiveCountdownSeconds
-            },
-            set: { seconds in
-                Task {
-                    await reminderPreferencesController.setCountdownOverrideSeconds(seconds)
-                }
-            }
-        )
-    }
+    // MARK: Calendar configuration
 
     var hasAddedCalDAVAccount: Bool {
         systemCalendarConnectionController.availableCalendars.contains(where: \.isSuggestedByDefault)
@@ -698,6 +359,8 @@ extension SettingsView {
         launchAtLoginController.statusSummary(for: uiLanguage)
     }
 
+    // MARK: Authorization summary helpers
+
     func localizedAuthorizationSummary(for state: SystemCalendarAuthorizationState) -> String {
         switch state {
         case .authorized:
@@ -728,6 +391,8 @@ extension SettingsView {
         }
     }
 
+    // MARK: Calendar page strings
+
     /// 日历页头部只保留一行事实摘要，不再堆满胶囊状态。
     var localizedCalendarPageStatusSummary: String {
         switch calendarConnectionState {
@@ -757,7 +422,7 @@ extension SettingsView {
         }
     }
 
-    /// “日历连接”模块会基于这份状态决定显示正常卡还是错误卡。
+    /// "日历连接"模块会基于这份状态决定显示正常卡还是错误卡。
     var calendarConnectionState: CalendarConnectionPresentationState {
         let authorizationState = systemCalendarConnectionController.authorizationState
 
@@ -780,7 +445,7 @@ extension SettingsView {
         return .healthy
     }
 
-    /// “今天 17:27” 这种时间表达比单独的时分更清晰，跨天时也不会让用户误判。
+    /// "今天 17:27" 这种时间表达比单独的时分更清晰，跨天时也不会让用户误判。
     var calendarLastCheckedSummary: String {
         guard let lastLoadedAt = systemCalendarConnectionController.lastLoadedAt else {
             return localized("尚未完成首次检查", "No successful check yet")
@@ -844,147 +509,7 @@ extension SettingsView {
         )
     }
 
-    var calendarHeaderSummaryColor: Color {
-        switch calendarConnectionState {
-        case .healthy:
-            return Color.secondary
-        case .authorizationRequired, .connectionFailure:
-            return Color.primary.opacity(0.82)
-        }
-    }
-
-    /// 概览和日历页现在共用同一套 header 主卡骨架，因此 badge 也改成显式数据数组。
-    var overviewHeaderBadges: [SettingsHeaderBadgeItem] {
-        [
-            SettingsHeaderBadgeItem(text: localizedOverviewHealthBadgeText, color: overviewHealthBadgeColor),
-            SettingsHeaderBadgeItem(
-                text: localizedOverviewSyncBadgeText,
-                color: diagnosticBadgeColor(for: syncFreshnessStatus)
-            )
-        ]
-    }
-
-    var calendarHeaderBadges: [SettingsHeaderBadgeItem] {
-        [
-            SettingsHeaderBadgeItem(text: localizedCalendarHeaderStateBadgeText, color: calendarHeaderStateBadgeColor),
-            SettingsHeaderBadgeItem(text: localizedCalendarHeaderConnectionBadgeText, color: calendarHeaderConnectionBadgeColor),
-            SettingsHeaderBadgeItem(text: localizedCalendarHeaderAuthorizationBadgeText, color: calendarHeaderAuthorizationBadgeColor),
-            SettingsHeaderBadgeItem(text: localizedCalendarHeaderCheckedBadgeText, color: calendarHeaderCheckedBadgeColor)
-        ]
-    }
-
-    var localizedCalendarHeaderStateBadgeText: String {
-        switch calendarConnectionState {
-        case .healthy:
-            return localized("状态正常", "Healthy")
-        case .authorizationRequired:
-            return localized("无法访问日历", "Access Needed")
-        case .connectionFailure:
-            return localized("连接异常", "Connection Issue")
-        }
-    }
-
-    var calendarHeaderStateBadgeColor: Color {
-        switch calendarConnectionState {
-        case .healthy:
-            return .green
-        case .authorizationRequired:
-            return .orange
-        case .connectionFailure:
-            return .red
-        }
-    }
-
-    var localizedCalendarHeaderConnectionBadgeText: String {
-        switch calendarConnectionState {
-        case .healthy:
-            return localized("CalDAV 已连接", "CalDAV Connected")
-        case .authorizationRequired:
-            return localized("等待 CalDAV 检查", "CalDAV Pending")
-        case .connectionFailure:
-            return localized("CalDAV 读取失败", "CalDAV Failed")
-        }
-    }
-
-    var calendarHeaderConnectionBadgeColor: Color {
-        switch calendarConnectionState {
-        case .healthy:
-            return .blue
-        case .authorizationRequired:
-            return .secondary
-        case .connectionFailure:
-            return .red
-        }
-    }
-
-    var localizedCalendarHeaderAuthorizationBadgeText: String {
-        switch systemCalendarConnectionController.authorizationState {
-        case .authorized:
-            return localized("已授权", "Granted")
-        case .notDetermined:
-            return localized("等待授权", "Needs Access")
-        case .denied:
-            return localized("已拒绝", "Denied")
-        case .restricted:
-            return localized("访问受限", "Restricted")
-        case .writeOnly:
-            return localized("仅写入", "Write-only")
-        case .unknown:
-            return localized("状态未知", "Unknown")
-        }
-    }
-
-    var calendarHeaderAuthorizationBadgeColor: Color {
-        authorizationBadgeColor(for: systemCalendarConnectionController.authorizationState)
-    }
-
-    var localizedCalendarHeaderCheckedBadgeText: String {
-        if let lastLoadedAt = systemCalendarConnectionController.lastLoadedAt {
-            return localized(
-                "\(localizedDateHeadline(for: lastLoadedAt)) 检查成功",
-                "Checked \(localizedDateHeadline(for: lastLoadedAt))"
-            )
-        }
-
-        return localized("等待首次检查", "Waiting for first check")
-    }
-
-    var calendarHeaderCheckedBadgeColor: Color {
-        switch calendarConnectionState {
-        case .healthy:
-            return .green
-        case .authorizationRequired:
-            return .secondary
-        case .connectionFailure:
-            return .orange
-        }
-    }
-
-    var localizedCalendarSelectionFeedback: String? {
-        switch systemCalendarConnectionController.selectionPersistenceState {
-        case .idle:
-            return nil
-        case .saving:
-            return localized("正在保存…", "Saving...")
-        case .saved:
-            return localized("已保存", "Saved")
-        case .failed:
-            return localized("保存失败，请重试", "Save failed, please retry")
-        }
-    }
-
-    var calendarSelectionFeedbackColor: Color {
-        switch systemCalendarConnectionController.selectionPersistenceState {
-        case .idle:
-            return .secondary
-        case .saving:
-            return .secondary
-        case .saved:
-            return Color.green.opacity(0.82)
-        case .failed:
-            return .red
-        }
-    }
+    // MARK: Calendar list helpers
 
     /// 搜索会保留来源分组，但匹配逻辑同时覆盖名称、来源和类型文案。
     var filteredCalendarSections: [CalendarSourceSection] {
@@ -1159,116 +684,11 @@ extension SettingsView {
         }
     }
 
-    func localizedMeetingStartLine(for meeting: MeetingRecord) -> String {
-        "\(Self.absoluteFormatter.string(from: meeting.startAt)) (\(localizedCountdownLine(until: meeting.startAt)))"
-    }
-
-    func localizedCountdownLine(until date: Date) -> String {
-        let interval = max(0, date.timeIntervalSinceNow)
-
-        if interval < 60 {
-            return localized("即将开始", "Starting Soon")
-        }
-
-        let totalSeconds = Int(interval.rounded(.up))
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-
-        if uiLanguage == .english {
-            if hours > 0 {
-                return minutes == 0 ? "\(hours)h" : "\(hours)h \(minutes)m"
-            }
-
-            return "\(max(1, minutes))m"
-        }
-
-        if hours > 0 {
-            return minutes == 0 ? "\(hours) 小时" : "\(hours) 小时 \(minutes) 分钟"
-        }
-
-        return "\(max(1, minutes)) 分钟"
-    }
-
-    func localizedElapsedDescription(_ elapsed: TimeInterval) -> String {
-        let totalMinutes = max(1, Int(elapsed / 60))
-
-        if uiLanguage == .english {
-            guard totalMinutes >= 60 else {
-                return totalMinutes == 1 ? "1 minute" : "\(totalMinutes) minutes"
-            }
-
-            let hours = totalMinutes / 60
-            let minutes = totalMinutes % 60
-            if minutes == 0 {
-                return hours == 1 ? "1 hour" : "\(hours) hours"
-            }
-
-            return "\(hours)h \(minutes)m"
-        }
-
-        guard totalMinutes >= 60 else {
-            return "\(totalMinutes) 分钟"
-        }
-
-        let hours = totalMinutes / 60
-        let minutes = totalMinutes % 60
-
-        if minutes == 0 {
-            return "\(hours) 小时"
-        }
-
-        return "\(hours) 小时 \(minutes) 分钟"
-    }
-
-    /// `SoundProfile.durationLine` 仍然是偏业务层的文案，这里只负责外壳本地化显示。
-    func localizedDurationLine(for duration: TimeInterval) -> String {
-        let totalSeconds = max(1, Int(ceil(duration)))
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-
-        if uiLanguage == .english {
-            if minutes == 0 {
-                return "\(seconds)s"
-            }
-
-            if seconds == 0 {
-                return "\(minutes)m"
-            }
-
-            return "\(minutes)m \(seconds)s"
-        }
-
-        if minutes == 0 {
-            return "\(seconds) 秒"
-        }
-
-        if seconds == 0 {
-            return "\(minutes) 分钟"
-        }
-
-        return "\(minutes) 分 \(seconds) 秒"
-    }
-
     func localizedJoinActionTitle(for meeting: MeetingRecord) -> String {
         localized(meeting.hasVideoConferenceLink ? "加入会议" : "打开事件", meeting.hasVideoConferenceLink ? "Join Video" : "Open Event")
     }
 
-    /// 当前倒计时秒数会同时影响 Overview 展示、提醒页文案和音频页说明。
-    var effectiveCountdownSeconds: Int {
-        if let overrideSeconds = reminderPreferencesController.reminderPreferences.countdownOverrideSeconds, overrideSeconds > 0 {
-            return overrideSeconds
-        }
-
-        if let selectedSoundProfile = soundProfileLibraryController.selectedSoundProfile {
-            return max(1, Int(ceil(selectedSoundProfile.duration)))
-        }
-
-        return 1
-    }
-
-    var effectiveCountdownDurationLine: String {
-        localizedDurationLine(for: TimeInterval(effectiveCountdownSeconds))
-    }
+    // MARK: Scheduled reminder context
 
     /// Overview 里需要把当前提醒上下文抽出来判断是不是已经为下一场会议建好提醒。
     var currentScheduledReminderContext: ScheduledReminderContext? {
@@ -1286,108 +706,7 @@ extension SettingsView {
         context.meeting.id == meeting.id && context.meeting.startAt == meeting.startAt
     }
 
-    /// Overview 主卡把开始时间表达成“今天 / 明天 / 日期 + 时间”的组合，更贴近用户视角。
-    func localizedMeetingScheduleLine(for meeting: MeetingRecord) -> String {
-        localizedDateHeadline(for: meeting.startAt)
-    }
-
-    func localizedDateHeadline(for date: Date) -> String {
-        let timeLine = Self.absoluteFormatter.string(from: date)
-        let calendar = Calendar.current
-
-        if calendar.isDateInToday(date) {
-            return localized("今天 \(timeLine)", "Today \(timeLine)")
-        }
-
-        if calendar.isDateInTomorrow(date) {
-            return localized("明天 \(timeLine)", "Tomorrow \(timeLine)")
-        }
-
-        if calendar.isDateInYesterday(date) {
-            return localized("昨天 \(timeLine)", "Yesterday \(timeLine)")
-        }
-
-        let month = calendar.component(.month, from: date)
-        let day = calendar.component(.day, from: date)
-
-        if uiLanguage == .english {
-            return "\(Self.englishMonthSymbols[max(0, min(11, month - 1))]) \(day), \(timeLine)"
-        }
-
-        let currentYear = calendar.component(.year, from: Date())
-        let year = calendar.component(.year, from: date)
-
-        if year == currentYear {
-            return "\(month)月\(day)日 \(timeLine)"
-        }
-
-        return "\(year)年\(month)月\(day)日 \(timeLine)"
-    }
-
-    func localizedMeetingCountdownHeadline(for meeting: MeetingRecord) -> String {
-        let interval = max(0, meeting.startAt.timeIntervalSinceNow)
-
-        guard interval >= 60 else {
-            return localized("距离开始不到 1 分钟", "Starts in less than 1 minute")
-        }
-
-        return localized(
-            "距离开始还有 \(localizedFutureDurationDescription(interval))",
-            "Starts in \(localizedFutureDurationDescription(interval))"
-        )
-    }
-
-    func localizedScheduledReminderLine(for context: ScheduledReminderContext) -> String {
-        let leadTime = localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt)
-
-        if context.triggeredImmediately {
-            return localized(
-                "距离会议已经太近，因此会立即开始提醒，倒计时持续 \(context.countdownSeconds) 秒。",
-                "The meeting is too close, so the reminder starts immediately and the countdown lasts \(context.countdownSeconds) seconds."
-            )
-        }
-
-        return localized(
-            "将在会议开始前 \(leadTime) 触发提醒，倒计时持续 \(context.countdownSeconds) 秒。",
-            "The reminder will trigger \(leadTime) before the meeting and the countdown lasts \(context.countdownSeconds) seconds."
-        )
-    }
-
-    func localizedLeadTimeDescription(triggerAt: Date, meetingStartAt: Date) -> String {
-        localizedDurationLine(for: max(1, meetingStartAt.timeIntervalSince(triggerAt)))
-    }
-
-    func localizedFutureDurationDescription(_ interval: TimeInterval) -> String {
-        let totalMinutes = max(1, Int(ceil(interval / 60)))
-
-        if uiLanguage == .english {
-            guard totalMinutes >= 60 else {
-                return totalMinutes == 1 ? "1 minute" : "\(totalMinutes) minutes"
-            }
-
-            let hours = totalMinutes / 60
-            let minutes = totalMinutes % 60
-
-            if minutes == 0 {
-                return hours == 1 ? "1 hour" : "\(hours) hours"
-            }
-
-            return "\(hours) hours \(minutes) minutes"
-        }
-
-        guard totalMinutes >= 60 else {
-            return "\(totalMinutes) 分钟"
-        }
-
-        let hours = totalMinutes / 60
-        let minutes = totalMinutes % 60
-
-        if minutes == 0 {
-            return "\(hours) 小时"
-        }
-
-        return "\(hours) 小时 \(minutes) 分钟"
-    }
+    // MARK: Overview card strings
 
     var localizedOverviewReminderStatusTitle: String {
         reminderPreferencesController.reminderPreferences.globalReminderEnabled
@@ -1620,23 +939,18 @@ extension SettingsView {
         return localized("如果后续出现权限、同步或音频问题，这里会优先展示修复入口。", "If permission, sync, or audio issues appear later, this area will show the fastest recovery path first.")
     }
 
-    private static let englishMonthSymbols = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ]
+    // MARK: Grid layout helper
 
     func responsiveCardColumns(minimum: CGFloat, maximum: CGFloat = 360) -> [GridItem] {
         [
             GridItem(.adaptive(minimum: minimum, maximum: maximum), spacing: 16, alignment: .topLeading)
         ]
     }
-
-    func localized(_ chinese: String, _ english: String) -> String {
-        uiLanguage == .english ? english : chinese
-    }
 }
 
-/// 日历页把“连接正常 / 权限异常 / 连接异常”抽成显式展示态，
+// MARK: - File-level types
+
+/// 日历页把"连接正常 / 权限异常 / 连接异常"抽成显式展示态，
 /// 这样页面结构可以围绕任务组织，而不是把多种判断散在 View 里。
 enum CalendarConnectionPresentationState: Equatable {
     case healthy
@@ -1644,7 +958,7 @@ enum CalendarConnectionPresentationState: Equatable {
     case connectionFailure(message: String)
 }
 
-/// 日历列表按来源分组，帮助用户先理解“这些日历来自哪里”，再决定是否纳入提醒。
+/// 日历列表按来源分组，帮助用户先理解"这些日历来自哪里"，再决定是否纳入提醒。
 enum CalendarSourceGroup: String, CaseIterable, Identifiable {
     case feishu
     case iCloud
@@ -1687,7 +1001,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     }
 }
 
-/// `ReminderCountdownMode` 只服务于设置页表达“当前时长来自哪里”，
+/// `ReminderCountdownMode` 只服务于设置页表达"当前时长来自哪里"，
 /// 它不会直接改变提醒引擎规则，只负责把现有偏好映射成两种可理解的 UI 选择。
 enum ReminderCountdownMode: String, CaseIterable, Identifiable {
     case followSound
