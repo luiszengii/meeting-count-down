@@ -121,12 +121,21 @@ final class SystemCalendarConnectionController: ObservableObject {
 
             if !suggestedIDs.isEmpty {
                 storedSelectedIDs = suggestedIDs
-                try? await preferencesStore.saveSelectedSystemCalendarIDs(suggestedIDs)
-                self.hasStoredSelection = true
-                logger.info("Auto-selected \(suggestedIDs.count) suggested system calendars on first authorized load")
+                do {
+                    try await preferencesStore.saveSelectedSystemCalendarIDs(suggestedIDs)
+                    self.hasStoredSelection = true
+                    logger.info("Auto-selected \(suggestedIDs.count) suggested system calendars on first authorized load")
+                } catch {
+                    // 故意保持 hasStoredSelection = false，让下次启动可以重新尝试自动选择。
+                    logger.error("Failed to persist auto-selected calendar IDs: \(error.localizedDescription)")
+                }
             }
         } else {
-            try? await preferencesStore.saveSelectedSystemCalendarIDs(storedSelectedIDs)
+            do {
+                try await preferencesStore.saveSelectedSystemCalendarIDs(storedSelectedIDs)
+            } catch {
+                logger.error("Failed to persist reconciled system calendar IDs: \(error.localizedDescription)")
+            }
         }
 
         availableCalendars = calendars

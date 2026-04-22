@@ -10,6 +10,8 @@ final class AppRefreshController {
     private let sourceCoordinator: SourceCoordinator
     /// 时钟入口，方便把“近会 30 秒刷新”判断写成可替换逻辑。
     private let dateProvider: any DateProviding
+    /// 统一的刷新调度日志入口。
+    private let logger: AppLogger
     /// 用于监听时区变化。
     private let notificationCenter: NotificationCenter
     /// 用于监听系统睡眠唤醒。
@@ -27,11 +29,13 @@ final class AppRefreshController {
     init(
         sourceCoordinator: SourceCoordinator,
         dateProvider: any DateProviding,
+        logger: AppLogger = AppLogger(source: "AppRefreshController"),
         notificationCenter: NotificationCenter = .default,
         workspaceNotificationCenter: NotificationCenter = NSWorkspace.shared.notificationCenter
     ) {
         self.sourceCoordinator = sourceCoordinator
         self.dateProvider = dateProvider
+        self.logger = logger
         self.notificationCenter = notificationCenter
         self.workspaceNotificationCenter = workspaceNotificationCenter
 
@@ -84,7 +88,11 @@ final class AppRefreshController {
         scheduledRefreshTask = Task { [weak self] in
             do {
                 try await Task.sleep(for: .seconds(delay))
+            } catch is CancellationError {
+                // 取消是常规的“重排下一次刷新”行为，不写日志避免噪音。
+                return
             } catch {
+                self?.logger.error("Scheduled refresh sleep failed: \(error.localizedDescription)")
                 return
             }
 
