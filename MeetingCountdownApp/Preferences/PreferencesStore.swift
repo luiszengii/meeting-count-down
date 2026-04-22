@@ -124,6 +124,16 @@ actor InMemoryPreferencesStore: PreferencesStore {
 actor UserDefaultsPreferencesStore: PreferencesStore {
     /// 统一管理所有非敏感偏好的读写入口。
     private let userDefaults: UserDefaults
+    /// actor 内部用的日志器，专门记录 UserDefaults 解码失败等运维信息。
+    private let logger = AppLogger(source: "PreferencesStore")
+    /// 同步 bootstrap 路径无法访问 actor 隔离实例，因此提供一份静态日志器。
+    private static let staticLogger = AppLogger(source: "PreferencesStore")
+    /// 当前偏好 schema 版本号；今天还没有真正发生 schema 演进，
+    /// 起始值定为 1 表示“首个被显式记录的版本”，后续任何破坏性 key 变更都需要将该值 +1 并补 migration。
+    private static let currentSchemaVersion = 1
+
+    /// 标记当前 actor 实例是否已经走过 migration 检查，避免每次 load 都重复跑。
+    private var didRunMigration = false
 
     /// 允许测试传入隔离的 suite，也允许生产环境默认使用标准容器。
     init(userDefaults: UserDefaults = .standard) {
@@ -135,9 +145,25 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
         self.userDefaults = UserDefaults(suiteName: suiteName) ?? .standard
     }
 
+    /// 在所有 public load 入口最前面调用，惰性把当前存档拉齐到 `currentSchemaVersion`。
+    /// 当前没有真正的 schema 升级动作，但保留这个 hook 后续就不需要再改调用方。
+    private func migrateIfNeeded() async {
+        guard !didRunMigration else { return }
+        didRunMigration = true
+
+        let storedVersion = userDefaults.object(forKey: Keys.schemaVersion) as? Int
+        if let storedVersion, storedVersion >= Self.currentSchemaVersion {
+            return
+        }
+
+        // TODO: 当 schema 升级时在此处补 migration，逐版本应用
+        userDefaults.set(Self.currentSchemaVersion, forKey: Keys.schemaVersion)
+    }
+
     /// 读取提醒偏好；当前字段不多，直接逐项从 `UserDefaults` 解码即可。
     func loadReminderPreferences() async -> ReminderPreferences {
-        ReminderPreferences(
+        await migrateIfNeeded()
+        return ReminderPreferences(
             countdownOverrideSeconds: userDefaults.object(forKey: Keys.countdownOverrideSeconds) as? Int,
             globalReminderEnabled: userDefaults.object(forKey: Keys.globalReminderEnabled) as? Bool ?? true,
             isMuted: userDefaults.object(forKey: Keys.isMuted) as? Bool ?? false,
@@ -175,7 +201,8 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
 
     /// 读取已选系统日历 ID，并统一转成集合避免重复。
     func loadSelectedSystemCalendarIDs() async -> Set<String> {
-        Self.bootstrapSelectedSystemCalendarIDs(userDefaults: userDefaults)
+        await migrateIfNeeded()
+        return Self.bootstrapSelectedSystemCalendarIDs(userDefaults: userDefaults)
     }
 
     /// 把当前系统日历选择写成稳定排序后的数组，便于调试和比较。
@@ -185,12 +212,14 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
 
     /// 只要对应 key 存在，无论数组是不是空，都说明用户已经显式保存过一次选择。
     func hasStoredSelectedSystemCalendarIDs() async -> Bool {
-        userDefaults.object(forKey: Keys.selectedSystemCalendarIDs) != nil
+        await migrateIfNeeded()
+        return userDefaults.object(forKey: Keys.selectedSystemCalendarIDs) != nil
     }
 
     /// 读取最近一次成功刷新时间；当前直接按 `Date` 原生对象往返。
     func loadLastSuccessfulRefreshAt() async -> Date? {
-        userDefaults.object(forKey: Keys.lastSuccessfulRefreshAt) as? Date
+        await migrateIfNeeded()
+        return userDefaults.object(forKey: Keys.lastSuccessfulRefreshAt) as? Date
     }
 
     /// 保存最近一次成功刷新时间；传 `nil` 时显式清掉旧值。
@@ -204,6 +233,7 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
 
     /// 读取已导入提醒音频列表；解码失败时回退为空列表，避免旧脏数据把设置页彻底卡住。
     func loadSoundProfiles() async -> [SoundProfile] {
+        await migrateIfNeeded()
         guard let data = userDefaults.data(forKey: Keys.soundProfiles) else {
             return []
         }
@@ -211,6 +241,8 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
         do {
             return try JSONDecoder().decode([SoundProfile].self, from: data)
         } catch {
+            // R-5：以前这里静默吞掉解码错误，导致旧脏数据无人察觉；现在显式打日志再回退。
+            logger.error("Failed to decode sound profiles: \(error.localizedDescription)")
             return []
         }
     }
@@ -223,7 +255,8 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
 
     /// 读取当前正式提醒使用的音频 ID。
     func loadSelectedSoundProfileID() async -> String? {
-        userDefaults.string(forKey: Keys.selectedSoundProfileID)
+        await migrateIfNeeded()
+        return userDefaults.string(forKey: Keys.selectedSoundProfileID)
     }
 
     /// 保存当前正式提醒使用的音频 ID；传 `nil` 时清除旧选择。
@@ -237,17 +270,42 @@ actor UserDefaultsPreferencesStore: PreferencesStore {
 
     /// 同步读取当前已选日历 ID，供 app 启动装配和桥接层初始化复用。
     nonisolated static func bootstrapSelectedSystemCalendarIDs(userDefaults: UserDefaults = .standard) -> Set<String> {
-        let identifiers = userDefaults.array(forKey: Keys.selectedSystemCalendarIDs) as? [String] ?? []
+        let raw = userDefaults.object(forKey: Keys.selectedSystemCalendarIDs)
+        guard let raw else {
+            // 没有写过这条 key 属于正常的“首次启动”分支，不打日志避免噪音。
+            return []
+        }
+        guard let identifiers = raw as? [String] else {
+            // R-11：旧版本/外部工具把这条 key 写成了非 [String] 形态时，
+            // 静默回退会把用户的真实选择丢进黑洞，必须显式打日志。
+            staticLogger.error(
+                "bootstrapSelectedSystemCalendarIDs: value at \(Keys.selectedSystemCalendarIDs) is not [String]; falling back to empty set"
+            )
+            return []
+        }
         return Set(identifiers)
     }
 
     /// 同步读取最近一次成功刷新时间，供 app 启动阶段在首次真正刷新完成前展示旧状态。
     nonisolated static func bootstrapLastSuccessfulRefreshAt(userDefaults: UserDefaults = .standard) -> Date? {
-        userDefaults.object(forKey: Keys.lastSuccessfulRefreshAt) as? Date
+        let raw = userDefaults.object(forKey: Keys.lastSuccessfulRefreshAt)
+        guard let raw else {
+            return nil
+        }
+        guard let date = raw as? Date else {
+            // R-11：和上面同理，遇到非 Date 写入要打日志再回退到 nil。
+            staticLogger.error(
+                "bootstrapLastSuccessfulRefreshAt: value at \(Keys.lastSuccessfulRefreshAt) is not Date; falling back to nil"
+            )
+            return nil
+        }
+        return date
     }
 
     /// 统一管理所有 `UserDefaults` 键名，避免散落字符串常量。
     private enum Keys {
+        /// E-5：偏好 schema 版本号；缺省即视为 0，由 `migrateIfNeeded()` 拉齐到当前版本。
+        static let schemaVersion = "preferences_schema_version"
         static let countdownOverrideSeconds = "reminder_preferences.countdown_override_seconds"
         static let globalReminderEnabled = "reminder_preferences.global_reminder_enabled"
         static let isMuted = "reminder_preferences.is_muted"
