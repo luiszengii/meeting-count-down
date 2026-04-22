@@ -164,12 +164,14 @@ enum MenuBarPresentationCalculator {
     }
 
     /// 把目标开始时间转换成适合菜单栏空间的简洁倒计时文案。
-    /// 不足一分钟统一显示"即将开始"，避免秒级跳动导致标题过于嘈杂。
+    /// 会议开始前最后一分钟内逐秒显示 `Xs`，让用户在提醒真正命中前也能看到秒级倒计时；
+    /// 超过一分钟则退回到分钟粒度，避免秒级跳动长期占用菜单栏宽度。
     private static func localizedCountdownLine(until date: Date, now: Date, uiLanguage: AppUILanguage) -> String {
         let interval = max(0, date.timeIntervalSince(now))
 
         if interval < 60 {
-            return localized("即将开始", "Soon", uiLanguage: uiLanguage)
+            let remainingSeconds = max(0, Int(interval.rounded(.up)))
+            return "\(remainingSeconds)s"
         }
 
         let totalSeconds = Int(interval.rounded(.up))

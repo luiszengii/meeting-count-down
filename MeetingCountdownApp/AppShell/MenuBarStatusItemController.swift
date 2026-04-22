@@ -70,6 +70,7 @@ final class MenuBarStatusItemController {
                 let rootView = MenuBarContentView(
                     sourceCoordinator: self.sourceCoordinator,
                     reminderPreferencesController: self.reminderPreferencesController,
+                    menuBarPresentationClock: self.menuBarPresentationClock,
                     openSettingsAction: { [weak self] in
                         self?.openSettingsWindow()
                     }

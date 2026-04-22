@@ -24,3 +24,4 @@
 - [MenuBarExtra label 使用 TimelineView 导致高频重绘](./swiftui-menubarextra-timelineview-overdraw.md)
 - [SwiftUI Settings scene 在菜单栏 app 里的打开方式](./swiftui-settings-scene-in-menu-bar-app.md)
 - [新增源文件后需要重新生成 Xcode 工程](./xcodegen-regenerate-project-after-adding-files.md)
+- [ReminderEngine reconcile 在播放中误判新提醒并掐掉音频](./reminder-engine-reconcile-cancels-ongoing-playback.md)

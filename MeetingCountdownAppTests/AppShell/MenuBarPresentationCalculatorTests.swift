@@ -261,8 +261,9 @@ final class MenuBarPresentationCalculatorTests: XCTestCase {
 
     // MARK: - Countdown format edge cases
 
-    /// 验证距会议不足 60 秒时显示"即将开始"而不是秒数。
-    func testMeetingWithinOneMinuteShowsSoonLabel() {
+    /// 验证距会议不足 60 秒时按秒粒度显示倒计时（不再统一收成"即将开始"），
+    /// 让用户在提醒真正命中前也能看到菜单栏秒级倒计时。
+    func testMeetingWithinOneMinuteShowsSecondsCountdown() {
         let meetingStart = fixedNow.addingTimeInterval(30)
         let presentation = MenuBarPresentationCalculator.calculate(
             reminderState: .idle(message: "No reminder."),
@@ -271,10 +272,8 @@ final class MenuBarPresentationCalculatorTests: XCTestCase {
             uiLanguage: .simplifiedChinese
         )
 
-        // 30 秒内会议，但没有 alert presentation，所以走普通路径
-        // meetingSoon（≤30分钟）+ title = "即将开始"
         XCTAssertEqual(presentation.visualState, .meetingSoon)
-        XCTAssertEqual(presentation.title, "即将开始")
+        XCTAssertEqual(presentation.title, "30s")
     }
 
     /// 验证正好 1 小时无零分钟时英文显示"1h"而不是"1h 0m"。

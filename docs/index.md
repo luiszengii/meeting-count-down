@@ -59,6 +59,7 @@
 | [./dev-logs/2026-04-15.md](./dev-logs/2026-04-15.md) | 升版到 `0.1.3` 并重新走 tag 驱动的 Release 发布链路 |
 | [./dev-logs/2026-04-16.md](./dev-logs/2026-04-16.md) | 确认 `Phase 6` 完成、清理工作区并把顶层文档切换到 `Phase 7` 口径 |
 | [./dev-logs/2026-04-17.md](./dev-logs/2026-04-17.md) | 修正设置页 tab 选中态文字对比度，并补同步切换动画 |
+| [./dev-logs/2026-04-22.md](./dev-logs/2026-04-22.md) | 修复弹层倒计时不自动递减、菜单栏末段秒数丢失，以及密集会议只有最后一场响铃的 race |
 
 ## Pitfalls
 
@@ -73,6 +74,7 @@
 | [./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md](./pitfalls/local-self-signed-code-signing-identity-for-manual-distribution.md) | 记录维护者如何准备本地自签名代码签名身份并接给分发脚本 |
 | [./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md](./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md) | 记录 Debug / Release 共用 bundle id 时，TCC / EventKit 权限会混淆的问题 |
 | [./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md](./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md) | 记录自动生成 `Info.plist` 在 release runner 上丢失 Calendar 权限说明的问题 |
+| [./pitfalls/reminder-engine-reconcile-cancels-ongoing-playback.md](./pitfalls/reminder-engine-reconcile-cancels-ongoing-playback.md) | 记录 reconcile 把 `triggeredImmediately` 纳入相等性判断导致播放中音频被掐掉的 race |
 
 ## 模板
 

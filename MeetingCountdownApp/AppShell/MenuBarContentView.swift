@@ -7,6 +7,9 @@ import SwiftUI
 struct MenuBarContentView: View {
     @ObservedObject var sourceCoordinator: SourceCoordinator
     @ObservedObject var reminderPreferencesController: ReminderPreferencesController
+    /// 弹层倒计时依赖这个展示时钟每秒 tick，否则 SwiftUI 只会在
+    /// `sourceCoordinator.state` 真正改变时才重绘，导致秒数长时间不动。
+    @ObservedObject var menuBarPresentationClock: MenuBarPresentationClock
     let openSettingsAction: () -> Void
 
     var body: some View {
@@ -265,7 +268,7 @@ struct MenuBarContentView: View {
             return nil
         }
 
-        let interval = nextMeeting.startAt.timeIntervalSinceNow
+        let interval = nextMeeting.startAt.timeIntervalSince(menuBarPresentationClock.now)
         guard interval <= 60 * 60 else {
             return nil
         }
@@ -276,17 +279,23 @@ struct MenuBarContentView: View {
         return String(format: "%02d:%02d", minutes, seconds)
     }
 
+    /// 只有进入最后 20 秒才把主卡倒计时切成红色强调态；
+    /// 再早的时段保持与副标题一致的白色，避免整块面板长期发红带来的焦虑感。
     private var heroCountdownColor: Color {
         if let nextMeeting = sourceCoordinator.state.nextMeeting,
-           nextMeeting.startAt.timeIntervalSinceNow <= 60 {
+           nextMeeting.startAt.timeIntervalSince(menuBarPresentationClock.now) <= 20 {
             return .red
         }
 
-        return Color(red: 1.0, green: 0.28, blue: 0.25)
+        return .white
     }
 
     private var heroSupportingTitle: String {
         if let nextMeeting = sourceCoordinator.state.nextMeeting {
+            let interval = nextMeeting.startAt.timeIntervalSince(menuBarPresentationClock.now)
+            if interval <= 0 {
+                return localized("会议已开始", "Meeting started")
+            }
             return localized("开始时间 \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))", "Starts at \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))")
         }
 

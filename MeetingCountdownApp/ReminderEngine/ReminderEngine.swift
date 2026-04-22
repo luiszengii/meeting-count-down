@@ -270,6 +270,12 @@ final class ReminderEngine: ObservableObject {
 
     /// 当上游状态只是重复发布同一场会议时，这里直接复用当前提醒状态，
     /// 避免先取消再重建导致日志噪音、任务抖动，甚至打断已经开始的播放。
+    ///
+    /// 判断"是否同一条提醒"时故意忽略 `triggeredImmediately`：
+    /// 这个标志只记录"调度时是否来不及等完整倒计时"，在提醒已经进入
+    /// `.playing` / `.triggeredSilently` 之后，下一次 reconcile 因为 `now` 已经
+    /// 越过 `triggerAt`，会把新算出的 context.triggeredImmediately 翻成 true，
+    /// 如果参与相等性比较就会被误判成"不同的提醒"并取消正在播放的音频。
     private func canReuseCurrentState(
         for context: ScheduledReminderContext,
         executionPolicy: ReminderExecutionPolicy
@@ -278,7 +284,10 @@ final class ReminderEngine: ObservableObject {
         case let .scheduled(currentContext),
              let .playing(currentContext, _),
              let .triggeredSilently(currentContext, _, _):
-            return currentContext == context && activeExecutionPolicy == executionPolicy
+            return currentContext.meeting == context.meeting
+                && currentContext.triggerAt == context.triggerAt
+                && currentContext.countdownSeconds == context.countdownSeconds
+                && activeExecutionPolicy == executionPolicy
         case .idle, .disabled, .failed:
             return false
         }
