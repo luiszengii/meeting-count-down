@@ -1,0 +1,60 @@
+# 该工作流在每次 push 与 pull_request 时运行单元测试。
+# 不依赖任何代码签名 secrets，也不会创建或修改 keychain，
+# 适配未加入 Apple Developer Program 的开发场景。
+# 它与仅在打 tag 时触发的 release.yml（需要签名）互为补充。
+# 参考：docs/adrs 与 AGENTS.md 中的测试方案。
+name: Tests
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+
+      - name: Regenerate Xcode Project
+        run: |
+          set -euo pipefail
+          xcodegen generate
+
+      - name: Run Unit Tests
+        run: |
+          set -euo pipefail
+
+          if command -v xcpretty >/dev/null 2>&1; then
+            set -o pipefail
+            xcodebuild \
+              -scheme FeishuMeetingCountdown \
+              -destination "platform=macOS" \
+              -configuration Debug \
+              test \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO | xcpretty
+          else
+            xcodebuild \
+              -scheme FeishuMeetingCountdown \
+              -destination "platform=macOS" \
+              -configuration Debug \
+              test \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO
+          fi
