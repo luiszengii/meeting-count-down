@@ -1,0 +1,60 @@
+# SwiftLint 配置
+# 哲学：warning 只是信号，不阻断构建；error 保留给真正影响代码健康的气味。
+# 首次引入时预计会出现一批 warning，安排单独清理任务处理；
+# CI 将 warning 作为 review signal，而不是让流水线变红。
+# 参考：docs/adrs/2026-04-22-swiftlint-and-pre-commit.md
+
+# 只 lint 这两个目录，避免扫描三方产物或测试辅助代码
+included:
+  - MeetingCountdownApp
+  - MeetingCountdownAppTests
+
+# 不扫描构建产物、Xcode 生成目录、shell 脚本目录、文档目录
+excluded:
+  - build
+  - DerivedData
+  - MeetingCountdown.xcodeproj
+  - .build
+  - scripts
+  - docs
+  - .planning
+
+# 关闭对开发阶段影响过大、或已有其他手段保证的规则
+disabled_rules:
+  - trailing_whitespace  # 编辑器格式化负责，不让 lint 重复
+  - todo                 # TODO 注释在本项目是有效的开发信号，不强制清除
+
+# 引入有价值但非默认启用的规则
+opt_in_rules:
+  - force_unwrapping          # 强制解包会导致运行时 crash，至少要 warning
+  - force_cast                # 同上
+  - implicit_return           # 单行闭包和计算属性可以省 return，保持风格一致
+  - redundant_nil_coalescing  # `?? nil` 是冗余写法，直接用 Optional
+  - sorted_imports            # import 按字母序，降低合并冲突概率
+
+# 行长度：开发时 140 字符以内为优选，超过 200 才算真正不可接受
+line_length:
+  warning: 140
+  error: 200
+  ignores_function_declarations: true
+  ignores_comments: true
+  ignores_urls: true
+
+# 函数体长度：超过 80 行说明可能需要拆分，超过 200 行才是错误
+function_body_length:
+  warning: 80
+  error: 200
+
+# 类型体长度：SwiftUI View 容易偏长，warning 阈值适当放宽
+type_body_length:
+  warning: 400
+  error: 800
+
+# 圈复杂度：超过 12 说明逻辑分支偏多，超过 25 是明确代码气味
+cyclomatic_complexity:
+  warning: 12
+  error: 25
+
+# 对 force_unwrapping / force_cast 只警告，不阻断（error 留给真正危险的场景）
+force_unwrapping: warning
+force_cast: warning

@@ -36,6 +36,22 @@ jobs:
           set -euo pipefail
           xcodegen generate
 
+      - name: Install SwiftLint
+        run: |
+          set -euo pipefail
+
+          if ! command -v swiftlint >/dev/null 2>&1; then
+            brew install swiftlint
+          fi
+
+      - name: Run SwiftLint
+        # warning 级别问题输出到日志作为 review signal，不让构建变红；
+        # error 级别问题（--strict 会把 warning 也升为 error，此处不传）
+        # 只有真正的 swiftlint error 才会导致非零退出码，进而让 CI 步骤失败。
+        run: |
+          set -euo pipefail
+          swiftlint lint --quiet
+
       - name: Run Unit Tests
         run: |
           set -euo pipefail

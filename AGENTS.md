@@ -61,6 +61,10 @@ Feishu Meeting Countdown for macOS
 
 上层目录只讲定位和边界，下层目录再讲实现细节，避免整棵树到处重复同样内容。
 
+## 代码风格守卫：SwiftLint + pre-commit hook
+
+仓库引入了 SwiftLint（`.swiftlint.yml`）来防止代码风格自然漂移。只扫描 `MeetingCountdownApp` 和 `MeetingCountdownAppTests` 两个目录；warning 是 review signal，不阻断构建；error 才阻断。在克隆仓库之后，运行一次 `bash scripts/install-pre-commit-hook.sh` 即可把 pre-commit hook 安装到本地 `.git/hooks/pre-commit`；此后每次 `git commit` 前，hook 会自动对本次暂存的 Swift 文件执行 SwiftLint，只有 error 级别的问题才会阻止提交，warning 仅打印但放行。如果机器上未安装 swiftlint，hook 会打印一行提示后继续放行，不强制阻断。CI（`.github/workflows/tests.yml`）会在单元测试步骤前额外执行 `swiftlint lint --quiet`，若机器没有 swiftlint 会先通过 `brew install swiftlint` 自动安装。首次引入会出现一批 warning，安排单独 task 清理，不在本批次修改 Swift 源文件。
+
 ## AI 代理执行约束（Hard Guardrails）
 
 - 禁止 force-push、删除分支、修改仓库 settings 或 GitHub secrets。
