@@ -19,3 +19,5 @@ ADR 表示 Architecture / Decision Record，用于记录技术栈、产品形态
 - [2026-04-22 引入 AsyncStateController 协议统一 refresh/loading/error 模板](./2026-04-22-async-state-controller.md)
 - [2026-04-22 将 1742 行 Presentation.swift 拆分为四个主题文件](./2026-04-22-presentation-split.md)
 - [2026-04-22 AppRuntime 内部分组与 RefreshEventBus 事件总线](./2026-04-22-runtime-composition-and-event-bus.md)
+- [2026-04-22 明确菜单栏 Presentation 真值方为 ReminderState，MenuBarStatusItemController 收缩为 AppKit 宿主](./2026-04-22-menu-bar-presentation-ownership.md)
+- [2026-04-22 将设置页从 SettingsView 扩展转为独立 SettingsPage 结构体注册表](./2026-04-22-settings-page-registry.md)

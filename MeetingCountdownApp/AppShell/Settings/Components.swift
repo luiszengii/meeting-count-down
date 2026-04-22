@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// 这个文件收口设置页共享组件。
-/// 这些小块如果继续散落在各个 tab 文件里，很快就会重新长回一份“复制粘贴版设置页”。
+/// 2026-04-22 T5 页面注册表重构后：页面特有的行组件（soundProfileRow、calendarRow 等）
+/// 已迁移至各页面 struct，这里保留仍需从 SettingsView 壳层访问的通用组件。
 extension SettingsView {
     /// 概览里的摘要卡需要在多个页面复用，因此抽成统一组件。
     func summaryCard(title: String, value: String, detail: String, accent: Color) -> some View {
@@ -27,7 +28,6 @@ extension SettingsView {
     }
 
     /// 行式开关用来承接提醒和高级设置，避免每个开关都变成一张卡。
-    /// 右侧额外补一枚显式状态胶囊，降低用户只靠绿色 / 灰色识别开关状态的成本。
     func preferenceToggleRow(title: String, detail: String, isOn: Binding<Bool>) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: 18) {
@@ -61,7 +61,7 @@ extension SettingsView {
         }
     }
 
-    /// 提醒页的时间参数更接近“当前值 + 调节控件”，因此补一套共享行骨架。
+    /// 提醒页的时间参数更接近"当前值 + 调节控件"，因此补一套共享行骨架。
     func preferenceValueRow<Control: View>(
         title: String,
         detail: String,
@@ -206,7 +206,7 @@ extension SettingsView {
         }
     }
 
-    /// 设置行状态统一走轻量胶囊，避免每个 tab 再各自发明“已开启 / 已关闭”的样式。
+    /// 设置行状态统一走轻量胶囊，避免每个 tab 再各自发明"已开启 / 已关闭"的样式。
     func preferenceStateLabel(text: String, color: Color) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .bold))
@@ -273,7 +273,6 @@ extension SettingsView {
     }
 
     /// 日历页的异常提示统一走这一套样式。
-    /// 正常态弱化，异常态通过整块背景和动作按钮来抬高优先级。
     func statusCallout(
         title: String,
         detail: String,
@@ -328,170 +327,6 @@ extension SettingsView {
                 .strokeBorder(palette.border, lineWidth: 1)
         )
     }
-
-    /// 日历候选改成紧凑列表行，不再让每个日历都独立占据一整张卡片。
-    func calendarRow(for calendar: SystemCalendarDescriptor) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Toggle(
-                isOn: Binding(
-                    get: {
-                        systemCalendarConnectionController.selectedCalendarIDs.contains(calendar.id)
-                    },
-                    set: { isSelected in
-                        Task {
-                            await systemCalendarConnectionController.setCalendarSelection(
-                                calendarID: calendar.id,
-                                isSelected: isSelected
-                            )
-                        }
-                    }
-                )
-            ) {
-                EmptyView()
-            }
-            .toggleStyle(.checkbox)
-            .labelsHidden()
-            .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(localizedCalendarDisplayName(for: calendar))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Spacer(minLength: 8)
-
-                    if let tag = localizedCalendarAccessoryTag(for: calendar) {
-                        calendarAccessoryTag(tag)
-                    }
-                }
-
-                Text(localizedCalendarSubtitle(for: calendar))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
-    func calendarAccessoryTag(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(Color.primary.opacity(0.74))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.12))
-            )
-    }
-
-    /// 音频条目需要 hover 态和动作菜单，因此集中放在共享组件里维护。
-    func soundProfileRow(for soundProfile: SoundProfile) -> some View {
-        let isCurrent = soundProfile.id == soundProfileLibraryController.selectedSoundProfileID
-        let isHovered = hoveredSoundProfileID == soundProfile.id
-        let shouldShowMoreMenu = !isCurrent && isHovered
-        let fillOpacity = isCurrent ? 0.2 : (isHovered ? 0.14 : 0.08)
-        let strokeOpacity = isCurrent ? 0.34 : 0.18
-        let rowShape = RoundedRectangle(cornerRadius: 20, style: .continuous)
-
-        return VStack(alignment: .leading, spacing: 14) {
-            soundProfileRowHeader(for: soundProfile, isCurrent: isCurrent)
-            soundProfileRowActions(for: soundProfile, isCurrent: isCurrent, shouldShowMoreMenu: shouldShowMoreMenu)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(rowShape.fill(Color.white.opacity(fillOpacity)))
-        .overlay(rowShape.strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 1))
-        .scaleEffect(isHovered ? 1.005 : 1)
-        .onHover { isHovering in
-            hoveredSoundProfileID = isHovering ? soundProfile.id : (hoveredSoundProfileID == soundProfile.id ? nil : hoveredSoundProfileID)
-        }
-        .animation(GlassMotion.hover, value: isHovered)
-    }
-
-    func soundProfileRowHeader(for soundProfile: SoundProfile, isCurrent: Bool) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Text(soundProfile.displayName)
-                        .font(.system(size: 15, weight: .bold))
-
-                    if soundProfile.isBundledDefault {
-                        GlassBadge(text: localized("内建", "Built-in"), color: .secondary)
-                    }
-
-                    if isCurrent {
-                        GlassBadge(text: localized("当前使用中", "Current"), color: .blue)
-                    }
-                }
-
-                Text(localizedDurationLine(for: soundProfile.duration))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-    }
-
-    func soundProfileRowActions(for soundProfile: SoundProfile, isCurrent: Bool, shouldShowMoreMenu: Bool) -> some View {
-        HStack(spacing: 10) {
-            Button {
-                Task {
-                    await soundProfileLibraryController.togglePreview(for: soundProfile.id)
-                }
-            } label: {
-                Text(soundProfileLibraryController.currentlyPreviewingSoundProfileID == soundProfile.id
-                    ? localized("停止试听", "Stop Preview")
-                    : localized("试听", "Preview"))
-            }
-            .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-            .disabled(soundProfileLibraryController.loadingState)
-
-            if isCurrent {
-                Button {
-                    Task {
-                        await soundProfileLibraryController.selectSoundProfile(id: soundProfile.id)
-                    }
-                } label: {
-                    Text(localized("保持当前", "Keep Current"))
-                }
-                .buttonStyle(GlassPillButtonStyle(tone: .secondary))
-                .disabled(isSoundProfileEditingDisabled)
-            } else if shouldShowMoreMenu {
-                Menu {
-                    Button {
-                        Task {
-                            await soundProfileLibraryController.selectSoundProfile(id: soundProfile.id)
-                        }
-                    } label: {
-                        Label(localized("设为当前音频", "Set as Current"), systemImage: "checkmark.circle")
-                    }
-
-                    if soundProfile.isImported {
-                        Button(role: .destructive) {
-                            Task {
-                                await soundProfileLibraryController.deleteSoundProfile(id: soundProfile.id)
-                            }
-                        } label: {
-                            Label(localized("删除音频", "Delete Audio"), systemImage: "trash")
-                        }
-                    }
-                } label: {
-                    soundProfileMoreLabel
-                }
-                .menuStyle(BorderlessButtonMenuStyle())
-                .fixedSize()
-                .disabled(isSoundProfileEditingDisabled)
-                .glassQuietFocus()
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
-        }
-    }
 }
 
 /// 状态提示块会根据语义切换不同的低饱和背景与边框颜色。
@@ -525,20 +360,4 @@ struct StatusCalloutAction: Identifiable {
     let title: String
     let tone: GlassPillButtonStyle.Tone
     let handler: () -> Void
-}
-
-    var soundProfileMoreLabel: some View {
-        let background = Capsule(style: .continuous)
-            .fill(Color.white.opacity(0.18))
-        let outline = Capsule(style: .continuous)
-            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-
-        return Text(localized("更多", "More"))
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Color.primary.opacity(0.9))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(background)
-            .overlay(outline)
-    }
 }

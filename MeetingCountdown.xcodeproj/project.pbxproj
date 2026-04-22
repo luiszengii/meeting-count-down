@@ -10,6 +10,7 @@
 		0329D3ACD8A1A220854EE035 /* PreferencesStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92472005DCE71CF8C973D6D /* PreferencesStoreTests.swift */; };
 		04047189B27507D4B11E5421 /* SoundProfileLibraryControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341C32CDDACA4E0FFAC29ADD /* SoundProfileLibraryControllerTests.swift */; };
 		07F2A2BFA3D36D127972EC55 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159EBB5E23B95125073E1B9 /* PreferencesStore.swift */; };
+		096A3840B815E370A17E9084 /* SettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D0E50223246810806F845 /* SettingsPage.swift */; };
 		09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060012B9D43327628F3EB740 /* DiagnosticCheckersTests.swift */; };
 		0AC8890F86D334C2ABA050CC /* ReminderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400F5E610E4CB38FC22FA221 /* ReminderState.swift */; };
 		0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */; };
@@ -62,15 +63,18 @@
 		BD42B27D13C82396C7F55DE6 /* StubMeetingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D86CBE28AD8F0838B4D62B /* StubMeetingSource.swift */; };
 		BD9F5E50706005163C372D8F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7A0B45578C38FFA11B87D493 /* Assets.xcassets */; };
 		BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28DD805547510F7DEE9F9CB /* ReminderEngineTests.swift */; };
+		C05D0AB2977874393794F266 /* MenuBarAppKitHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEEE64423CCAD19F96F5A241 /* MenuBarAppKitHost.swift */; };
 		C4C5668DAF91ECD4D3E7EE9B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB44FF575940D623FFD822F /* SettingsView.swift */; };
 		C62CFB42FF685943679356F0 /* DiagnosticCheckers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC234B4B698019FA3938A72A /* DiagnosticCheckers.swift */; };
 		C97155D34714248A69EC016E /* RemindersPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88BCCC992BA06ED1B43211FD /* RemindersPage.swift */; };
 		D02C06C468AD048A059B9A07 /* SelectableSoundProfileReminderAudioEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA45E9422D9BEAE364CF745A /* SelectableSoundProfileReminderAudioEngineTests.swift */; };
 		D1ED963528220CF79C90ABC7 /* ReminderAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F0040176A4207996B8526B /* ReminderAudioEngine.swift */; };
 		D9B53815EF2478A306F5DABE /* SystemCalendarMeetingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CA4EAC81F494EDA7F3B98E /* SystemCalendarMeetingSource.swift */; };
+		DA5364BC848AD0E19E79DF0F /* MenuBarPresentationCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09FD6338A8CFCB441D1F924 /* MenuBarPresentationCalculatorTests.swift */; };
 		E07827B9566EB75B910EE297 /* SoundProfilePreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55D895F109E5D9D4FE749A7 /* SoundProfilePreviewPlayer.swift */; };
 		E29CF28B89883514939F5BE6 /* SystemCalendarBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D222E1EB98EB2C80DA37E1E /* SystemCalendarBridgeTests.swift */; };
 		E848E5203527FD582DE28771 /* RefreshTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E2BC2E27A8551DB11F1EED /* RefreshTrigger.swift */; };
+		EACFB1E33AF2B863DB456300 /* MenuBarPresentationCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4C752D7EC6425A25D10F0C4 /* MenuBarPresentationCalculator.swift */; };
 		F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */; };
 		F2C19904FCBFF380B30F3DF3 /* AudioPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74FD58D73731E1367D6452E1 /* AudioPage.swift */; };
 		F3BEE12F823630B87FCC6133 /* GlassUITheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE0D631FC7E9FB934E05D1F /* GlassUITheme.swift */; };
@@ -148,6 +152,7 @@
 		B9F7A7849159337A8D5A6F07 /* DiagnosticsState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsState.swift; sourceTree = "<group>"; };
 		BAB554BC93E4A5CD4D5F4D48 /* SourceCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCoordinatorTests.swift; sourceTree = "<group>"; };
 		C159EBB5E23B95125073E1B9 /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		C19D0E50223246810806F845 /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPage.swift; sourceTree = "<group>"; };
 		C1D86CBE28AD8F0838B4D62B /* StubMeetingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubMeetingSource.swift; sourceTree = "<group>"; };
 		C4CC5E772A53F99FA27E636A /* CalendarConnectionDiagnosticsPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticsPresenter.swift; sourceTree = "<group>"; };
 		C9AF9C74D784B315E50F901E /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
@@ -157,8 +162,11 @@
 		CFB74BF1F8847411F3EBB92B /* AsyncStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncStateController.swift; sourceTree = "<group>"; };
 		CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecord.swift; sourceTree = "<group>"; };
 		D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticSnapshotTests.swift; sourceTree = "<group>"; };
+		DEEE64423CCAD19F96F5A241 /* MenuBarAppKitHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarAppKitHost.swift; sourceTree = "<group>"; };
 		E28DD805547510F7DEE9F9CB /* ReminderEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngineTests.swift; sourceTree = "<group>"; };
+		E4C752D7EC6425A25D10F0C4 /* MenuBarPresentationCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPresentationCalculator.swift; sourceTree = "<group>"; };
 		EE49FFDD6C119F4194958281 /* ReminderPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderPreferences.swift; sourceTree = "<group>"; };
+		F09FD6338A8CFCB441D1F924 /* MenuBarPresentationCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPresentationCalculatorTests.swift; sourceTree = "<group>"; };
 		F22C240547110028BB783D74 /* ReminderStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderStateTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -234,6 +242,7 @@
 				7E1CA5A0CB5FF3DBF31E9CDC /* SettingsBadgePresentation.swift */,
 				6C74659C920D8F715F22734C /* SettingsDateFormatting.swift */,
 				AD81FB746BF569987F8E803B /* SettingsLocalizationPresentation.swift */,
+				C19D0E50223246810806F845 /* SettingsPage.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -316,6 +325,7 @@
 		CB89145FE191D29FF04E62E8 /* AppShell */ = {
 			isa = PBXGroup;
 			children = (
+				F09FD6338A8CFCB441D1F924 /* MenuBarPresentationCalculatorTests.swift */,
 				59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */,
 				70E443A44CA811E301744349 /* SettingsSceneOpenControllerTests.swift */,
 			);
@@ -351,7 +361,9 @@
 				6AE6E7DD9E61646D1E54858F /* GlassUI.swift */,
 				1FE0D631FC7E9FB934E05D1F /* GlassUITheme.swift */,
 				C9AF9C74D784B315E50F901E /* LaunchAtLoginController.swift */,
+				DEEE64423CCAD19F96F5A241 /* MenuBarAppKitHost.swift */,
 				02E35285E19D5F099F9FDF69 /* MenuBarContentView.swift */,
+				E4C752D7EC6425A25D10F0C4 /* MenuBarPresentationCalculator.swift */,
 				CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */,
 				CE290BAC98F94507CC538D90 /* MenuBarStatusItemController.swift */,
 				8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */,
@@ -489,6 +501,7 @@
 			files = (
 				F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */,
 				09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */,
+				DA5364BC848AD0E19E79DF0F /* MenuBarPresentationCalculatorTests.swift in Sources */,
 				94747232041240F8669C6993 /* NextMeetingSelectorTests.swift in Sources */,
 				0329D3ACD8A1A220854EE035 /* PreferencesStoreTests.swift in Sources */,
 				BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */,
@@ -528,7 +541,9 @@
 				94FC139015D66E6070C02F8A /* LaunchAtLoginController.swift in Sources */,
 				81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */,
 				3B071A07E4619D85C7CE5888 /* MeetingSource.swift in Sources */,
+				C05D0AB2977874393794F266 /* MenuBarAppKitHost.swift in Sources */,
 				92B5EB3F4BB8ED4F7CAD0637 /* MenuBarContentView.swift in Sources */,
+				EACFB1E33AF2B863DB456300 /* MenuBarPresentationCalculator.swift in Sources */,
 				4079514509B7FE24DAF3E265 /* MenuBarPresentationClock.swift in Sources */,
 				9E53DB4BB37696F0550E0BE4 /* MenuBarStatusItemController.swift in Sources */,
 				1655E15D790C5648C01905EC /* NextMeetingSelector.swift in Sources */,
@@ -547,6 +562,7 @@
 				71BBCBAED4AFB6D2DDF4537B /* SettingsBadgePresentation.swift in Sources */,
 				78312D2ECCE8E261BF973472 /* SettingsDateFormatting.swift in Sources */,
 				6684A563E57C60581B73CABD /* SettingsLocalizationPresentation.swift in Sources */,
+				096A3840B815E370A17E9084 /* SettingsPage.swift in Sources */,
 				66D922920448C6C423981DF3 /* SettingsSceneOpenController.swift in Sources */,
 				C4C5668DAF91ECD4D3E7EE9B /* SettingsView.swift in Sources */,
 				F48E4AE2F6AD606FD26FB575 /* SettingsWindowController.swift in Sources */,

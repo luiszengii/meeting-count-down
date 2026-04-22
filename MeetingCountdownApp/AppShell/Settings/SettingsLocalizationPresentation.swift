@@ -1,5 +1,16 @@
 import SwiftUI
 
+// MARK: - Standalone localization free function
+
+/// 给独立 View struct 用的本地化入口；T7 i18n 落地后会把这里替换为 key-based。
+///
+/// 这个独立函数让 SettingsPage struct（不持有 SettingsView 引用）可以直接进行本地化，
+/// 避免需要依赖 SettingsView extension 上的 `localized(_:_:)` 实例方法。
+/// 详见 ADR: docs/adrs/2026-04-22-settings-page-registry.md
+func localized(_ chinese: String, _ english: String, in language: AppUILanguage) -> String {
+    language == .english ? english : chinese
+}
+
 // MARK: - Localization bridge and language bindings
 
 /// 核心 i18n 桥接：`localized(_:_:)` 函数、语言偏好读取和 Binding 封装。

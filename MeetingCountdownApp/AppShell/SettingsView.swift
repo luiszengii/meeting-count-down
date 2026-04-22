@@ -3,8 +3,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// `SettingsView` 现在只负责设置窗口壳层：注入依赖、切换 tab、
-/// 管理首次展开状态和音频文件导入。具体 tab 页面与共享设置组件
-/// 已拆到 `AppShell/Settings/`，这样后续维护不必再回到一个近两千行的大文件。
+/// 维护页面注册表，以及管理首次展开状态和音频文件导入。
+/// 具体 tab 页面已拆到各自独立的 View struct（实现 SettingsPage 协议），
+/// 这样后续维护不必再回到单一大文件。
+///
+/// 详见 ADR: docs/adrs/2026-04-22-settings-page-registry.md
 struct SettingsView: View {
     @ObservedObject var sourceCoordinator: SourceCoordinator
     @ObservedObject var systemCalendarConnectionController: SystemCalendarConnectionController
@@ -15,11 +18,42 @@ struct SettingsView: View {
 
     @State var isPresentingSoundImporter = false
     @State var selectedTab: SettingsTab = .overview
-    @State var isCalendarConfigurationExpanded = true
-    @State var calendarSearchQuery = ""
-    @State var hasInitializedCalendarConfigurationExpansion = false
-    @State var hoveredSoundProfileID: SoundProfile.ID?
-    @State var didCopyCalendarDiagnostics = false
+
+    /// 页面注册表：每次 body 重绘时按顺序构建，保持与 SettingsTab 枚举顺序一致。
+    /// SettingsPage 协议使用 `any SettingsPage` 存在性，不需要关联类型，
+    /// 因此可以直接存入同构数组。
+    var pages: [any SettingsPage] {
+        [
+            OverviewPage(
+                sourceCoordinator: sourceCoordinator,
+                systemCalendarConnectionController: systemCalendarConnectionController,
+                reminderEngine: reminderEngine,
+                reminderPreferencesController: reminderPreferencesController,
+                soundProfileLibraryController: soundProfileLibraryController,
+                onNavigate: { tab in selectedTab = tab }
+            ),
+            CalendarPage(
+                systemCalendarConnectionController: systemCalendarConnectionController,
+                sourceCoordinator: sourceCoordinator
+            ),
+            RemindersPage(
+                reminderEngine: reminderEngine,
+                reminderPreferencesController: reminderPreferencesController,
+                soundProfileLibraryController: soundProfileLibraryController
+            ),
+            AudioPage(
+                soundProfileLibraryController: soundProfileLibraryController,
+                reminderPreferencesController: reminderPreferencesController,
+                isPresentingSoundImporter: $isPresentingSoundImporter
+            ),
+            AdvancedPage(
+                sourceCoordinator: sourceCoordinator,
+                systemCalendarConnectionController: systemCalendarConnectionController,
+                reminderPreferencesController: reminderPreferencesController,
+                launchAtLoginController: launchAtLoginController
+            )
+        ]
+    }
 
     var body: some View {
         ZStack {
@@ -38,19 +72,6 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .onAppear {
-            guard !hasInitializedCalendarConfigurationExpansion else {
-                return
-            }
-
-            hasInitializedCalendarConfigurationExpansion = true
-            isCalendarConfigurationExpanded = !isCalendarConfigurationComplete
-        }
-        .onChange(of: isCalendarConfigurationComplete) { _, isComplete in
-            withAnimation(GlassMotion.page) {
-                isCalendarConfigurationExpanded = !isComplete
-            }
         }
         .fileImporter(
             isPresented: $isPresentingSoundImporter,
