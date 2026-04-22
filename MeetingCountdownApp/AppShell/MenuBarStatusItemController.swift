@@ -8,11 +8,11 @@ import SwiftUI
 @MainActor
 final class MenuBarStatusItemController {
     /// 胶囊提醒态需要显式限制最大宽度，避免长标题把状态栏按钮撑得过宽后出现奇怪的垂直挤压。
-    private static let maxCapsuleStatusItemLength: CGFloat = 220
+    private static let maxCapsuleStatusItemLength: CGFloat = GlassUITheme.MenuBar.maxCapsuleStatusItemLength
     /// 菜单弹层当前由固定尺寸的控制面板承载。
     /// 这里显式记录尺寸，避免安装 `NSHostingController` 时为了取 `fittingSize`
     /// 强行触发布局，进而撞上 AppKit 的递归布局警告。
-    private static let popoverContentSize = NSSize(width: 324, height: 270)
+    private static let popoverContentSize = GlassUITheme.MenuBar.popoverContentSize
 
     /// 会议读取状态仍然来自唯一的协调层。
     private let sourceCoordinator: SourceCoordinator
@@ -212,7 +212,7 @@ final class MenuBarStatusItemController {
 
         /// `NSStatusItem.variableLength` 只会按当前内容的紧凑宽度收缩。
         /// 胶囊背景需要额外左右留白，因此这里主动给状态栏项补一点宽度。
-        let extraWidth: CGFloat = presentation.showsCapsuleBackground ? 12 : 0
+        let extraWidth: CGFloat = presentation.showsCapsuleBackground ? GlassUITheme.MenuBar.extraWidth : 0
         let idealLength = max(NSStatusItem.squareLength, button.fittingSize.width + extraWidth)
         statusItem.length = presentation.showsCapsuleBackground
             ? min(Self.maxCapsuleStatusItemLength, idealLength)

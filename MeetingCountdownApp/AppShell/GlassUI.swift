@@ -87,8 +87,8 @@ struct GlassPanel<Content: View>: View {
     @ViewBuilder let content: Content
 
     init(
-        cornerRadius: CGFloat = 22,
-        padding: CGFloat = 14,
+        cornerRadius: CGFloat = GlassUITheme.CornerRadius.large,
+        padding: CGFloat = GlassUITheme.Padding.default,
         overlayOpacity: Double = 0.18,
         @ViewBuilder content: () -> Content
     ) {
@@ -130,8 +130,8 @@ struct GlassCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     init(
-        cornerRadius: CGFloat = 18,
-        padding: CGFloat = 12,
+        cornerRadius: CGFloat = GlassUITheme.CornerRadius.medium,
+        padding: CGFloat = GlassUITheme.Padding.compact,
         tintOpacity: Double = 0.22,
         @ViewBuilder content: () -> Content
     ) {
@@ -223,7 +223,7 @@ struct GlassPillButtonStyle: ButtonStyle {
 struct GlassIconButtonStyle: ButtonStyle {
     let cornerRadius: CGFloat
 
-    init(cornerRadius: CGFloat = 12) {
+    init(cornerRadius: CGFloat = GlassUITheme.CornerRadius.compact) {
         self.cornerRadius = cornerRadius
     }
 
@@ -290,7 +290,7 @@ private struct GlassIconButtonStyleBody: View {
 struct GlassListRowButtonStyle: ButtonStyle {
     let cornerRadius: CGFloat
 
-    init(cornerRadius: CGFloat = 16) {
+    init(cornerRadius: CGFloat = GlassUITheme.CornerRadius.extraSmall) {
         self.cornerRadius = cornerRadius
     }
 

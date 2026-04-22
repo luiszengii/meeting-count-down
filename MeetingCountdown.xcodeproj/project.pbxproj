@@ -22,8 +22,10 @@
 		426656C9BCD061226497353D /* OverviewPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B188279C8B8B38585DEF86CC /* OverviewPage.swift */; };
 		4293E9E8048234A39385A9A7 /* Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C16B01745BE0445939314EC /* Header.swift */; };
 		45519A205FC61C998C73CCC1 /* PS5 Game Start.flac in Resources */ = {isa = PBXBuildFile; fileRef = 346D975040199E4F0FFDA9B7 /* PS5 Game Start.flac */; };
+		4A671E6550EAF397E37B0954 /* ReminderPreferencesControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A049E33FC6FB0483456047D7 /* ReminderPreferencesControllerTests.swift */; };
 		4FF3910E5AA555BB9C398E44 /* SourceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004137816B55DDDF2DC423A1 /* SourceCoordinator.swift */; };
 		50ED62B7EE8A52809F0FB009 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A142DD44858FEA8D98FE277 /* AppLogger.swift */; };
+		552C0D8984C10592943B68B4 /* AsyncStateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB74BF1F8847411F3EBB92B /* AsyncStateController.swift */; };
 		5AB73F7901F71BFBEB90DBA1 /* ReminderPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434080B94782F33E5F0BE80 /* ReminderPreferencesController.swift */; };
 		5C0D63A2079B309B3E27F8CC /* SoundProfileLibraryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */; };
 		5D3D83B0D51495855E8AF4E4 /* StartupError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B5AE5DBB8F54393D63167D /* StartupError.swift */; };
@@ -66,6 +68,7 @@
 		E848E5203527FD582DE28771 /* RefreshTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E2BC2E27A8551DB11F1EED /* RefreshTrigger.swift */; };
 		F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */; };
 		F2C19904FCBFF380B30F3DF3 /* AudioPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74FD58D73731E1367D6452E1 /* AudioPage.swift */; };
+		F3BEE12F823630B87FCC6133 /* GlassUITheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE0D631FC7E9FB934E05D1F /* GlassUITheme.swift */; };
 		F48E4AE2F6AD606FD26FB575 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */; };
 		FB599DAD0BF6136EE4D336FE /* SystemCalendarAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161F70512D2E9A019D854F1E /* SystemCalendarAccess.swift */; };
 /* End PBXBuildFile section */
@@ -90,6 +93,7 @@
 		16CB78D0412F8C8E9C56AA36 /* SoundProfileAssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileAssetStore.swift; sourceTree = "<group>"; };
 		1D82B0152C497FA6578E57A8 /* FeishuMeetingCountdownTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FeishuMeetingCountdownTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EC530C79CB8AFC603615014 /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
+		1FE0D631FC7E9FB934E05D1F /* GlassUITheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassUITheme.swift; sourceTree = "<group>"; };
 		3325B87E9489B077781ABAF3 /* Presentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presentation.swift; sourceTree = "<group>"; };
 		341C32CDDACA4E0FFAC29ADD /* SoundProfileLibraryControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileLibraryControllerTests.swift; sourceTree = "<group>"; };
 		346D975040199E4F0FFDA9B7 /* PS5 Game Start.flac */ = {isa = PBXFileReference; path = "PS5 Game Start.flac"; sourceTree = "<group>"; };
@@ -123,6 +127,7 @@
 		94F0040176A4207996B8526B /* ReminderAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderAudioEngine.swift; sourceTree = "<group>"; };
 		98C9EE430CE7C02299866822 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9A142DD44858FEA8D98FE277 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		A049E33FC6FB0483456047D7 /* ReminderPreferencesControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderPreferencesControllerTests.swift; sourceTree = "<group>"; };
 		A7CA4EAC81F494EDA7F3B98E /* SystemCalendarMeetingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarMeetingSource.swift; sourceTree = "<group>"; };
 		A92472005DCE71CF8C973D6D /* PreferencesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStoreTests.swift; sourceTree = "<group>"; };
 		AA45E9422D9BEAE364CF745A /* SelectableSoundProfileReminderAudioEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableSoundProfileReminderAudioEngineTests.swift; sourceTree = "<group>"; };
@@ -139,6 +144,7 @@
 		CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPresentationClock.swift; sourceTree = "<group>"; };
 		CE290BAC98F94507CC538D90 /* MenuBarStatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusItemController.swift; sourceTree = "<group>"; };
 		CE2D7C9623430AC9CADCCA38 /* FeishuMeetingCountdown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FeishuMeetingCountdown.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CFB74BF1F8847411F3EBB92B /* AsyncStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncStateController.swift; sourceTree = "<group>"; };
 		CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecord.swift; sourceTree = "<group>"; };
 		D2198881A2E6FF17FCBA9075 /* CalendarConnectionDiagnosticSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticSnapshotTests.swift; sourceTree = "<group>"; };
 		E28DD805547510F7DEE9F9CB /* ReminderEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngineTests.swift; sourceTree = "<group>"; };
@@ -188,6 +194,7 @@
 			isa = PBXGroup;
 			children = (
 				A92472005DCE71CF8C973D6D /* PreferencesStoreTests.swift */,
+				A049E33FC6FB0483456047D7 /* ReminderPreferencesControllerTests.swift */,
 				341C32CDDACA4E0FFAC29ADD /* SoundProfileLibraryControllerTests.swift */,
 			);
 			path = Preferences;
@@ -247,6 +254,7 @@
 			isa = PBXGroup;
 			children = (
 				9A142DD44858FEA8D98FE277 /* AppLogger.swift */,
+				CFB74BF1F8847411F3EBB92B /* AsyncStateController.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -326,6 +334,7 @@
 				1EC530C79CB8AFC603615014 /* AppRuntime.swift */,
 				6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */,
 				6AE6E7DD9E61646D1E54858F /* GlassUI.swift */,
+				1FE0D631FC7E9FB934E05D1F /* GlassUITheme.swift */,
 				C9AF9C74D784B315E50F901E /* LaunchAtLoginController.swift */,
 				02E35285E19D5F099F9FDF69 /* MenuBarContentView.swift */,
 				CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */,
@@ -468,6 +477,7 @@
 				94747232041240F8669C6993 /* NextMeetingSelectorTests.swift in Sources */,
 				0329D3ACD8A1A220854EE035 /* PreferencesStoreTests.swift in Sources */,
 				BEB5815AA462B1C2C9E3BA9D /* ReminderEngineTests.swift in Sources */,
+				4A671E6550EAF397E37B0954 /* ReminderPreferencesControllerTests.swift in Sources */,
 				ACA0046E387F16D4868029A4 /* ReminderStateTests.swift in Sources */,
 				D02C06C468AD048A059B9A07 /* SelectableSoundProfileReminderAudioEngineTests.swift in Sources */,
 				0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */,
@@ -487,6 +497,7 @@
 				50ED62B7EE8A52809F0FB009 /* AppLogger.swift in Sources */,
 				8FF7DC94E8902C3465A02CB0 /* AppRefreshController.swift in Sources */,
 				5EE9174C36E6A73A282C8036 /* AppRuntime.swift in Sources */,
+				552C0D8984C10592943B68B4 /* AsyncStateController.swift in Sources */,
 				B4563C746B28080BB2086F6D /* AudioOutputRoute.swift in Sources */,
 				F2C19904FCBFF380B30F3DF3 /* AudioPage.swift in Sources */,
 				A1FA7797611B814CFBDE893C /* CalendarConnectionDiagnosticSnapshot.swift in Sources */,
@@ -496,6 +507,7 @@
 				B172F6148DCB4468092F6839 /* DiagnosticsState.swift in Sources */,
 				8C113D0D214E22A3D593B4E6 /* FeishuMeetingCountdownApp.swift in Sources */,
 				7EC32AC7335445C203A3D3FF /* GlassUI.swift in Sources */,
+				F3BEE12F823630B87FCC6133 /* GlassUITheme.swift in Sources */,
 				4293E9E8048234A39385A9A7 /* Header.swift in Sources */,
 				94FC139015D66E6070C02F8A /* LaunchAtLoginController.swift in Sources */,
 				81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */,
