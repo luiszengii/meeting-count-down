@@ -186,17 +186,6 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 }
 
-/// 固定时钟实现，用于让测试里的“当前时间”完全可控。
-private struct FixedDateProvider: DateProviding {
-    /// 测试时注入的固定当前时间。
-    let currentDate: Date
-
-    /// 直接返回注入的固定时间。
-    func now() -> Date {
-        currentDate
-    }
-}
-
 /// 故意失败的数据源实现，用于验证协调层错误处理路径。
 private struct FailingMeetingSource: MeetingSource {
     /// 这个失败源也需要暴露来源描述，方便协调层照常记录模式信息。

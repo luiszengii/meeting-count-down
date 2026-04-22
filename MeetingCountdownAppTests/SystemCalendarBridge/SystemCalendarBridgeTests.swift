@@ -321,17 +321,6 @@ private final class StubSystemCalendarAccess: SystemCalendarAccessing {
     }
 }
 
-/// 这些桥接层测试同样使用固定时钟，避免“最近更新时间”依赖真实当前时间。
-private struct FixedDateProvider: DateProviding {
-    /// 测试注入的固定当前时间。
-    let currentDate: Date
-
-    /// 直接返回固定时间。
-    func now() -> Date {
-        currentDate
-    }
-}
-
 /// 这个测试 actor 会在保存日历选择时故意抛错，
 /// 让我们验证控制器的乐观更新和失败回滚是否保持一致。
 actor FailingSelectionPreferencesStore: PreferencesStore {

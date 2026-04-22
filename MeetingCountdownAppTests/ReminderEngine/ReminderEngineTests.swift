@@ -395,17 +395,6 @@ private final class StubAudioOutputRouteProvider: AudioOutputRouteProviding {
     }
 }
 
-/// 固定时钟实现，用于让提醒调度测试完全控制“当前时间”。
-private struct FixedDateProvider: DateProviding {
-    /// 测试注入的固定当前时间。
-    let currentDate: Date
-
-    /// 直接返回固定时间。
-    func now() -> Date {
-        currentDate
-    }
-}
-
 /// 用纯 Swift 假音频引擎替代真实 AVFoundation，实现稳定的调度断言。
 @MainActor
 private final class SpyReminderAudioEngine: ReminderAudioEngine {

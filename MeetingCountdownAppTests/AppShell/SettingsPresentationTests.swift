@@ -122,15 +122,6 @@ final class SettingsPresentationTests: XCTestCase {
     }
 }
 
-/// 固定时钟让设置页展示态里的“上次同步 / 下一场会议”类文案更稳定。
-private struct FixedDateProvider: DateProviding {
-    let currentDate: Date
-
-    func now() -> Date {
-        currentDate
-    }
-}
-
 /// 这里用纯 Swift stub 替掉真实 EventKit 访问层，避免设置页展示测试依赖宿主机器权限。
 @MainActor
 private final class StubSystemCalendarAccess: SystemCalendarAccessing {

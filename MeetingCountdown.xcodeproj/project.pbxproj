@@ -14,6 +14,7 @@
 		09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060012B9D43327628F3EB740 /* DiagnosticCheckersTests.swift */; };
 		0AC8890F86D334C2ABA050CC /* ReminderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400F5E610E4CB38FC22FA221 /* ReminderState.swift */; };
 		0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */; };
+		133A9D4C4702270E4474F5C4 /* FixedDateProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A2E862C2F672F69717560F /* FixedDateProvider.swift */; };
 		163D266695E119E3BCAD99E9 /* CalendarPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D91BFCEE716B62B4BF0DA2 /* CalendarPage.swift */; };
 		1655E15D790C5648C01905EC /* NextMeetingSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36AE16EAB5592B16A910AFEB /* NextMeetingSelector.swift */; };
 		1A490D446B83CD2E9A3A77C1 /* CalendarConnectionDiagnosticsPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CC5E772A53F99FA27E636A /* CalendarConnectionDiagnosticsPresenter.swift */; };
@@ -154,6 +155,7 @@
 		C159EBB5E23B95125073E1B9 /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
 		C19D0E50223246810806F845 /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPage.swift; sourceTree = "<group>"; };
 		C1D86CBE28AD8F0838B4D62B /* StubMeetingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubMeetingSource.swift; sourceTree = "<group>"; };
+		C2A2E862C2F672F69717560F /* FixedDateProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedDateProvider.swift; sourceTree = "<group>"; };
 		C4CC5E772A53F99FA27E636A /* CalendarConnectionDiagnosticsPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarConnectionDiagnosticsPresenter.swift; sourceTree = "<group>"; };
 		C9AF9C74D784B315E50F901E /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
 		CC6E822E95EC75D17BA00AA5 /* MenuBarPresentationClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPresentationClock.swift; sourceTree = "<group>"; };
@@ -273,6 +275,14 @@
 			path = Diagnostics;
 			sourceTree = "<group>";
 		};
+		5BE5E17588690328A5386958 /* TestSupport */ = {
+			isa = PBXGroup;
+			children = (
+				C2A2E862C2F672F69717560F /* FixedDateProvider.swift */,
+			);
+			path = TestSupport;
+			sourceTree = "<group>";
+		};
 		79634B84F93F67FC2B65CFAF /* Shared */ = {
 			isa = PBXGroup;
 			children = (
@@ -310,6 +320,7 @@
 				D73391623F1867E646C390E4 /* ReminderEngine */,
 				CA8B3AABDAC91368B5FE2947 /* SourceCoordinator */,
 				B2962385A21E449A097B5221 /* SystemCalendarBridge */,
+				5BE5E17588690328A5386958 /* TestSupport */,
 			);
 			path = MeetingCountdownAppTests;
 			sourceTree = "<group>";
@@ -501,6 +512,7 @@
 			files = (
 				F1F3334DBF2B5E3BFDE86EE9 /* CalendarConnectionDiagnosticSnapshotTests.swift in Sources */,
 				09A18E7171118DB3A64DA8D3 /* DiagnosticCheckersTests.swift in Sources */,
+				133A9D4C4702270E4474F5C4 /* FixedDateProvider.swift in Sources */,
 				DA5364BC848AD0E19E79DF0F /* MenuBarPresentationCalculatorTests.swift in Sources */,
 				94747232041240F8669C6993 /* NextMeetingSelectorTests.swift in Sources */,
 				0329D3ACD8A1A220854EE035 /* PreferencesStoreTests.swift in Sources */,
