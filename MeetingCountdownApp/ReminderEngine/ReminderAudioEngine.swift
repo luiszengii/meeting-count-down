@@ -53,6 +53,8 @@ final class BundledAudioFileReminderAudioEngine: ReminderAudioEngine {
     private var player: AVAudioPlayer?
     /// 缓存已经解析出的资源 URL，避免每次播放都重新走 bundle 查找。
     private var cachedResourceURL: URL?
+    /// 统一的运维日志通道，主要用于记录降级到兜底引擎的情况。
+    private let logger = AppLogger(source: "ReminderAudioEngine.BundledAudioFile")
 
     init(
         resourceName: String,
@@ -73,6 +75,9 @@ final class BundledAudioFileReminderAudioEngine: ReminderAudioEngine {
             player.prepareToPlay()
         } catch {
             if let fallbackEngine {
+                // 即便兜底引擎能成功预热，也要把主链路失败原因写进日志，
+                // 否则运营侧只会看到“一切正常”，难以发现已经在降级状态。
+                logger.error("默认音频文件预热失败，已降级到兜底引擎：\(error.localizedDescription)")
                 try await fallbackEngine.warmUp()
                 return
             }
@@ -183,6 +188,13 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
     private let amplitude: Float
     /// 标记音频图是否已经至少成功启动过一次。
     private var hasWarmedUp: Bool
+    /// 统一日志通道，主要用于记录引擎启动失败和音频配置变更。
+    private let logger = AppLogger(source: "ReminderAudioEngine.GeneratedTone")
+    /// 监听 `AVAudioEngine.configurationChangeNotification` 的句柄，便于在 deinit 中精确移除。
+    /// Swift 6 严格并发下，`deinit` 默认 nonisolated，访问 `(any NSObjectProtocol)?`
+    /// 这种非 `Sendable` 的存储要么走 `MainActor.assumeIsolated`，要么标记 unsafe。
+    /// 这里只在 init 写入、deinit 读取，写入后不会被外部并发访问，标 unsafe 是更直接的取舍。
+    private nonisolated(unsafe) var configurationChangeObserver: NSObjectProtocol?
 
     /// 构造默认音频引擎，并把播放节点提前接到主混音器。
     init(
@@ -201,6 +213,37 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
         engine.attach(playerNode)
         engine.connect(playerNode, to: engine.mainMixerNode, format: format)
         engine.prepare()
+
+        registerConfigurationChangeObserver()
+    }
+
+    /// 系统切换默认输出设备或采样率时 AVAudioEngine 会停掉自身，
+    /// 这里把状态重置回未预热，下一次播放会强制走 reset+reconnect+start 路径。
+    private func registerConfigurationChangeObserver() {
+        // `AVAudioEngine` 文档明确说明该通知会在任意线程派发；
+        // 这里把回调显式调度回 MainActor，匹配类型本身的隔离域。
+        configurationChangeObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.handleConfigurationChange()
+            }
+        }
+    }
+
+    /// 收到音频配置变化通知时清掉预热状态，避免继续使用已经失效的 IO 链路。
+    private func handleConfigurationChange() {
+        logger.error("AVAudioEngine 检测到音频配置变化，已标记需要重新预热")
+        hasWarmedUp = false
+    }
+
+    deinit {
+        if let configurationChangeObserver {
+            NotificationCenter.default.removeObserver(configurationChangeObserver)
+        }
     }
 
     /// 显式预热音频图，避免第一次提醒时才启动底层音频设备。
@@ -243,7 +286,14 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
             engine.prepare()
         }
 
-        try engine.start()
+        do {
+            try engine.start()
+        } catch {
+            // 把启动失败显式记录为错误，方便结合配置变化通知日志定位音频链路问题；
+            // 仍然把异常抛出去，避免悄悄掩盖播放失败的事实。
+            logger.error("AVAudioEngine 启动失败：\(error.localizedDescription)")
+            throw error
+        }
     }
 
     /// 生成一个带淡入淡出的正弦波缓冲区，减少纯方波式的“啪”声。
