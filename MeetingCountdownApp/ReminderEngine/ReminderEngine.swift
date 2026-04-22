@@ -100,7 +100,19 @@ final class ReminderEngine: ObservableObject {
     /// 监听 `SourceCoordinator` 聚合状态变化的订阅。
     private var sourceStateCancellable: AnyCancellable?
     /// 当前真正等待命中提醒的任务。
-    private var scheduledReminderTask: (any ReminderScheduledTask)?
+    private var scheduledReminderTask: (any ReminderScheduledTask)? {
+        didSet {
+            // 只在任务从 nil → 非 nil（新建任务）时设为 true；
+            // 取消或清空时置为 false，确保 deinit 断言不误判。
+            _hasActiveScheduledTask = scheduledReminderTask != nil
+        }
+    }
+
+    /// `deinit` 是 `nonisolated` 的，无法直接访问 `@MainActor` 隔离属性。
+    /// 这里保留一个 `nonisolated(unsafe)` 的布尔镜像，仅用于 `deinit` 里的断言检查。
+    /// 注意：`cancelOutstandingWork` 会把 `scheduledReminderTask` 置 nil，
+    /// 从而把这个标志复位，因此正常取消路径不会触发断言。
+    nonisolated(unsafe) private var _hasActiveScheduledTask: Bool = false
     /// 提醒命中后，用于把“正在播放”收回空闲态的后置任务。
     private var playbackCompletionTask: (any ReminderScheduledTask)?
     /// 最近一次已经真正触发过的提醒主键，用来防止同一会议被重复提醒。
@@ -108,6 +120,16 @@ final class ReminderEngine: ObservableObject {
     /// 当前活动提醒调度所绑定的执行策略。
     /// 只要静音或耳机输出策略发生变化，即使会议上下文没变，也应该重建调度。
     private var activeExecutionPolicy: ReminderExecutionPolicy?
+
+    /// 捕捉提醒引擎在还有活跃（未通过 cancel 清空）调度任务时就被销毁的生命周期 bug。
+    /// 生产环境下 `assertionFailure` 不会崩溃，但 Debug / 测试构建会及时暴露问题。
+    nonisolated deinit {
+        if _hasActiveScheduledTask {
+            assertionFailure(
+                "ReminderEngine deallocated with an outstanding scheduledReminderTask — call stopAll() before releasing"
+            )
+        }
+    }
 
     /// 先构造一个空闲提醒引擎，后续再通过 `bind` 接上真正的数据源状态流。
     init(

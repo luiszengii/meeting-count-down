@@ -30,6 +30,8 @@ final class ReminderEngineTests: XCTestCase {
         }
         XCTAssertEqual(scheduledTask.delay, 296, accuracy: 0.001)
         XCTAssertEqual(audioEngine.playCallCount, 0)
+
+        await engine.stopAll()
     }
 
     /// 验证等价的下一场会议重复发布时，会复用已有提醒而不是先取消再重建一条新任务。
@@ -57,6 +59,8 @@ final class ReminderEngineTests: XCTestCase {
         }
         XCTAssertEqual(context.meeting.id, "same")
         XCTAssertEqual(audioEngine.playCallCount, 0)
+
+        await engine.stopAll()
     }
 
     /// 验证当会议已经近到来不及等待完整倒计时时，会立即触发默认音效播放。

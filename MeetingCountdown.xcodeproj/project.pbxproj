@@ -41,6 +41,7 @@
 		7238928744EFEB29EB2C746A /* ReminderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */; };
 		78312D2ECCE8E261BF973472 /* SettingsDateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C74659C920D8F715F22734C /* SettingsDateFormatting.swift */; };
 		79C75486C861D3AE9AD8BB05 /* Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3325B87E9489B077781ABAF3 /* Presentation.swift */; };
+		7A1C208A0D1F6890064FCF0A /* SoundProfileAssetStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62F76E9A891A2AD11B2F1C9A /* SoundProfileAssetStoreTests.swift */; };
 		7EC32AC7335445C203A3D3FF /* GlassUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AE6E7DD9E61646D1E54858F /* GlassUI.swift */; };
 		81DC1C2E545BDE382DB1D8AB /* MeetingRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB7CC4AC95E74E207C21836 /* MeetingRecord.swift */; };
 		8C113D0D214E22A3D593B4E6 /* FeishuMeetingCountdownApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D137F6A7C582A1C24EC9E3A /* FeishuMeetingCountdownApp.swift */; };
@@ -122,6 +123,7 @@
 		59E32CFF4CA21C575CF9DE34 /* SettingsPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPresentationTests.swift; sourceTree = "<group>"; };
 		5D222E1EB98EB2C80DA37E1E /* SystemCalendarBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarBridgeTests.swift; sourceTree = "<group>"; };
 		61D91BFCEE716B62B4BF0DA2 /* CalendarPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPage.swift; sourceTree = "<group>"; };
+		62F76E9A891A2AD11B2F1C9A /* SoundProfileAssetStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileAssetStoreTests.swift; sourceTree = "<group>"; };
 		668B545A1CBFDD1DC916F3F8 /* ReminderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngine.swift; sourceTree = "<group>"; };
 		6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundProfileLibraryController.swift; sourceTree = "<group>"; };
 		6AE6E7DD9E61646D1E54858F /* GlassUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassUI.swift; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 			children = (
 				A92472005DCE71CF8C973D6D /* PreferencesStoreTests.swift */,
 				A049E33FC6FB0483456047D7 /* ReminderPreferencesControllerTests.swift */,
+				62F76E9A891A2AD11B2F1C9A /* SoundProfileAssetStoreTests.swift */,
 				341C32CDDACA4E0FFAC29ADD /* SoundProfileLibraryControllerTests.swift */,
 			);
 			path = Preferences;
@@ -526,6 +529,7 @@
 				B1C485E124F100D969D8BBED /* SettingsPageRegistryTests.swift in Sources */,
 				0BA13A2C54A51BE0BB08D90C /* SettingsPresentationTests.swift in Sources */,
 				6AC08E6B218E5EEB68C49548 /* SettingsSceneOpenControllerTests.swift in Sources */,
+				7A1C208A0D1F6890064FCF0A /* SoundProfileAssetStoreTests.swift in Sources */,
 				04047189B27507D4B11E5421 /* SoundProfileLibraryControllerTests.swift in Sources */,
 				A9A569940CA3C6B96391A0C7 /* SourceCoordinatorTests.swift in Sources */,
 				E29CF28B89883514939F5BE6 /* SystemCalendarBridgeTests.swift in Sources */,
