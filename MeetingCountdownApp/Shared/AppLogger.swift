@@ -14,12 +14,38 @@ struct AppLogger: Sendable {
     }
 
     /// 记录普通信息级日志。
+    /// 默认 `.private`，只有调用方明确传 `public: true` 才记为 `.public`；
+    /// 用于不会泄漏会议标题/URL/与会者等用户数据的运维信息。
     func info(_ message: String) {
-        logger.info("\(message, privacy: .public)")
+        logger.info("\(message, privacy: .private)")
+    }
+
+    /// 记录普通信息级日志。
+    /// 默认 `.private`，只有调用方明确传 `public: true` 才记为 `.public`；
+    /// 用于不会泄漏会议标题/URL/与会者等用户数据的运维信息。
+    func info(_ message: String, public isPublic: Bool) {
+        if isPublic {
+            logger.info("\(message, privacy: .public)")
+        } else {
+            logger.info("\(message, privacy: .private)")
+        }
     }
 
     /// 记录错误级日志。
+    /// 默认 `.private`，只有调用方明确传 `public: true` 才记为 `.public`；
+    /// 用于不会泄漏会议标题/URL/与会者等用户数据的运维信息。
     func error(_ message: String) {
-        logger.error("\(message, privacy: .public)")
+        logger.error("\(message, privacy: .private)")
+    }
+
+    /// 记录错误级日志。
+    /// 默认 `.private`，只有调用方明确传 `public: true` 才记为 `.public`；
+    /// 用于不会泄漏会议标题/URL/与会者等用户数据的运维信息。
+    func error(_ message: String, public isPublic: Bool) {
+        if isPublic {
+            logger.error("\(message, privacy: .public)")
+        } else {
+            logger.error("\(message, privacy: .private)")
+        }
     }
 }
