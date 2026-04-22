@@ -1,7 +1,34 @@
 import Foundation
 
-/// `PreferencesStore` 把“偏好模型是什么”和“偏好具体存在哪里”解耦。
+/// `PreferencesStore` 把”偏好模型是什么”和”偏好具体存在哪里”解耦。
 /// 这样 Phase 0 可以先用内存实现把接口定住，Phase 2 再把连接模式和系统日历选择接进真实持久化。
+///
+/// ## Threading contract
+///
+/// **Implementations are actors.** Both concrete implementations (`InMemoryPreferencesStore` and
+/// `UserDefaultsPreferencesStore`) are Swift `actor` types. This means each implementation
+/// serialises access on its own executor; no additional locking is needed inside an
+/// implementation.
+///
+/// **All methods are `async`.** The `async` surface exists precisely to accommodate actor-isolated
+/// implementations and future storage backends (disk I/O, iCloud, migration pipelines) without
+/// requiring call-site changes. Callers must `await` every method, even when the underlying work
+/// is trivially fast.
+///
+/// **Call sites are typically `@MainActor` controllers bridging via `await`.** SwiftUI views and
+/// `@MainActor`-isolated view-models call into `PreferencesStore` with a plain `await`. Swift's
+/// concurrency runtime suspends the caller on the main actor, resumes it on the store's actor
+/// for the duration of the call, then returns execution to the main actor — this is safe and
+/// requires no manual dispatch.
+///
+/// **Values cross actor boundaries safely.** All types returned by or passed into the protocol
+/// — `ReminderPreferences`, `SoundProfile`, `Set<String>`, `Date?`, `String?`, `Bool` — are
+/// value types or standard-library primitives that conform to `Sendable`. No shared mutable state
+/// crosses the boundary; the compiler enforces this through the `Sendable` constraint on the
+/// protocol itself.
+///
+/// **Do not add `@MainActor` to this protocol.** Doing so would conflict with `actor`
+/// conformances, which cannot be constrained to an external actor.
 protocol PreferencesStore: Sendable {
     /// 读取当前提醒偏好。
     /// 使用异步接口是为了让未来切换到 `UserDefaults`、文件系统甚至迁移流程时不必改调用方签名。
