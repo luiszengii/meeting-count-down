@@ -26,6 +26,7 @@
 		50ED62B7EE8A52809F0FB009 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A142DD44858FEA8D98FE277 /* AppLogger.swift */; };
 		5AB73F7901F71BFBEB90DBA1 /* ReminderPreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434080B94782F33E5F0BE80 /* ReminderPreferencesController.swift */; };
 		5C0D63A2079B309B3E27F8CC /* SoundProfileLibraryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6721CE71D8AEF49ED14AA08D /* SoundProfileLibraryController.swift */; };
+		5D3D83B0D51495855E8AF4E4 /* StartupError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B5AE5DBB8F54393D63167D /* StartupError.swift */; };
 		5E251C833627F81C2EF6715D /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C9EE430CE7C02299866822 /* Components.swift */; };
 		5EE9174C36E6A73A282C8036 /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC530C79CB8AFC603615014 /* AppRuntime.swift */; };
 		66D922920448C6C423981DF3 /* SettingsSceneOpenController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */; };
@@ -96,6 +97,7 @@
 		39FE68844BD1999A114D9CD4 /* AdvancedPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedPage.swift; sourceTree = "<group>"; };
 		400F5E610E4CB38FC22FA221 /* ReminderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderState.swift; sourceTree = "<group>"; };
 		411B32E4F494116427681C2E /* SystemCalendarModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCalendarModels.swift; sourceTree = "<group>"; };
+		48B5AE5DBB8F54393D63167D /* StartupError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupError.swift; sourceTree = "<group>"; };
 		4C16B01745BE0445939314EC /* Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Header.swift; sourceTree = "<group>"; };
 		4D33FE3B2AF0502DBBE1C910 /* MeetingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingSource.swift; sourceTree = "<group>"; };
 		4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
@@ -331,6 +333,7 @@
 				8739B1EA28984FA21F554FE1 /* SettingsSceneOpenController.swift */,
 				8DB44FF575940D623FFD822F /* SettingsView.swift */,
 				4E9C3A36ACD70A35F6DC66DA /* SettingsWindowController.swift */,
+				48B5AE5DBB8F54393D63167D /* StartupError.swift */,
 				302DEFAEBB9CDCF7A195638C /* Settings */,
 			);
 			path = AppShell;
@@ -520,6 +523,7 @@
 				5C0D63A2079B309B3E27F8CC /* SoundProfileLibraryController.swift in Sources */,
 				E07827B9566EB75B910EE297 /* SoundProfilePreviewPlayer.swift in Sources */,
 				4FF3910E5AA555BB9C398E44 /* SourceCoordinator.swift in Sources */,
+				5D3D83B0D51495855E8AF4E4 /* StartupError.swift in Sources */,
 				BD42B27D13C82396C7F55DE6 /* StubMeetingSource.swift in Sources */,
 				FB599DAD0BF6136EE4D336FE /* SystemCalendarAccess.swift in Sources */,
 				9AF6CD06AC52E88719FE9C49 /* SystemCalendarConnectionController.swift in Sources */,

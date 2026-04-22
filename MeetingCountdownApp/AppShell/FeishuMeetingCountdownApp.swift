@@ -7,6 +7,18 @@ import SwiftUI
 @MainActor
 final class FeishuMeetingCountdownAppDelegate: NSObject, NSApplicationDelegate {
     /// 运行时依赖只创建一次，供菜单栏入口和设置窗口共同复用。
+    ///
+    /// Startup error policy（与 `AppContainer.makeAppRuntime()` 中的策略保持一致）：
+    /// 当前 `makeAppRuntime()` 内部所有子组件构造器都不会抛错，所以这里直接同步赋值。
+    /// 一旦未来某个子组件需要抛 `StartupError`（详见 `StartupError.swift`），
+    /// 需要把这个属性改成 `Result<AppRuntime, StartupError>`（或等价的 `@Published`
+    /// 状态），并在 `FeishuMeetingCountdownApp.body` 里根据失败状态切换到中文
+    /// 回退视图，例如：
+    ///
+    ///     "应用初始化失败：\(error.localizedDescription)\n请重启应用或在设置中重置偏好。"
+    ///
+    /// 同时菜单栏入口要降级为 no-op（不要再调 `installIfNeeded()`），
+    /// 避免在依赖缺失的情况下继续往下跑导致更难定位的崩溃。
     let appRuntime = AppContainer.makeAppRuntime()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
