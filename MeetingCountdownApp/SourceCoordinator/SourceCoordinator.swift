@@ -41,6 +41,17 @@ struct SourceCoordinatorState: Equatable, Sendable {
 
         return healthState.summary
     }
+
+    /// 菜单栏图标根据"是否已有下一场会议"切换。
+    /// 纯派生属性放在状态值上，方便 `MenuBarPresentationCalculator` 等纯计算消费方
+    /// 不必持有 `SourceCoordinator` 实例就能拿到。
+    var menuBarSymbolName: String {
+        if nextMeeting != nil {
+            return "calendar.badge.clock"
+        }
+
+        return healthState.symbolName
+    }
 }
 
 /// `SourceCoordinator` 是 Phase 0 的主状态机入口。
@@ -120,14 +131,10 @@ final class SourceCoordinator: ObservableObject {
     }
 
     /// 为菜单栏标题配套选择图标。
-    /// 这里统一从聚合状态派生，避免 View 层自己再判断一遍业务条件。
-    /// 菜单栏图标根据“是否已有下一场会议”切换。
+    /// 已下沉到 `SourceCoordinatorState.menuBarSymbolName`，这里保留 forwarding
+    /// 仅为 backward compatibility（暂未发现外部调用方）。
     var menuBarSymbolName: String {
-        if state.nextMeeting != nil {
-            return "calendar.badge.clock"
-        }
-
-        return state.healthState.symbolName
+        state.menuBarSymbolName
     }
 
     /// 生成菜单栏详情文字。
