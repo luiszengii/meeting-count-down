@@ -8,6 +8,38 @@
 
 ---
 
+## Status updates
+
+### T10 状态（截至 W5）
+
+**T10 共三个子项，各有不同结局：**
+
+**1. 计算器覆盖（MenuBarPresentationCalculator）— 已被 T4 覆盖**
+T4 在拆 `MenuBarStatusItemController` 时同步新建了
+`MeetingCountdownAppTests/AppShell/MenuBarPresentationCalculatorTests.swift`，
+包含 17 条单元测试，覆盖了所有 `ReminderState` 变体（idle / scheduled / playing / triggeredSilently / disabled / failed）以及中英文本地化。
+T10 计算器部分由此完全被 T4 覆盖，无需重复。
+
+**2. SettingsPage 注册表覆盖 — 本批次（W5）落地**
+新建 `MeetingCountdownAppTests/AppShell/SettingsPageRegistryTests.swift`，5 条结构性测试：
+- `testRegistryContainsExactlyFivePagesWithExpectedTabIDs`：注册表恰好 5 页，tab ID 与预期顺序（overview / calendar / reminders / audio / advanced）完全吻合。
+- `testEachPageTitleKeyReturnsNonEmptyChineseAndEnglishValues`：每个页面的 titleKey 中英文值均非空，防止 tab bar / header 出现空白标签。
+- `testEachPageBodyConstructsWithoutCrashingInBothLanguages`：每个页面的 `body(uiLanguage:)` 在中英文模式下均能构建 AnyView，不崩溃（仅验证构建路径，不做快照对比）。
+- `testConstructingTwoRegistriesWithSameControllersDoesNotCrash`：用同一批 controller 构建两次注册表，验证无共享可变状态导致的崩溃。
+- `testRegistryOrderMatchesSettingsTabAllCases`：注册表顺序与 `SettingsTab.allCases` 完全一致；新增 tab 时 CI 会在这里失败，强制同步更新注册表。
+
+**3. 快照框架采用 — 已延迟，待用户决策**
+计划采用 `swift-snapshot-testing` 对菜单栏 presentation 和 SettingsView 关键页做视觉回归。
+但 `swift-snapshot-testing` 将是项目的**第一个外部 Swift Package 依赖**（当前项目零外部依赖，审计视为优势）。
+本决策需要用户明确同意后才能推进。
+快照测试将锁定以下已拆分的 presentation 结构（参见相关 ADR）：
+- `docs/adrs/2026-04-22-presentation-split.md`：展示层按职责拆分的边界约定。
+- `docs/adrs/2026-04-22-menu-bar-presentation-ownership.md`：菜单栏 presentation 归属权约定。
+
+**结论**：T10 的两个可执行子项均已有覆盖；快照框架采用挂起，等待用户决策。
+
+---
+
 ## P0 — 阻碍其他重构的前置项（先做这两个）
 
 ### T1. 抽 GlassUITheme 设计 token —【M-3 / M-8】 Size: S
