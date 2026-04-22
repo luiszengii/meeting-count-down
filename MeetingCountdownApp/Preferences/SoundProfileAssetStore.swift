@@ -19,15 +19,28 @@ struct SoundProfileImportBatch: Equatable, Sendable {
     let failures: [SoundProfileImportFailure]
 }
 
+/// `SoundProfileDeletionResult` 让调用方区分三种删除结果：
+/// - `deleted`：文件存在并成功删除。
+/// - `alreadyMissing`：文件本就不在磁盘上，操作为幂等空转。
+/// - `staleMetadata`：传入的 profile 不是已导入类型（非 `.imported` storage），无法定位文件。
+enum SoundProfileDeletionResult: Equatable, Sendable {
+    /// 文件存在并已成功删除。
+    case deleted
+    /// 文件本就不存在于磁盘，操作为幂等空转。
+    case alreadyMissing
+    /// profile 的 storage 不是 `.imported` 类型，无从定位文件。
+    case staleMetadata
+}
+
 /// `SoundProfileAssetManaging` 抽象提醒音频的真实文件管理能力。
-/// 上层控制器只关心“导入结果是什么”“怎么删”“怎么重新定位到文件”，不关心目录结构细节。
+/// 上层控制器只关心”导入结果是什么””怎么删””怎么重新定位到文件”，不关心目录结构细节。
 protocol SoundProfileAssetManaging: Sendable {
     /// 返回当前 app 固定存在的内建默认提醒音频条目。
     func bundledDefaultProfile() async -> SoundProfile
     /// 把用户选择的多个音频文件复制进 app 自己管理的目录，并返回导入结果。
     func importSoundFiles(from urls: [URL]) async -> SoundProfileImportBatch
-    /// 删除一条已经导入到 app 本地目录的音频文件。
-    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws
+    /// 删除一条已经导入到 app 本地目录的音频文件，并返回删除结果。
+    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult
     /// 把一条音频条目重新解析成真实文件 URL。
     func url(for profile: SoundProfile) async throws -> URL
 }
@@ -115,20 +128,21 @@ actor SoundProfileAssetStore: SoundProfileAssetManaging {
         return SoundProfileImportBatch(importedProfiles: importedProfiles, failures: failures)
     }
 
-    /// 删除一条已经导入到 app 本地目录的音频文件。
-    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws {
+    /// 删除一条已经导入到 app 本地目录的音频文件，并返回删除结果。
+    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult {
         guard case let .imported(fileName) = profile.storage else {
-            return
+            return .staleMetadata
         }
 
         let fileURL = importedSoundsDirectoryURL.appendingPathComponent(fileName, isDirectory: false)
 
         guard fileManager.fileExists(atPath: fileURL.path) else {
-            return
+            return .alreadyMissing
         }
 
         do {
             try fileManager.removeItem(at: fileURL)
+            return .deleted
         } catch {
             throw SoundProfileAssetStoreError.failedToDeleteImportedFile(
                 fileName: fileName,

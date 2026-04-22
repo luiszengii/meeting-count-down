@@ -209,8 +209,9 @@ actor StubSoundProfileAssetStore: SoundProfileAssetManaging {
         importBatch
     }
 
-    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws {
+    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult {
         deletedProfileIDs.append(profile.id)
+        return .deleted
     }
 
     func url(for profile: SoundProfile) async throws -> URL {

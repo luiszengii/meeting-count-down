@@ -167,7 +167,9 @@ private actor SettingsPresentationStubSoundProfileAssetStore: SoundProfileAssetM
         SoundProfileImportBatch(importedProfiles: [], failures: [])
     }
 
-    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws {}
+    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult {
+        .deleted
+    }
 
     func url(for profile: SoundProfile) async throws -> URL {
         URL(fileURLWithPath: "/tmp/\(profile.id).wav")

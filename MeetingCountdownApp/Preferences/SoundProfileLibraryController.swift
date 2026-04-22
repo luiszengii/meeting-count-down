@@ -106,7 +106,8 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
                 applyHydratedState(await loadHydratedState())
             } catch {
                 for soundProfile in importBatch.importedProfiles {
-                    try? await assetStore.deleteImportedSoundProfile(soundProfile)
+                    let result = try? await assetStore.deleteImportedSoundProfile(soundProfile)
+                    print("[SoundProfileLibraryController] rollback delete '\(soundProfile.id)': \(String(describing: result))")
                 }
 
                 errorMessage = error.localizedDescription
@@ -177,7 +178,8 @@ final class SoundProfileLibraryController: ObservableObject, AsyncStateControlle
             try await preferencesStore.saveSelectedSoundProfileID(fallbackSelectedID)
 
             do {
-                try await assetStore.deleteImportedSoundProfile(soundProfile)
+                let result = try await assetStore.deleteImportedSoundProfile(soundProfile)
+                print("[SoundProfileLibraryController] delete '\(soundProfile.id)': \(result)")
             } catch {
                 errorMessage = error.localizedDescription
             }

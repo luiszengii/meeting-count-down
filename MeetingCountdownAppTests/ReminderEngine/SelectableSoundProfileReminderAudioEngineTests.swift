@@ -76,8 +76,9 @@ actor StubSelectableSoundProfileAssetStore: SoundProfileAssetManaging {
         SoundProfileImportBatch(importedProfiles: [], failures: [])
     }
 
-    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws {
+    func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult {
         /// 这组测试不关心删除逻辑。
+        return .deleted
     }
 
     func url(for profile: SoundProfile) async throws -> URL {
