@@ -27,8 +27,17 @@ protocol SystemCalendarAccessing: AnyObject {
 @MainActor
 final class EventKitSystemCalendarAccess: SystemCalendarAccessing {
     /// EventKit 的统一入口对象。
-    /// `EKEventStore` 会长期跟随这个桥接对象存活，但调用方仍通过 `@MainActor` 入口串行访问它。
-    /// 这里显式使用 `nonisolated(unsafe)`，避免 Swift 6 把异步权限申请误判成跨 actor 发送。
+    ///
+    /// # 并发安全契约 (Concurrency Safety Contract)
+    /// `EKEventStore` 不满足 Swift 6 的 `Sendable` 要求，因此用 `nonisolated(unsafe)` 跳过
+    /// 编译器的隔离检查。这里的安全性完全由以下约束来保证，违反任何一条都会引入数据竞争：
+    ///
+    /// 1. **所有调用方必须是 `@MainActor`**：`SystemCalendarAccessing` 协议本身标记了
+    ///    `@MainActor`，所有入口方法（`currentAuthorizationState`、`requestReadAccess`、
+    ///    `fetchCalendars`、`fetchEventPayloads`）都只在 MainActor 上被调用。
+    /// 2. **禁止在子 Task 里访问 `eventStore`**：任何调用方都不得把 `eventStore` 捕获进
+    ///    `Task { ... }` 或 `Task.detached { ... }` 等脱离 MainActor 隔离的上下文。
+    ///    若未来需要后台访问，必须先完整替换为线程安全的包装方案。
     nonisolated(unsafe) private let eventStore: EKEventStore
 
     init(eventStore: EKEventStore = EKEventStore()) {
@@ -43,8 +52,14 @@ final class EventKitSystemCalendarAccess: SystemCalendarAccessing {
     }
 
     /// 由设置页显式触发系统权限弹窗。
+    /// 若 EventKit 在申请权限时抛出意外错误，会被包裹成 `MeetingSourceError.failedToRequestAccess`
+    /// 再向上传播，避免原始 EventKit 错误直接泄漏到领域层之外。
     func requestReadAccess() async throws -> SystemCalendarAuthorizationState {
-        _ = try await eventStore.requestFullAccessToEvents()
+        do {
+            _ = try await eventStore.requestFullAccessToEvents()
+        } catch {
+            throw MeetingSourceError.failedToRequestAccess(underlyingDescription: error.localizedDescription)
+        }
         return currentAuthorizationState()
     }
 

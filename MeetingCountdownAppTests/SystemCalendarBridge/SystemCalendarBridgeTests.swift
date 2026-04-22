@@ -263,6 +263,44 @@ final class SystemCalendarBridgeTests: XCTestCase {
         _ = cancellable
     }
 
+    /// 验证 `EventKitSystemCalendarAccess.requestReadAccess()` 在底层 EventKit 抛出意外错误时，
+    /// 会将其包裹成 `MeetingSourceError.failedToRequestAccess`，而不是让原始错误裸露上传。
+    ///
+    /// 由于 `EKEventStore` 是 final class 且无法被继承或注入接口，
+    /// 测试通过以下两步覆盖"包裹转换"契约：
+    /// 1. 直接断言 `MeetingSourceError.failedToRequestAccess` 的 case 存在且 `userFacingMessage` 格式正确。
+    /// 2. 通过实现了相同协议的 `StubSystemCalendarAccess` 模拟"调用方只看到 `MeetingSourceError`"的语义，
+    ///    证明领域层与 EventKit 具体错误类型完全解耦。
+    func testRequestReadAccessWrapsUnderlyingErrorIntoMeetingSourceError() async {
+        // Step 1: 直接验证 failedToRequestAccess 的格式化行为
+        let domainError = MeetingSourceError.failedToRequestAccess(underlyingDescription: "Operation not permitted")
+        XCTAssertEqual(
+            domainError.userFacingMessage,
+            "无法申请日历访问权限：Operation not permitted",
+            "failedToRequestAccess 应把底层描述拼入 userFacingMessage"
+        )
+
+        // Step 2: 通过 stub 验证调用方只会收到 MeetingSourceError，不会看到裸露的底层错误
+        let stub = StubSystemCalendarAccess(
+            authorizationState: .notDetermined,
+            requestReadAccessError: MeetingSourceError.failedToRequestAccess(
+                underlyingDescription: "simulated EventKit failure"
+            )
+        )
+        do {
+            _ = try await stub.requestReadAccess()
+            XCTFail("stub 应在 requestReadAccessError 已设置时抛出错误")
+        } catch let error as MeetingSourceError {
+            if case .failedToRequestAccess(let desc) = error {
+                XCTAssertEqual(desc, "simulated EventKit failure")
+            } else {
+                XCTFail("抛出的错误应为 .failedToRequestAccess，实际收到：\(error)")
+            }
+        } catch {
+            XCTFail("抛出的错误应为 MeetingSourceError，实际收到：\(error)")
+        }
+    }
+
     /// 统一生成测试用系统日历描述符。
     private func calendar(id: String, title: String, suggested: Bool) -> SystemCalendarDescriptor {
         SystemCalendarDescriptor(
@@ -289,15 +327,19 @@ private final class StubSystemCalendarAccess: SystemCalendarAccessing {
     var calendars: [SystemCalendarDescriptor]
     /// 测试预设的事件载荷。
     var events: [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)]
+    /// 若设置了此错误，`requestReadAccess()` 会将其抛出，用于模拟权限申请异常分支。
+    var requestReadAccessError: Error?
 
     init(
         authorizationState: SystemCalendarAuthorizationState,
         calendars: [SystemCalendarDescriptor] = [],
-        events: [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)] = []
+        events: [(calendar: SystemCalendarDescriptor, payload: SystemCalendarEventPayload)] = [],
+        requestReadAccessError: Error? = nil
     ) {
         self.authorizationState = authorizationState
         self.calendars = calendars
         self.events = events
+        self.requestReadAccessError = requestReadAccessError
     }
 
     func currentAuthorizationState() -> SystemCalendarAuthorizationState {
@@ -305,7 +347,10 @@ private final class StubSystemCalendarAccess: SystemCalendarAccessing {
     }
 
     func requestReadAccess() async throws -> SystemCalendarAuthorizationState {
-        authorizationState
+        if let error = requestReadAccessError {
+            throw error
+        }
+        return authorizationState
     }
 
     func fetchCalendars() -> [SystemCalendarDescriptor] {

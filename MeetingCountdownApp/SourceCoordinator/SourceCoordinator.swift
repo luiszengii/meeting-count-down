@@ -176,9 +176,16 @@ final class SourceCoordinator: ObservableObject {
         logger.info("Refreshing source \(source.descriptor.sourceIdentifier) because \(trigger.rawValue)")
 
         /// `defer` 保证无论刷新成功还是失败，最终都能把刷新中的标志位关掉。
+        /// 如果任务在 defer 执行时已被取消，则同时清空错误文案，避免取消操作留下
+        /// "isRefreshing=false + 旧错误文案"的不一致状态。
         defer {
             state.isRefreshing = false
+            if Task.isCancelled {
+                state.lastErrorMessage = nil
+            }
         }
+
+        guard !Task.isCancelled else { return }
 
         do {
             let snapshot = try await source.refresh(trigger: trigger, now: now)
@@ -203,7 +210,7 @@ final class SourceCoordinator: ObservableObject {
             switch error {
             case .notConfigured:
                 state.healthState = .unconfigured(message: error.userFacingMessage)
-            case .unavailable:
+            case .unavailable, .failedToRequestAccess:
                 state.healthState = .failed(message: error.userFacingMessage)
             }
             state.nextMeeting = nil
@@ -211,6 +218,7 @@ final class SourceCoordinator: ObservableObject {
             state.lastErrorMessage = error.userFacingMessage
             logger.error("Meeting source failed with domain error: \(error.userFacingMessage)")
         } catch {
+            guard !Task.isCancelled else { return }
             state.healthState = .failed(message: "刷新失败")
             state.nextMeeting = nil
             state.meetings = []

@@ -10,12 +10,19 @@ enum MeetingSourceError: Error, Equatable, Sendable {
     case notConfigured(message: String)
     /// 代表源本身暂时不可用，例如 EventKit 读取失败或系统能力异常。
     case unavailable(message: String)
+    /// 代表系统日历权限申请本身抛出了意外错误，包裹的是底层 EventKit 错误的文本描述。
+    /// 注意：`underlyingDescription` 使用 `String` 而非 `Error`，
+    /// 这样可以保持 `Equatable` 一致性（`Error` 本身不遵守 `Equatable`），
+    /// 同时在测试和日志层面保留足够的诊断信息。
+    case failedToRequestAccess(underlyingDescription: String)
 
     /// 把底层错误统一压成可直接展示给用户的文本，避免 UI 层再理解领域错误的细节。
     var userFacingMessage: String {
         switch self {
         case .notConfigured(let message), .unavailable(let message):
             message
+        case .failedToRequestAccess(let underlyingDescription):
+            "无法申请日历访问权限：\(underlyingDescription)"
         }
     }
 }
