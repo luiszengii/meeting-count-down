@@ -7,6 +7,11 @@
 # Xcode
 build/
 DerivedData/
+# 兜底忽略 Finder/Time Machine/Dropbox 等遇到 Spotlight 锁时自动生成的
+# 带 " 2" / " 3" 数字后缀的 .xcodeproj 副本（xcodegen 只产出
+# MeetingCountdown.xcodeproj，正版不带空格不带数字）。
+# 出现过两次：2026-04-22 审计发现一次、2026-04-25 第二次。
+MeetingCountdown\ [0-9]*.xcodeproj/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
