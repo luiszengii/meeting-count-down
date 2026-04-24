@@ -123,7 +123,11 @@ final class ReminderEngine: ObservableObject {
 
     /// 捕捉提醒引擎在还有活跃（未通过 cancel 清空）调度任务时就被销毁的生命周期 bug。
     /// 生产环境下 `assertionFailure` 不会崩溃，但 Debug / 测试构建会及时暴露问题。
-    nonisolated deinit {
+    ///
+    /// 不写显式的 `nonisolated`：该语法要 Swift 6.1 + `-enable-experimental-feature IsolatedDeinit`；
+    /// 在 Swift 6.0 (CI 当前的 Xcode) 直接编译失败。普通 `deinit` 在 `@MainActor` 类型上
+    /// 默认就是 nonisolated，访问 `nonisolated(unsafe)` 镜像字段也安全。
+    deinit {
         if _hasActiveScheduledTask {
             assertionFailure(
                 "ReminderEngine deallocated with an outstanding scheduledReminderTask — call stopAll() before releasing"
