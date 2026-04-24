@@ -38,8 +38,8 @@ private struct AudioPageBody: View {
 
     // MARK: Localization shorthand
 
-    private func L(_ chinese: String, _ english: String) -> String {
-        localized(chinese, english, in: uiLanguage)
+    private func localized(_ chinese: String, _ english: String) -> String {
+        FeishuMeetingCountdown.localized(chinese, english, in: uiLanguage)
     }
 
     // MARK: Hero panel
@@ -51,16 +51,16 @@ private struct AudioPageBody: View {
                     HStack(alignment: .top, spacing: 18) {
                         VStack(alignment: .leading, spacing: 14) {
                             pageIntro(
-                                eyebrow: L("音频", "AUDIO"),
-                                title: L("当前提醒音频", "Current Reminder Sound"),
-                                detail: L(
+                                eyebrow: localized("音频", "AUDIO"),
+                                title: localized("当前提醒音频", "Current Reminder Sound"),
+                                detail: localized(
                                     "试听、切换，或上传新的提醒音频；提醒时长设置已收口到\u{201C}提醒\u{201D}页。",
                                     "Preview, switch, or upload reminder sounds. Timing settings now live in Reminders."
                                 )
                             )
 
                             summaryCard(
-                                title: L("当前音频", "Current Sound"),
+                                title: localized("当前音频", "Current Sound"),
                                 value: currentSoundProfileLine,
                                 detail: countdownFollowLine,
                                 accent: .blue
@@ -70,7 +70,7 @@ private struct AudioPageBody: View {
                         Spacer(minLength: 0)
 
                         Button { page.isPresentingSoundImporter = true } label: {
-                            Text(L("上传音频", "Upload Audio"))
+                            Text(localized("上传音频", "Upload Audio"))
                         }
                         .buttonStyle(GlassPillButtonStyle(tone: .primary))
                         .disabled(isSoundProfileEditingDisabled)
@@ -79,23 +79,23 @@ private struct AudioPageBody: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         pageIntro(
-                            eyebrow: L("音频", "AUDIO"),
-                            title: L("当前提醒音频", "Current Reminder Sound"),
-                            detail: L(
+                            eyebrow: localized("音频", "AUDIO"),
+                            title: localized("当前提醒音频", "Current Reminder Sound"),
+                            detail: localized(
                                 "试听、切换，或上传新的提醒音频；提醒时长设置已收口到\u{201C}提醒\u{201D}页。",
                                 "Preview, switch, or upload reminder sounds. Timing settings now live in Reminders."
                             )
                         )
 
                         summaryCard(
-                            title: L("当前音频", "Current Sound"),
+                            title: localized("当前音频", "Current Sound"),
                             value: currentSoundProfileLine,
                             detail: countdownFollowLine,
                             accent: .blue
                         )
 
                         Button { page.isPresentingSoundImporter = true } label: {
-                            Text(L("上传音频", "Upload Audio"))
+                            Text(localized("上传音频", "Upload Audio"))
                         }
                         .buttonStyle(GlassPillButtonStyle(tone: .primary))
                         .disabled(isSoundProfileEditingDisabled)
@@ -115,9 +115,9 @@ private struct AudioPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 18) {
                 pageIntro(
-                    eyebrow: L("声音列表", "SOUNDS"),
-                    title: L("选择要播放的声音", "Choose the sound to play"),
-                    detail: L("你可以试听、设为当前，或删除已导入的音频。", "Preview, select, or delete imported sounds.")
+                    eyebrow: localized("声音列表", "SOUNDS"),
+                    title: localized("选择要播放的声音", "Choose the sound to play"),
+                    detail: localized("你可以试听、设为当前，或删除已导入的音频。", "Preview, select, or delete imported sounds.")
                 )
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -163,10 +163,10 @@ private struct AudioPageBody: View {
                     Text(soundProfile.displayName).font(.system(size: 15, weight: .bold))
 
                     if soundProfile.isBundledDefault {
-                        GlassBadge(text: L("内建", "Built-in"), color: .secondary)
+                        GlassBadge(text: localized("内建", "Built-in"), color: .secondary)
                     }
                     if isCurrent {
-                        GlassBadge(text: L("当前使用中", "Current"), color: .blue)
+                        GlassBadge(text: localized("当前使用中", "Current"), color: .blue)
                     }
                 }
 
@@ -184,8 +184,8 @@ private struct AudioPageBody: View {
                 Task { await page.soundProfileLibraryController.togglePreview(for: soundProfile.id) }
             } label: {
                 Text(page.soundProfileLibraryController.currentlyPreviewingSoundProfileID == soundProfile.id
-                    ? L("停止试听", "Stop Preview")
-                    : L("试听", "Preview"))
+                    ? localized("停止试听", "Stop Preview")
+                    : localized("试听", "Preview"))
             }
             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
             .disabled(page.soundProfileLibraryController.loadingState)
@@ -194,7 +194,7 @@ private struct AudioPageBody: View {
                 Button {
                     Task { await page.soundProfileLibraryController.selectSoundProfile(id: soundProfile.id) }
                 } label: {
-                    Text(L("保持当前", "Keep Current"))
+                    Text(localized("保持当前", "Keep Current"))
                 }
                 .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                 .disabled(isSoundProfileEditingDisabled)
@@ -203,14 +203,14 @@ private struct AudioPageBody: View {
                     Button {
                         Task { await page.soundProfileLibraryController.selectSoundProfile(id: soundProfile.id) }
                     } label: {
-                        Label(L("设为当前音频", "Set as Current"), systemImage: "checkmark.circle")
+                        Label(localized("设为当前音频", "Set as Current"), systemImage: "checkmark.circle")
                     }
 
                     if soundProfile.isImported {
                         Button(role: .destructive) {
                             Task { await page.soundProfileLibraryController.deleteSoundProfile(id: soundProfile.id) }
                         } label: {
-                            Label(L("删除音频", "Delete Audio"), systemImage: "trash")
+                            Label(localized("删除音频", "Delete Audio"), systemImage: "trash")
                         }
                     }
                 } label: {
@@ -229,7 +229,7 @@ private struct AudioPageBody: View {
         let background = Capsule(style: .continuous).fill(Color.white.opacity(0.18))
         let outline = Capsule(style: .continuous).strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
 
-        return Text(L("更多", "More"))
+        return Text(localized("更多", "More"))
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(Color.primary.opacity(0.9))
             .padding(.horizontal, 10)
@@ -268,21 +268,21 @@ private struct AudioPageBody: View {
         if let profile = page.soundProfileLibraryController.selectedSoundProfile {
             return "\(profile.displayName) · \(localizedDurationLine(for: profile.duration))"
         }
-        return L("默认提醒音效", "Default reminder sound")
+        return localized("默认提醒音效", "Default reminder sound")
     }
 
     private var countdownFollowLine: String {
         if !isCountdownFollowingSelectedSound {
-            return L(
+            return localized(
                 "当前倒计时固定为 \(effectiveCountdownDurationLine)，可在\u{201C}提醒\u{201D}页调整。",
                 "Countdown is fixed at \(effectiveCountdownDurationLine). Adjust it in Reminders."
             )
         }
         if let profile = page.soundProfileLibraryController.selectedSoundProfile {
             let durationLine = localizedDurationLine(for: profile.duration)
-            return L("当前跟随 \(profile.displayName)（\(durationLine)）。", "Currently follows \(profile.displayName) (\(durationLine)).")
+            return localized("当前跟随 \(profile.displayName)（\(durationLine)）。", "Currently follows \(profile.displayName) (\(durationLine)).")
         }
-        return L("当前跟随默认提醒音效时长。", "Currently follows the default reminder sound length.")
+        return localized("当前跟随默认提醒音效时长。", "Currently follows the default reminder sound length.")
     }
 
     // MARK: Duration helpers

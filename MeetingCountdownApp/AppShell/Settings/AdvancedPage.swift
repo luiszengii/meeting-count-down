@@ -38,8 +38,8 @@ private struct AdvancedPageBody: View {
 
     // MARK: Localization shorthand
 
-    private func L(_ chinese: String, _ english: String) -> String {
-        localized(chinese, english, in: uiLanguage)
+    private func localized(_ chinese: String, _ english: String) -> String {
+        FeishuMeetingCountdown.localized(chinese, english, in: uiLanguage)
     }
 
     // MARK: Language panel
@@ -49,9 +49,9 @@ private struct AdvancedPageBody: View {
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .center, spacing: 16) {
                     pageIntro(
-                        eyebrow: L("语言", "LANGUAGE"),
-                        title: L("界面语言", "Language"),
-                        detail: L("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
+                        eyebrow: localized("语言", "LANGUAGE"),
+                        title: localized("界面语言", "Language"),
+                        detail: localized("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
                     )
                     Spacer(minLength: 12)
                     GlassSegmentedTabs(selection: interfaceLanguageBinding) { language in
@@ -62,9 +62,9 @@ private struct AdvancedPageBody: View {
 
                 VStack(alignment: .leading, spacing: 16) {
                     pageIntro(
-                        eyebrow: L("语言", "LANGUAGE"),
-                        title: L("界面语言", "Language"),
-                        detail: L("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
+                        eyebrow: localized("语言", "LANGUAGE"),
+                        title: localized("界面语言", "Language"),
+                        detail: localized("切换设置页和菜单栏文案。", "Change the text in Settings and the menu bar.")
                     )
                     GlassSegmentedTabs(selection: interfaceLanguageBinding) { language in
                         language.optionLabel
@@ -82,9 +82,9 @@ private struct AdvancedPageBody: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: 16) {
                         pageIntro(
-                            eyebrow: L("系统", "SYSTEM"),
-                            title: L("同步和开机启动", "Sync and Launch"),
-                            detail: L(
+                            eyebrow: localized("系统", "SYSTEM"),
+                            title: localized("同步和开机启动", "Sync and Launch"),
+                            detail: localized(
                                 "查看上次同步，并控制登录后是否自动启动。",
                                 "Check the latest sync and control whether the app launches after login."
                             )
@@ -96,9 +96,9 @@ private struct AdvancedPageBody: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         pageIntro(
-                            eyebrow: L("系统", "SYSTEM"),
-                            title: L("同步和开机启动", "Sync and Launch"),
-                            detail: L(
+                            eyebrow: localized("系统", "SYSTEM"),
+                            title: localized("同步和开机启动", "Sync and Launch"),
+                            detail: localized(
                                 "查看上次同步，并控制登录后是否自动启动。",
                                 "Check the latest sync and control whether the app launches after login."
                             )
@@ -107,12 +107,12 @@ private struct AdvancedPageBody: View {
                     }
                 }
 
-                infoRow(title: L("上次同步", "Last Sync"), value: localizedAdvancedLastSyncValue)
+                infoRow(title: localized("上次同步", "Last Sync"), value: localizedAdvancedLastSyncValue)
 
                 preferenceDivider
 
                 preferenceToggleRow(
-                    title: L("开机启动", "Launch at Login"),
+                    title: localized("开机启动", "Launch at Login"),
                     detail: localizedLaunchAtLoginStatusSummary,
                     isOn: Binding(
                         get: { page.launchAtLoginController.isEnabled },
@@ -132,7 +132,7 @@ private struct AdvancedPageBody: View {
         Button {
             Task { await page.sourceCoordinator.refresh(trigger: .manualRefresh) }
         } label: {
-            Text(L("立即同步", "Sync Now"))
+            Text(localized("立即同步", "Sync Now"))
         }
         .buttonStyle(GlassPillButtonStyle(tone: .secondary))
         .disabled(page.sourceCoordinator.state.isRefreshing)
@@ -146,9 +146,9 @@ private struct AdvancedPageBody: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: 16) {
                         pageIntro(
-                            eyebrow: L("诊断", "DIAGNOSTICS"),
-                            title: L("诊断信息", "Diagnostics"),
-                            detail: L(
+                            eyebrow: localized("诊断", "DIAGNOSTICS"),
+                            title: localized("诊断信息", "Diagnostics"),
+                            detail: localized(
                                 "只保留排障独有信息，并支持导出完整诊断文本。",
                                 "Show only troubleshooting-specific facts and export the full diagnostic report."
                             )
@@ -160,9 +160,9 @@ private struct AdvancedPageBody: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         pageIntro(
-                            eyebrow: L("诊断", "DIAGNOSTICS"),
-                            title: L("诊断信息", "Diagnostics"),
-                            detail: L(
+                            eyebrow: localized("诊断", "DIAGNOSTICS"),
+                            title: localized("诊断信息", "Diagnostics"),
+                            detail: localized(
                                 "只保留排障独有信息，并支持导出完整诊断文本。",
                                 "Show only troubleshooting-specific facts and export the full diagnostic report."
                             )
@@ -172,10 +172,10 @@ private struct AdvancedPageBody: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    infoRow(title: L("当前数据源", "Active Data Source"), value: L("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar"))
-                    infoRow(title: L("接入模式", "Connection Mode"), value: L("CalDAV 单一路径", "CalDAV Only"))
-                    infoRow(title: L("可见日历", "Visible Calendars"), value: localizedVisibleCalendarCountValue)
-                    infoRow(title: L("连接诊断", "Connection Diagnosis"), value: localizedCalendarConnectionDiagnosticSummary)
+                    infoRow(title: localized("当前数据源", "Active Data Source"), value: localized("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar"))
+                    infoRow(title: localized("接入模式", "Connection Mode"), value: localized("CalDAV 单一路径", "CalDAV Only"))
+                    infoRow(title: localized("可见日历", "Visible Calendars"), value: localizedVisibleCalendarCountValue)
+                    infoRow(title: localized("连接诊断", "Connection Diagnosis"), value: localizedCalendarConnectionDiagnosticSummary)
                 }
 
                 if let lastErrorMessage = page.sourceCoordinator.state.lastErrorMessage {
@@ -196,12 +196,12 @@ private struct AdvancedPageBody: View {
                     didCopyCalendarDiagnostics = false
                 }
             } label: {
-                Text(L("复制诊断信息", "Copy Diagnostics"))
+                Text(localized("复制诊断信息", "Copy Diagnostics"))
             }
             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
 
             if didCopyCalendarDiagnostics {
-                Text(L("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))
+                Text(localized("已复制，可直接粘贴给开发者。", "Copied. Paste it directly to the developer."))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -223,14 +223,14 @@ private struct AdvancedPageBody: View {
 
     private var localizedAdvancedLastSyncValue: String {
         guard let lastRefreshAt = page.sourceCoordinator.state.lastRefreshAt else {
-            return L("尚未同步", "Not synced yet")
+            return localized("尚未同步", "Not synced yet")
         }
         return localizedDateHeadline(for: lastRefreshAt)
     }
 
     private var localizedVisibleCalendarCountValue: String {
         let count = page.systemCalendarConnectionController.availableCalendars.count
-        return L("\(count) 个系统日历", "\(count) system calendar(s)")
+        return localized("\(count) 个系统日历", "\(count) system calendar(s)")
     }
 
     private var localizedCalendarConnectionDiagnosticSummary: String {
@@ -240,32 +240,32 @@ private struct AdvancedPageBody: View {
         case .authorized:
             break
         case .notDetermined:
-            return L("等待授予日历权限", "Calendar access is needed")
+            return localized("等待授予日历权限", "Calendar access is needed")
         case .denied:
-            return L("日历权限被拒绝", "Calendar access was denied")
+            return localized("日历权限被拒绝", "Calendar access was denied")
         case .restricted:
-            return L("日历访问受限", "Calendar access is restricted")
+            return localized("日历访问受限", "Calendar access is restricted")
         case .writeOnly:
-            return L("当前只有写入权限", "Calendar access is write-only")
+            return localized("当前只有写入权限", "Calendar access is write-only")
         case .unknown:
-            return L("日历权限状态未知", "Calendar access is unknown")
+            return localized("日历权限状态未知", "Calendar access is unknown")
         }
 
         if page.sourceCoordinator.state.lastErrorMessage != nil {
-            return L("会议读取出现问题", "Meeting reading has an issue")
+            return localized("会议读取出现问题", "Meeting reading has an issue")
         }
 
         switch snapshot.selectionDebugState {
         case "ready":
-            return L("就绪", "Ready")
+            return localized("就绪", "Ready")
         case "stored_selection_missing_from_current_calendar_list":
-            return L("已保存的日历当前不可用", "Saved calendars are unavailable")
+            return localized("已保存的日历当前不可用", "Saved calendars are unavailable")
         case "stored_selection_is_empty":
-            return L("当前保存的是空选择", "An empty selection is saved")
+            return localized("当前保存的是空选择", "An empty selection is saved")
         case "selection_not_saved_yet":
-            return L("尚未保存日历选择", "No calendar selection is saved yet")
+            return localized("尚未保存日历选择", "No calendar selection is saved yet")
         default:
-            return L("状态未知", "Unknown")
+            return localized("状态未知", "Unknown")
         }
     }
 
@@ -301,10 +301,10 @@ private struct AdvancedPageBody: View {
     // MARK: Date helper
 
     private static let absoluteFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .none
-        f.timeStyle = .short
-        return f
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
     }()
 
     private static let englishMonthSymbols = [
@@ -315,9 +315,9 @@ private struct AdvancedPageBody: View {
     private func localizedDateHeadline(for date: Date) -> String {
         let timeLine = Self.absoluteFormatter.string(from: date)
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return L("今天 \(timeLine)", "Today \(timeLine)") }
-        if cal.isDateInTomorrow(date) { return L("明天 \(timeLine)", "Tomorrow \(timeLine)") }
-        if cal.isDateInYesterday(date) { return L("昨天 \(timeLine)", "Yesterday \(timeLine)") }
+        if cal.isDateInToday(date) { return localized("今天 \(timeLine)", "Today \(timeLine)") }
+        if cal.isDateInTomorrow(date) { return localized("明天 \(timeLine)", "Tomorrow \(timeLine)") }
+        if cal.isDateInYesterday(date) { return localized("昨天 \(timeLine)", "Yesterday \(timeLine)") }
         let month = cal.component(.month, from: date)
         let day = cal.component(.day, from: date)
         if uiLanguage == .english {
@@ -436,8 +436,8 @@ private struct AdvancedPageBody: View {
     }
 
     private func preferenceToggleStateText(isOn: Bool) -> String {
-        if isReminderPreferenceEditingDisabled { return L("保存中", "Saving") }
-        return isOn ? L("已开启", "Enabled") : L("已关闭", "Disabled")
+        if isReminderPreferenceEditingDisabled { return localized("保存中", "Saving") }
+        return isOn ? localized("已开启", "Enabled") : localized("已关闭", "Disabled")
     }
 
     private func preferenceToggleStateColor(isOn: Bool) -> Color {

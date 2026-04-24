@@ -155,7 +155,13 @@ final class SystemCalendarConnectionController: ObservableObject, AsyncStateCont
         selectionPersistenceState = .idle
         lastLoadedAt = dateProvider.now()
         logger.info(
-            "System calendar connection state ready: available=\(calendars.count), stored=\(lastLoadedStoredCalendarIDs.count), unavailableStored=\(lastUnavailableStoredCalendarIDs.count), effectiveSelected=\(selectedCalendarIDs.count)"
+            """
+            System calendar connection state ready: \
+            available=\(calendars.count), \
+            stored=\(lastLoadedStoredCalendarIDs.count), \
+            unavailableStored=\(lastUnavailableStoredCalendarIDs.count), \
+            effectiveSelected=\(selectedCalendarIDs.count)
+            """
         )
     }
 

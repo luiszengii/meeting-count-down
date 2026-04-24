@@ -329,26 +329,35 @@ extension SettingsView {
     }
 }
 
+/// 状态提示块的低饱和配色集合，按语义在背景 / 边框 / 标题 / 正文之间切换。
+/// 用具名 struct 而不是 4-tuple，是因为 SwiftLint `large_tuple` 限制 + 可读性更好。
+struct StatusCalloutPalette {
+    let background: Color
+    let border: Color
+    let title: Color
+    let detail: Color
+}
+
 /// 状态提示块会根据语义切换不同的低饱和背景与边框颜色。
 enum StatusCalloutTone {
     case warning
     case error
 
-    var palette: (background: Color, border: Color, title: Color, detail: Color) {
+    var palette: StatusCalloutPalette {
         switch self {
         case .warning:
-            return (
-                Color.orange.opacity(0.08),
-                Color.orange.opacity(0.18),
-                Color.primary.opacity(0.92),
-                Color.primary.opacity(0.72)
+            return StatusCalloutPalette(
+                background: Color.orange.opacity(0.08),
+                border: Color.orange.opacity(0.18),
+                title: Color.primary.opacity(0.92),
+                detail: Color.primary.opacity(0.72)
             )
         case .error:
-            return (
-                Color.red.opacity(0.08),
-                Color.red.opacity(0.18),
-                Color.primary.opacity(0.92),
-                Color.primary.opacity(0.72)
+            return StatusCalloutPalette(
+                background: Color.red.opacity(0.08),
+                border: Color.red.opacity(0.18),
+                title: Color.primary.opacity(0.92),
+                detail: Color.primary.opacity(0.72)
             )
         }
     }

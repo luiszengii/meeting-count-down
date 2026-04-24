@@ -33,8 +33,8 @@ private struct RemindersPageBody: View {
 
     // MARK: Localization shorthand
 
-    private func L(_ chinese: String, _ english: String) -> String {
-        localized(chinese, english, in: uiLanguage)
+    private func localized(_ chinese: String, _ english: String) -> String {
+        FeishuMeetingCountdown.localized(chinese, english, in: uiLanguage)
     }
 
     // MARK: Hero panel
@@ -43,9 +43,9 @@ private struct RemindersPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.14) {
             VStack(alignment: .leading, spacing: 16) {
                 pageIntro(
-                    eyebrow: L("当前状态", "STATUS"),
-                    title: L("提醒现在会怎么工作", "How reminders behave right now"),
-                    detail: L(
+                    eyebrow: localized("当前状态", "STATUS"),
+                    title: localized("提醒现在会怎么工作", "How reminders behave right now"),
+                    detail: localized(
                         "这里只看提醒本身是否已排定、何时开始，以及声音会怎么处理。",
                         "This section focuses on reminder execution only: whether it is scheduled, when it starts, and how sound behaves."
                     )
@@ -56,7 +56,7 @@ private struct RemindersPageBody: View {
                 if page.reminderPreferencesController.loadingState || page.reminderPreferencesController.isSavingState {
                     HStack(spacing: 10) {
                         ProgressView().controlSize(.small)
-                        Text(L("正在保存提醒设置…", "Saving reminder settings..."))
+                        Text(localized("正在保存提醒设置…", "Saving reminder settings..."))
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -106,7 +106,7 @@ private struct RemindersPageBody: View {
 
     private var reminderStatusSummaryCopy: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(L("提醒摘要", "Reminder Summary"))
+            Text(localized("提醒摘要", "Reminder Summary"))
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(reminderStatusBadgeColor.opacity(0.9))
             Text(localizedReminderStateSummary)
@@ -124,14 +124,14 @@ private struct RemindersPageBody: View {
     private var reminderStatusSummaryFacts: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 24) {
-                statusSnapshotRow(title: L("下一次提醒", "Next Reminder"), value: localizedReminderScheduleSnapshotValue)
-                statusSnapshotRow(title: L("声音策略", "Sound Policy"), value: localizedOverviewAudioStatusTitle)
+                statusSnapshotRow(title: localized("下一次提醒", "Next Reminder"), value: localizedReminderScheduleSnapshotValue)
+                statusSnapshotRow(title: localized("声音策略", "Sound Policy"), value: localizedOverviewAudioStatusTitle)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 12) {
-                statusSnapshotRow(title: L("下一次提醒", "Next Reminder"), value: localizedReminderScheduleSnapshotValue)
-                statusSnapshotRow(title: L("声音策略", "Sound Policy"), value: localizedOverviewAudioStatusTitle)
+                statusSnapshotRow(title: localized("下一次提醒", "Next Reminder"), value: localizedReminderScheduleSnapshotValue)
+                statusSnapshotRow(title: localized("声音策略", "Sound Policy"), value: localizedOverviewAudioStatusTitle)
             }
         }
     }
@@ -142,16 +142,16 @@ private struct RemindersPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 14) {
                 pageIntro(
-                    eyebrow: L("提醒时间", "TIMING"),
-                    title: L("把时间参数调成你想要的节奏", "Set the timing rhythm you want"),
-                    detail: L(
+                    eyebrow: localized("提醒时间", "TIMING"),
+                    title: localized("把时间参数调成你想要的节奏", "Set the timing rhythm you want"),
+                    detail: localized(
                         "当前提醒仍然会在倒计时开始时一起触发；这里只把它表达成更明确的设置项。",
                         "Reminders still trigger when the countdown begins; this section simply expresses that rule as clearer settings."
                     )
                 )
 
                 preferenceValueRow(
-                    title: L("提前提醒", "Reminder Lead Time"),
+                    title: localized("提前提醒", "Reminder Lead Time"),
                     detail: localizedReminderLeadTimeSettingDetail,
                     value: effectiveCountdownDurationLine
                 ) {
@@ -161,9 +161,9 @@ private struct RemindersPageBody: View {
                             .disabled(isCountdownFollowingSelectedSound || isReminderPreferenceEditingDisabled)
 
                         if isCountdownFollowingSelectedSound {
-                            preferenceStateLabel(text: L("跟随音频", "Sound-based"), color: .secondary)
+                            preferenceStateLabel(text: localized("跟随音频", "Sound-based"), color: .secondary)
                         } else {
-                            preferenceStateLabel(text: L("手动固定", "Manual"), color: .blue)
+                            preferenceStateLabel(text: localized("手动固定", "Manual"), color: .blue)
                         }
                     }
                     .opacity(isCountdownFollowingSelectedSound ? 0.62 : 1)
@@ -172,7 +172,7 @@ private struct RemindersPageBody: View {
                 preferenceDivider
 
                 preferenceValueRow(
-                    title: L("倒计时时长", "Countdown Duration"),
+                    title: localized("倒计时时长", "Countdown Duration"),
                     detail: localizedReminderCountdownModeDetail,
                     value: localizedReminderCountdownModeValue
                 ) {
@@ -196,14 +196,14 @@ private struct RemindersPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 14) {
                 pageIntro(
-                    eyebrow: L("播放方式", "PLAYBACK"),
-                    title: L("声音提醒", "Sound Playback"),
-                    detail: L("决定提醒命中后会不会真的出声。", "Choose whether reminders should actually make sound when they trigger.")
+                    eyebrow: localized("播放方式", "PLAYBACK"),
+                    title: localized("声音提醒", "Sound Playback"),
+                    detail: localized("决定提醒命中后会不会真的出声。", "Choose whether reminders should actually make sound when they trigger.")
                 )
 
                 preferenceToggleRow(
-                    title: L("启用本地提醒", "Enable Local Reminders"),
-                    detail: L("为选中的日历安排会前提醒。", "Schedule reminders for selected calendars."),
+                    title: localized("启用本地提醒", "Enable Local Reminders"),
+                    detail: localized("为选中的日历安排会前提醒。", "Schedule reminders for selected calendars."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.globalReminderEnabled },
                         set: { isEnabled in Task { await page.reminderPreferencesController.setGlobalReminderEnabled(isEnabled) } }
@@ -213,8 +213,8 @@ private struct RemindersPageBody: View {
                 preferenceDivider
 
                 preferenceToggleRow(
-                    title: L("静音模式", "Mute Mode"),
-                    detail: L("保留提醒，但不播放声音。", "Keep reminders on, but mute the sound."),
+                    title: localized("静音模式", "Mute Mode"),
+                    detail: localized("保留提醒，但不播放声音。", "Keep reminders on, but mute the sound."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.isMuted },
                         set: { isMuted in Task { await page.reminderPreferencesController.setMuted(isMuted) } }
@@ -224,8 +224,8 @@ private struct RemindersPageBody: View {
                 preferenceDivider
 
                 preferenceToggleRow(
-                    title: L("仅在耳机连接时播放", "Play Only on Headphones"),
-                    detail: L("外放时会自动静音。", "Sound stays silent when you're on speakers."),
+                    title: localized("仅在耳机连接时播放", "Play Only on Headphones"),
+                    detail: localized("外放时会自动静音。", "Sound stays silent when you're on speakers."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected },
                         set: { isEnabled in Task { await page.reminderPreferencesController.setPlaySoundOnlyWhenHeadphonesConnected(isEnabled) } }
@@ -241,14 +241,14 @@ private struct RemindersPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 18, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 14) {
                 pageIntro(
-                    eyebrow: L("会议过滤", "FILTERS"),
-                    title: L("筛选要提醒的会议", "Filter which meetings get reminders"),
-                    detail: L("这些选项只影响提醒，不会改动系统日历。", "These options affect reminders only.")
+                    eyebrow: localized("会议过滤", "FILTERS"),
+                    title: localized("筛选要提醒的会议", "Filter which meetings get reminders"),
+                    detail: localized("这些选项只影响提醒，不会改动系统日历。", "These options affect reminders only.")
                 )
 
                 preferenceToggleRow(
-                    title: L("仅提醒含视频链接的会议", "Only Meetings with Video Link"),
-                    detail: L("只提醒带会议链接的事件。", "Only remind for events with a meeting link."),
+                    title: localized("仅提醒含视频链接的会议", "Only Meetings with Video Link"),
+                    detail: localized("只提醒带会议链接的事件。", "Only remind for events with a meeting link."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.onlyForMeetingsWithVideoLink },
                         set: { isEnabled in Task { await page.reminderPreferencesController.setOnlyForMeetingsWithVideoLink(isEnabled) } }
@@ -258,8 +258,8 @@ private struct RemindersPageBody: View {
                 preferenceDivider
 
                 preferenceToggleRow(
-                    title: L("跳过已拒绝会议", "Skip Declined Meetings"),
-                    detail: L("不提醒你已拒绝的会议。", "Don't remind for meetings you've declined."),
+                    title: localized("跳过已拒绝会议", "Skip Declined Meetings"),
+                    detail: localized("不提醒你已拒绝的会议。", "Don't remind for meetings you've declined."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.skipDeclinedMeetings },
                         set: { isEnabled in Task { await page.reminderPreferencesController.setSkipDeclinedMeetings(isEnabled) } }
@@ -295,7 +295,7 @@ private struct RemindersPageBody: View {
 
     private var selectedSoundProfileName: String {
         page.soundProfileLibraryController.selectedSoundProfile?.displayName
-            ?? L("默认提醒音效", "Default reminder sound")
+            ?? localized("默认提醒音效", "Default reminder sound")
     }
 
     // MARK: Bindings
@@ -327,96 +327,96 @@ private struct RemindersPageBody: View {
 
     private var localizedReminderStateSummary: String {
         switch page.reminderEngine.state {
-        case .idle: return L("当前没有待触发的提醒", "No reminder is waiting to trigger")
-        case .scheduled: return L("下一次提醒已安排", "The next reminder is scheduled")
+        case .idle: return localized("当前没有待触发的提醒", "No reminder is waiting to trigger")
+        case .scheduled: return localized("下一次提醒已安排", "The next reminder is scheduled")
         case let .playing(context, _):
-            if context.triggeredImmediately { return L("提醒已立即开始执行", "The reminder started immediately") }
-            return L("提醒正在执行倒计时", "The reminder countdown is running")
+            if context.triggeredImmediately { return localized("提醒已立即开始执行", "The reminder started immediately") }
+            return localized("提醒正在执行倒计时", "The reminder countdown is running")
         case let .triggeredSilently(_, _, reason):
             switch reason {
-            case .userMuted: return L("提醒已触发，但当前为静音模式", "The reminder was triggered, but mute mode is on")
-            case .outputRoutePolicy: return L("提醒已触发，但当前不会播放声音", "The reminder was triggered, but sound playback is blocked")
+            case .userMuted: return localized("提醒已触发，但当前为静音模式", "The reminder was triggered, but mute mode is on")
+            case .outputRoutePolicy: return localized("提醒已触发，但当前不会播放声音", "The reminder was triggered, but sound playback is blocked")
             }
-        case .disabled: return L("本地提醒已关闭", "Local reminders are turned off")
-        case .failed: return L("提醒当前不可用", "Reminders are currently unavailable")
+        case .disabled: return localized("本地提醒已关闭", "Local reminders are turned off")
+        case .failed: return localized("提醒当前不可用", "Reminders are currently unavailable")
         }
     }
 
     private var localizedReminderStatusCardDetail: String {
         switch page.reminderEngine.state {
         case .idle:
-            return L("当前没有正在等待触发的提醒任务。", "There is no reminder waiting to trigger right now.")
+            return localized("当前没有正在等待触发的提醒任务。", "There is no reminder waiting to trigger right now.")
         case let .scheduled(context):
             return localizedScheduledReminderLine(for: context)
         case let .playing(context, _):
             if context.triggeredImmediately {
-                return L("距离会议已经太近，因此提醒已经立即开始。", "The meeting was too close, so the reminder started immediately.")
+                return localized("距离会议已经太近，因此提醒已经立即开始。", "The meeting was too close, so the reminder started immediately.")
             }
-            return L("提醒已经开始执行，菜单栏会继续显示倒计时。", "The reminder is already running and the menu bar keeps showing the countdown.")
+            return localized("提醒已经开始执行，菜单栏会继续显示倒计时。", "The reminder is already running and the menu bar keeps showing the countdown.")
         case let .triggeredSilently(_, _, reason):
             switch reason {
             case .userMuted:
-                return L("提醒已经命中，但当前为静音模式，因此不会播放声音。", "The reminder was triggered, but mute mode is on, so no sound will play.")
+                return localized("提醒已经命中，但当前为静音模式，因此不会播放声音。", "The reminder was triggered, but mute mode is on, so no sound will play.")
             case .outputRoutePolicy:
-                return L("提醒已经命中，但当前输出不满足播放策略，因此不会播放声音。", "The reminder was triggered, but the current output doesn't satisfy playback policy.")
+                return localized("提醒已经命中，但当前输出不满足播放策略，因此不会播放声音。", "The reminder was triggered, but the current output doesn't satisfy playback policy.")
             }
         case .disabled:
-            return L("本地提醒已关闭，因此不会为下一场会议建立提醒。", "Local reminders are off, so the next meeting won't get a reminder.")
+            return localized("本地提醒已关闭，因此不会为下一场会议建立提醒。", "Local reminders are off, so the next meeting won't get a reminder.")
         case .failed:
-            return L("提醒链路当前不可用，可能无法按计划触发。", "The reminder pipeline is unavailable right now, so it may not trigger as planned.")
+            return localized("提醒链路当前不可用，可能无法按计划触发。", "The reminder pipeline is unavailable right now, so it may not trigger as planned.")
         }
     }
 
     private var localizedReminderScheduleSnapshotValue: String {
         switch page.reminderEngine.state {
-        case .idle: return L("暂无待触发", "Nothing Pending")
+        case .idle: return localized("暂无待触发", "Nothing Pending")
         case let .scheduled(context):
             let leadTime = localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt)
-            return L("会前 \(leadTime)", "\(leadTime) before start")
+            return localized("会前 \(leadTime)", "\(leadTime) before start")
         case let .playing(context, _):
             return context.triggeredImmediately
-                ? L("已立即开始", "Started Immediately")
-                : L("正在倒计时", "Countdown Running")
+                ? localized("已立即开始", "Started Immediately")
+                : localized("正在倒计时", "Countdown Running")
         case let .triggeredSilently(_, _, reason):
             switch reason {
-            case .userMuted: return L("静音命中", "Muted Trigger")
-            case .outputRoutePolicy: return L("策略静默", "Policy-muted")
+            case .userMuted: return localized("静音命中", "Muted Trigger")
+            case .outputRoutePolicy: return localized("策略静默", "Policy-muted")
             }
-        case .disabled: return L("提醒关闭", "Reminder Off")
-        case .failed: return L("当前不可用", "Unavailable")
+        case .disabled: return localized("提醒关闭", "Reminder Off")
+        case .failed: return localized("当前不可用", "Unavailable")
         }
     }
 
     private var localizedOverviewAudioStatusTitle: String {
-        if !page.reminderPreferencesController.reminderPreferences.globalReminderEnabled { return L("不会播放", "Playback Off") }
-        if page.reminderPreferencesController.reminderPreferences.isMuted { return L("静音模式", "Muted") }
-        if page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected { return L("仅耳机播放", "Headphones Only") }
-        return L("正常播放", "Audible")
+        if !page.reminderPreferencesController.reminderPreferences.globalReminderEnabled { return localized("不会播放", "Playback Off") }
+        if page.reminderPreferencesController.reminderPreferences.isMuted { return localized("静音模式", "Muted") }
+        if page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected { return localized("仅耳机播放", "Headphones Only") }
+        return localized("正常播放", "Audible")
     }
 
     private var localizedReminderLeadTimeSettingDetail: String {
         if isCountdownFollowingSelectedSound {
-            return L(
+            return localized(
                 "当前跟随 \(selectedSoundProfileName) 的时长；提醒和倒计时会一起开始。",
                 "Currently follows \(selectedSoundProfileName); the reminder and countdown start together."
             )
         }
-        return L("当前使用固定秒数；提醒和倒计时会一起开始。", "A fixed duration is active; the reminder and countdown start together.")
+        return localized("当前使用固定秒数；提醒和倒计时会一起开始。", "A fixed duration is active; the reminder and countdown start together.")
     }
 
     private var localizedReminderCountdownModeValue: String {
-        if isCountdownFollowingSelectedSound { return L("跟随当前音频", "Follow Current Sound") }
-        return L("手动 \(effectiveCountdownDurationLine)", "Manual \(effectiveCountdownDurationLine)")
+        if isCountdownFollowingSelectedSound { return localized("跟随当前音频", "Follow Current Sound") }
+        return localized("手动 \(effectiveCountdownDurationLine)", "Manual \(effectiveCountdownDurationLine)")
     }
 
     private var localizedReminderCountdownModeDetail: String {
         if isCountdownFollowingSelectedSound {
-            return L(
+            return localized(
                 "当前用所选音频的时长决定会前提醒和倒计时。",
                 "The selected sound duration currently decides both reminder lead time and countdown."
             )
         }
-        return L(
+        return localized(
             "当前固定使用同一时长来触发提醒和执行倒计时。",
             "A fixed duration is currently used for both the reminder trigger and countdown."
         )
@@ -472,12 +472,12 @@ private struct RemindersPageBody: View {
     private func localizedScheduledReminderLine(for context: ScheduledReminderContext) -> String {
         let leadTime = localizedLeadTimeDescription(triggerAt: context.triggerAt, meetingStartAt: context.meeting.startAt)
         if context.triggeredImmediately {
-            return L(
+            return localized(
                 "距离会议已经太近，因此会立即开始提醒，倒计时持续 \(context.countdownSeconds) 秒。",
                 "The meeting is too close, so the reminder starts immediately and the countdown lasts \(context.countdownSeconds) seconds."
             )
         }
-        return L(
+        return localized(
             "将在会议开始前 \(leadTime) 触发提醒，倒计时持续 \(context.countdownSeconds) 秒。",
             "The reminder will trigger \(leadTime) before the meeting and the countdown lasts \(context.countdownSeconds) seconds."
         )
@@ -610,8 +610,8 @@ private struct RemindersPageBody: View {
     }
 
     private func preferenceToggleStateText(isOn: Bool) -> String {
-        if isReminderPreferenceEditingDisabled { return L("保存中", "Saving") }
-        return isOn ? L("已开启", "Enabled") : L("已关闭", "Disabled")
+        if isReminderPreferenceEditingDisabled { return localized("保存中", "Saving") }
+        return isOn ? localized("已开启", "Enabled") : localized("已关闭", "Disabled")
     }
 
     private func preferenceToggleStateColor(isOn: Bool) -> Color {

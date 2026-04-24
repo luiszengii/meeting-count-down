@@ -54,8 +54,8 @@ private struct CalendarPageBody: View {
 
     // MARK: Localization shorthand
 
-    private func L(_ chinese: String, _ english: String) -> String {
-        localized(chinese, english, in: uiLanguage)
+    private func localized(_ chinese: String, _ english: String) -> String {
+        FeishuMeetingCountdown.localized(chinese, english, in: uiLanguage)
     }
 
     // MARK: Connection panel
@@ -63,7 +63,7 @@ private struct CalendarPageBody: View {
     private var calendarConnectionPanel: some View {
         GlassPanel(cornerRadius: 28, padding: 20, overlayOpacity: 0.12) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(L("日历连接", "Calendar Connection"))
+                Text(localized("日历连接", "Calendar Connection"))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary.opacity(0.95))
 
@@ -80,14 +80,14 @@ private struct CalendarPageBody: View {
                 switch calendarConnectionState {
                 case .healthy:
                     VStack(alignment: .leading, spacing: 12) {
-                        infoRow(title: L("连接方式", "Connection"), value: "CalDAV")
-                        infoRow(title: L("授权状态", "Access"), value: localizedCalendarAuthorizationValue)
-                        infoRow(title: L("最近检查", "Last Checked"), value: calendarLastCheckedSummary)
+                        infoRow(title: localized("连接方式", "Connection"), value: "CalDAV")
+                        infoRow(title: localized("授权状态", "Access"), value: localizedCalendarAuthorizationValue)
+                        infoRow(title: localized("最近检查", "Last Checked"), value: calendarLastCheckedSummary)
                     }
                 case .authorizationRequired:
                     EmptyView()
                 case let .connectionFailure(message):
-                    infoRow(title: L("错误详情", "Error Detail"), value: message)
+                    infoRow(title: localized("错误详情", "Error Detail"), value: message)
                 }
 
                 calendarConnectionActions
@@ -128,15 +128,15 @@ private struct CalendarPageBody: View {
 
     private var primaryCalendarConnectionActionTitle: String {
         switch calendarConnectionState {
-        case .healthy, .authorizationRequired: return L("重新检查连接", "Check Again")
-        case .connectionFailure: return L("重试连接", "Retry Connection")
+        case .healthy, .authorizationRequired: return localized("重新检查连接", "Check Again")
+        case .connectionFailure: return localized("重试连接", "Retry Connection")
         }
     }
 
     private var secondaryCalendarConnectionActionTitle: String {
         switch calendarConnectionState {
-        case .authorizationRequired: return L("打开系统设置", "Open System Settings")
-        case .healthy, .connectionFailure: return L("查看接入说明", "View Setup Guide")
+        case .authorizationRequired: return localized("打开系统设置", "Open System Settings")
+        case .healthy, .connectionFailure: return localized("查看接入说明", "View Setup Guide")
         }
     }
 
@@ -155,10 +155,10 @@ private struct CalendarPageBody: View {
         GlassPanel(cornerRadius: 28, padding: 20, overlayOpacity: 0.1) {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(L("选择参与提醒的日历", "Choose Calendars for Reminders"))
+                    Text(localized("选择参与提醒的日历", "Choose Calendars for Reminders"))
                         .font(.system(size: 18, weight: .bold, design: .rounded))
 
-                    Text(L(
+                    Text(localized(
                         "仅勾选日历中的会议会触发提醒",
                         "Only meetings in selected calendars can trigger reminders"
                     ))
@@ -201,13 +201,13 @@ private struct CalendarPageBody: View {
                     HStack(alignment: .center, spacing: 12) {
                         HStack(spacing: 10) {
                             Button { selectAllCalendars() } label: {
-                                Text(L("全选", "Select All"))
+                                Text(localized("全选", "Select All"))
                             }
                             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                             .disabled(!isCalendarSelectionInteractionEnabled)
 
                             Button { clearAllCalendars() } label: {
-                                Text(L("清空", "Clear"))
+                                Text(localized("清空", "Clear"))
                             }
                             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                             .disabled(!isCalendarSelectionInteractionEnabled)
@@ -221,13 +221,13 @@ private struct CalendarPageBody: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 10) {
                             Button { selectAllCalendars() } label: {
-                                Text(L("全选", "Select All"))
+                                Text(localized("全选", "Select All"))
                             }
                             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                             .disabled(!isCalendarSelectionInteractionEnabled)
 
                             Button { clearAllCalendars() } label: {
-                                Text(L("清空", "Clear"))
+                                Text(localized("清空", "Clear"))
                             }
                             .buttonStyle(GlassPillButtonStyle(tone: .secondary))
                             .disabled(!isCalendarSelectionInteractionEnabled)
@@ -240,7 +240,7 @@ private struct CalendarPageBody: View {
     }
 
     private var calendarSearchField: some View {
-        TextField(L("搜索日历…", "Search calendars…"), text: $calendarSearchQuery)
+        TextField(localized("搜索日历…", "Search calendars…"), text: $calendarSearchQuery)
             .textFieldStyle(.roundedBorder)
             .disabled(!isCalendarSelectionInteractionEnabled)
     }
@@ -251,67 +251,67 @@ private struct CalendarPageBody: View {
     private var calendarSelectionAlerts: some View {
         if shouldShowCalendarPermissionAlert {
             statusCallout(
-                title: L("无法访问日历", "Calendar Access Is Unavailable"),
-                detail: L(
+                title: localized("无法访问日历", "Calendar Access Is Unavailable"),
+                detail: localized(
                     "应用尚未获得日历访问权限，当前无法读取会议并触发提醒。",
                     "The app hasn't been granted calendar access, so it can't read meetings or trigger reminders."
                 ),
                 tone: .error,
                 actions: [
-                    StatusCalloutAction(title: L("打开系统设置", "Open System Settings"), tone: .primary, handler: openCalendarPrivacySettings),
-                    StatusCalloutAction(title: L("重新检查连接", "Check Again"), tone: .secondary, handler: refreshCalendarConnection)
+                    StatusCalloutAction(title: localized("打开系统设置", "Open System Settings"), tone: .primary, handler: openCalendarPrivacySettings),
+                    StatusCalloutAction(title: localized("重新检查连接", "Check Again"), tone: .secondary, handler: refreshCalendarConnection)
                 ]
             )
         }
 
         if case let .connectionFailure(message) = calendarConnectionState {
             statusCallout(
-                title: L("无法连接到飞书日历", "Unable to Connect to Feishu Calendar"),
+                title: localized("无法连接到飞书日历", "Unable to Connect to Feishu Calendar"),
                 detail: message,
                 tone: .error,
                 actions: [
-                    StatusCalloutAction(title: L("重试连接", "Retry Connection"), tone: .primary, handler: refreshCalendarConnection),
-                    StatusCalloutAction(title: L("查看接入说明", "View Setup Guide"), tone: .secondary, handler: showCalendarSetupGuide)
+                    StatusCalloutAction(title: localized("重试连接", "Retry Connection"), tone: .primary, handler: refreshCalendarConnection),
+                    StatusCalloutAction(title: localized("查看接入说明", "View Setup Guide"), tone: .secondary, handler: showCalendarSetupGuide)
                 ]
             )
         }
 
         if shouldShowCalendarUnavailableAlert {
             statusCallout(
-                title: L("没有发现可用日历", "No Available Calendars Were Found"),
-                detail: L(
+                title: localized("没有发现可用日历", "No Available Calendars Were Found"),
+                detail: localized(
                     "当前账户下没有可用于提醒的日历，请重新检查连接或确认账户内容。",
                     "No calendars that can be used for reminders were found. Re-check the connection or confirm the account contents."
                 ),
                 tone: .error,
                 actions: [
-                    StatusCalloutAction(title: L("重新扫描", "Scan Again"), tone: .primary, handler: refreshCalendarConnection),
-                    StatusCalloutAction(title: L("查看帮助", "View Help"), tone: .secondary, handler: showCalendarSetupGuide)
+                    StatusCalloutAction(title: localized("重新扫描", "Scan Again"), tone: .primary, handler: refreshCalendarConnection),
+                    StatusCalloutAction(title: localized("查看帮助", "View Help"), tone: .secondary, handler: showCalendarSetupGuide)
                 ]
             )
         }
 
         if shouldShowNoSelectedCalendarsAlert {
             statusCallout(
-                title: L("尚未选择任何日历", "No Calendars Are Selected Yet"),
-                detail: L("当前不会对任何会议触发提醒。", "No meetings will trigger reminders right now."),
+                title: localized("尚未选择任何日历", "No Calendars Are Selected Yet"),
+                detail: localized("当前不会对任何会议触发提醒。", "No meetings will trigger reminders right now."),
                 tone: .warning,
                 actions: [
-                    StatusCalloutAction(title: L("全选", "Select All"), tone: .secondary, handler: selectAllCalendars)
+                    StatusCalloutAction(title: localized("全选", "Select All"), tone: .secondary, handler: selectAllCalendars)
                 ]
             )
         }
 
         if shouldShowCalendarSaveFailureAlert {
             statusCallout(
-                title: L("保存失败", "Save Failed"),
-                detail: L(
+                title: localized("保存失败", "Save Failed"),
+                detail: localized(
                     "未能更新日历选择，已恢复到上一次保存状态。",
                     "The calendar selection couldn't be updated and has been restored to the last saved state."
                 ),
                 tone: .error,
                 actions: [
-                    StatusCalloutAction(title: L("重试", "Try Again"), tone: .secondary, handler: refreshCalendarConnection)
+                    StatusCalloutAction(title: localized("重试", "Try Again"), tone: .secondary, handler: refreshCalendarConnection)
                 ]
             )
         }
@@ -323,12 +323,12 @@ private struct CalendarPageBody: View {
     private var calendarGroupList: some View {
         if page.systemCalendarConnectionController.loadingState {
             GlassPanel(cornerRadius: 24, padding: 18, overlayOpacity: 0.08) {
-                ProgressView(L("正在读取本地日历…", "Reading local calendars..."))
+                ProgressView(localized("正在读取本地日历…", "Reading local calendars..."))
                     .controlSize(.small)
             }
         } else if !page.systemCalendarConnectionController.authorizationState.allowsReading {
             GlassPanel(cornerRadius: 24, padding: 18, overlayOpacity: 0.08) {
-                Text(L(
+                Text(localized(
                     "完成授权后，这里会按来源分组显示可参与提醒的日历。",
                     "Available calendars will appear here by source after access is granted."
                 ))
@@ -341,8 +341,8 @@ private struct CalendarPageBody: View {
             EmptyView()
         } else if filteredCalendarSections.isEmpty {
             emptyStatePanel(
-                title: L("未找到匹配的日历", "No Matching Calendars Found"),
-                detail: L("请尝试其他关键词。", "Try a different keyword.")
+                title: localized("未找到匹配的日历", "No Matching Calendars Found"),
+                detail: localized("请尝试其他关键词。", "Try a different keyword.")
             )
         } else {
             VStack(alignment: .leading, spacing: 18) {
@@ -378,15 +378,15 @@ private struct CalendarPageBody: View {
     private var calendarInfoPanel: some View {
         GlassPanel(cornerRadius: 24, padding: 18, overlayOpacity: 0.08) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(L("说明", "Notes"))
+                Text(localized("说明", "Notes"))
                     .font(.system(size: 16, weight: .bold))
-                Text(L(
+                Text(localized(
                     "勾选后会自动保存。仅勾选日历中的会议会触发提醒。",
                     "Selections are saved automatically. Only meetings in selected calendars can trigger reminders."
                 ))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
-                Text(L(
+                Text(localized(
                     "系统日历、节假日和生日日历通常不建议开启会议提醒。",
                     "System calendars, holiday calendars, and birthday calendars usually shouldn't trigger meeting reminders."
                 ))
@@ -400,10 +400,10 @@ private struct CalendarPageBody: View {
     private var calendarStepsPanel: some View {
         GlassPanel(cornerRadius: 26, padding: 18, overlayOpacity: 0.08) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(L("接入说明", "Setup Guide"))
+                Text(localized("接入说明", "Setup Guide"))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
 
-                Text(L(
+                Text(localized(
                     "首次配置或排查连接问题时，优先按下面四步检查。",
                     "Use these four steps first when setting up or troubleshooting the connection."
                 ))
@@ -412,22 +412,22 @@ private struct CalendarPageBody: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     setupStepRow(
-                        title: L("在飞书里生成 CalDAV 凭证", "Generate CalDAV credentials in Feishu"),
-                        detail: L("复制用户名、专用密码和服务器地址。", "Copy the username, app password, and server address."),
+                        title: localized("在飞书里生成 CalDAV 凭证", "Generate CalDAV credentials in Feishu"),
+                        detail: localized("复制用户名、专用密码和服务器地址。", "Copy the username, app password, and server address."),
                         isComplete: true
                     )
                     setupStepRow(
-                        title: L("在 macOS 日历里添加\u{201C}其他 CalDAV 账户\u{201D}", "Add an Other CalDAV Account in macOS Calendar"),
-                        detail: L("选择\u{201C}手动\u{201D}，再粘贴刚才的凭证。", "Choose manual setup, then paste the credentials."),
+                        title: localized("在 macOS 日历里添加\u{201C}其他 CalDAV 账户\u{201D}", "Add an Other CalDAV Account in macOS Calendar"),
+                        detail: localized("选择\u{201C}手动\u{201D}，再粘贴刚才的凭证。", "Choose manual setup, then paste the credentials."),
                         isComplete: hasAddedCalDAVAccount
                     )
                     setupStepRow(
-                        title: L("授予本应用日历访问权限", "Grant this app calendar access"),
+                        title: localized("授予本应用日历访问权限", "Grant this app calendar access"),
                         detail: localizedAuthorizationSummary(for: page.systemCalendarConnectionController.authorizationState),
                         isComplete: page.systemCalendarConnectionController.authorizationState == .authorized
                     )
                     setupStepRow(
-                        title: L("选择需要参与提醒的日历", "Select the calendars that should count"),
+                        title: localized("选择需要参与提醒的日历", "Select the calendars that should count"),
                         detail: localizedCalendarSelectionSummary,
                         isComplete: page.systemCalendarConnectionController.hasSelectedCalendars
                     )
@@ -527,7 +527,7 @@ private struct CalendarPageBody: View {
         guard authorizationState.allowsReading else { return .authorizationRequired }
 
         if case .failed = page.sourceCoordinator.state.healthState {
-            let fallback = L("请检查网络、账号信息或服务器地址后重试", "Check your network, account information, or server address and try again")
+            let fallback = localized("请检查网络、账号信息或服务器地址后重试", "Check your network, account information, or server address and try again")
             return .connectionFailure(message: page.sourceCoordinator.state.lastErrorMessage ?? fallback)
         }
 
@@ -580,7 +580,7 @@ private struct CalendarPageBody: View {
 
     private var calendarLastCheckedSummary: String {
         guard let lastLoadedAt = page.systemCalendarConnectionController.lastLoadedAt else {
-            return L("尚未完成首次检查", "No successful check yet")
+            return localized("尚未完成首次检查", "No successful check yet")
         }
         return localizedDateHeadline(for: lastLoadedAt)
     }
@@ -588,20 +588,20 @@ private struct CalendarPageBody: View {
     private var localizedCalendarConnectionHeadline: String {
         switch calendarConnectionState {
         case .healthy:
-            return L("飞书日历连接正常，可读取会议并用于提醒", "Feishu Calendar is connected and can be used for reminders")
+            return localized("飞书日历连接正常，可读取会议并用于提醒", "Feishu Calendar is connected and can be used for reminders")
         case .authorizationRequired:
-            return L("无法访问日历", "Calendar Access Is Unavailable")
+            return localized("无法访问日历", "Calendar Access Is Unavailable")
         case .connectionFailure:
-            return L("无法连接到飞书日历", "Unable to Connect to Feishu Calendar")
+            return localized("无法连接到飞书日历", "Unable to Connect to Feishu Calendar")
         }
     }
 
     private var localizedCalendarConnectionDetail: String {
         switch calendarConnectionState {
         case .healthy:
-            return L("当前连接方式为 CalDAV，系统日历读取正常。", "The app is using CalDAV and can read macOS Calendar normally.")
+            return localized("当前连接方式为 CalDAV，系统日历读取正常。", "The app is using CalDAV and can read macOS Calendar normally.")
         case .authorizationRequired:
-            return L("应用尚未获得日历访问权限，当前无法读取会议并触发提醒。", "The app doesn't have calendar access yet, so it can't read meetings or trigger reminders.")
+            return localized("应用尚未获得日历访问权限，当前无法读取会议并触发提醒。", "The app doesn't have calendar access yet, so it can't read meetings or trigger reminders.")
         case let .connectionFailure(message):
             return message
         }
@@ -609,17 +609,17 @@ private struct CalendarPageBody: View {
 
     private var localizedCalendarAuthorizationValue: String {
         switch page.systemCalendarConnectionController.authorizationState {
-        case .authorized: return L("已授权", "Granted")
-        case .notDetermined: return L("未授权", "Not Granted Yet")
-        case .denied: return L("已拒绝", "Denied")
-        case .restricted: return L("访问受限", "Restricted")
-        case .writeOnly: return L("仅写入", "Write-only")
-        case .unknown: return L("状态未知", "Unknown")
+        case .authorized: return localized("已授权", "Granted")
+        case .notDetermined: return localized("未授权", "Not Granted Yet")
+        case .denied: return localized("已拒绝", "Denied")
+        case .restricted: return localized("访问受限", "Restricted")
+        case .writeOnly: return localized("仅写入", "Write-only")
+        case .unknown: return localized("状态未知", "Unknown")
         }
     }
 
     private var localizedCalendarSelectionCountSummary: String {
-        L(
+        localized(
             "已选择 \(page.systemCalendarConnectionController.selectedCalendarIDs.count) 个，共 \(page.systemCalendarConnectionController.availableCalendars.count) 个可用",
             "\(page.systemCalendarConnectionController.selectedCalendarIDs.count) selected, \(page.systemCalendarConnectionController.availableCalendars.count) available"
         )
@@ -628,9 +628,9 @@ private struct CalendarPageBody: View {
     private var localizedCalendarSelectionFeedback: String? {
         switch page.systemCalendarConnectionController.selectionPersistenceState {
         case .idle: return nil
-        case .saving: return L("正在保存…", "Saving...")
-        case .saved: return L("已保存", "Saved")
-        case .failed: return L("保存失败，请重试", "Save failed, please retry")
+        case .saving: return localized("正在保存…", "Saving...")
+        case .saved: return localized("已保存", "Saved")
+        case .failed: return localized("保存失败，请重试", "Save failed, please retry")
         }
     }
 
@@ -644,18 +644,18 @@ private struct CalendarPageBody: View {
 
     private var localizedCalendarSelectionSummary: String {
         let count = page.systemCalendarConnectionController.selectedCalendarIDs.count
-        if count == 0 { return L("尚未选择系统日历", "No calendar selected") }
-        return L("已选 \(count) 个日历", "\(count) calendar(s) selected")
+        if count == 0 { return localized("尚未选择系统日历", "No calendar selected") }
+        return localized("已选 \(count) 个日历", "\(count) calendar(s) selected")
     }
 
     private func localizedAuthorizationSummary(for state: SystemCalendarAuthorizationState) -> String {
         switch state {
-        case .authorized: return L("已授权，可以读取日历。", "Access granted. Calendar can be read.")
-        case .notDetermined: return L("还没授予日历权限。", "Calendar access hasn't been granted yet.")
-        case .denied: return L("日历权限被拒绝，请去系统设置打开。", "Calendar access was denied. Turn it on in System Settings.")
-        case .restricted: return L("日历权限受限，暂时无法读取。", "Calendar access is restricted right now.")
-        case .writeOnly: return L("当前只能写入，不能读取日历。", "Write-only access is available, so events can't be read.")
-        case .unknown: return L("暂时无法确认日历权限状态。", "The Calendar permission state couldn't be confirmed.")
+        case .authorized: return localized("已授权，可以读取日历。", "Access granted. Calendar can be read.")
+        case .notDetermined: return localized("还没授予日历权限。", "Calendar access hasn't been granted yet.")
+        case .denied: return localized("日历权限被拒绝，请去系统设置打开。", "Calendar access was denied. Turn it on in System Settings.")
+        case .restricted: return localized("日历权限受限，暂时无法读取。", "Calendar access is restricted right now.")
+        case .writeOnly: return localized("当前只能写入，不能读取日历。", "Write-only access is available, so events can't be read.")
+        case .unknown: return localized("暂时无法确认日历权限状态。", "The Calendar permission state couldn't be confirmed.")
         }
     }
 
@@ -698,16 +698,16 @@ private struct CalendarPageBody: View {
         let duplicateCount = calendarTitleDuplicateCounts[normalizedTitle, default: 0]
         guard duplicateCount > 1 else { return calendar.title }
         let suffix = localizedCalendarDisambiguationSuffix(for: calendar)
-        return L("\(calendar.title)（\(suffix)）", "\(calendar.title) (\(suffix))")
+        return localized("\(calendar.title)（\(suffix)）", "\(calendar.title) (\(suffix))")
     }
 
     private func localizedCalendarDisambiguationSuffix(for calendar: SystemCalendarDescriptor) -> String {
         switch calendarSourceGroup(for: calendar) {
-        case .feishu: return L("飞书", "Feishu")
+        case .feishu: return localized("飞书", "Feishu")
         case .iCloud: return "iCloud"
-        case .subscribed: return L("订阅", "Subscribed")
+        case .subscribed: return localized("订阅", "Subscribed")
         case .other:
-            if calendar.sourceTypeLabel == "生日" { return L("生日", "Birthdays") }
+            if calendar.sourceTypeLabel == "生日" { return localized("生日", "Birthdays") }
             if !calendar.sourceTitle.isEmpty { return calendar.sourceTitle }
             return localizedCalendarSourceTypeLabel(calendar.sourceTypeLabel)
         }
@@ -720,17 +720,17 @@ private struct CalendarPageBody: View {
     }
 
     private func localizedCalendarAccessoryTag(for calendar: SystemCalendarDescriptor) -> String? {
-        if calendar.isSuggestedByDefault { return L("主日历", "Primary") }
-        if calendar.sourceTypeLabel == "生日" { return L("生日", "Birthdays") }
+        if calendar.isSuggestedByDefault { return localized("主日历", "Primary") }
+        if calendar.sourceTypeLabel == "生日" { return localized("生日", "Birthdays") }
         return nil
     }
 
     private func localizedCalendarGroupTitle(for group: CalendarSourceGroup) -> String {
         switch group {
-        case .feishu: return L("飞书", "Feishu")
+        case .feishu: return localized("飞书", "Feishu")
         case .iCloud: return "iCloud"
-        case .subscribed: return L("订阅日历", "Subscribed Calendars")
-        case .other: return L("其他", "Other")
+        case .subscribed: return localized("订阅日历", "Subscribed Calendars")
+        case .other: return localized("其他", "Other")
         }
     }
 
@@ -746,10 +746,10 @@ private struct CalendarPageBody: View {
 
     private func localizedCalendarSourceTypeLabel(_ label: String) -> String {
         switch label {
-        case "本地": return L("本地", "Local")
-        case "订阅": return L("订阅", "Subscribed")
-        case "生日": return L("生日", "Birthdays")
-        case "其他": return L("其他", "Other")
+        case "本地": return localized("本地", "Local")
+        case "订阅": return localized("订阅", "Subscribed")
+        case "生日": return localized("生日", "Birthdays")
+        case "其他": return localized("其他", "Other")
         default: return label
         }
     }
@@ -854,10 +854,10 @@ private struct CalendarPageBody: View {
     // MARK: Date helper
 
     private static let absoluteFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .none
-        f.timeStyle = .short
-        return f
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
     }()
 
     private static let englishMonthSymbols = [
@@ -868,9 +868,9 @@ private struct CalendarPageBody: View {
     private func localizedDateHeadline(for date: Date) -> String {
         let timeLine = Self.absoluteFormatter.string(from: date)
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return L("今天 \(timeLine)", "Today \(timeLine)") }
-        if cal.isDateInTomorrow(date) { return L("明天 \(timeLine)", "Tomorrow \(timeLine)") }
-        if cal.isDateInYesterday(date) { return L("昨天 \(timeLine)", "Yesterday \(timeLine)") }
+        if cal.isDateInToday(date) { return localized("今天 \(timeLine)", "Today \(timeLine)") }
+        if cal.isDateInTomorrow(date) { return localized("明天 \(timeLine)", "Tomorrow \(timeLine)") }
+        if cal.isDateInYesterday(date) { return localized("昨天 \(timeLine)", "Yesterday \(timeLine)") }
         let month = cal.component(.month, from: date)
         let day = cal.component(.day, from: date)
         if uiLanguage == .english {
