@@ -53,24 +53,28 @@ jobs:
           swiftlint lint --quiet
 
       - name: Run Unit Tests
+        # Snapshot 测试 (MenuBarContentViewSnapshotTests / SettingsPageSnapshotTests)
+        # 用 PNG 像素级对比，对字体渲染、HiDPI 缩放、AppKit 版本敏感。
+        # baseline 在作者本地机器录制；CI runner 的 macOS / 字体环境与本地不同，
+        # 必然产生像素差异。snapshot 的真正价值是作者写代码时本地跑发现 UI 退化，
+        # CI 这边只跑非视觉回归测试即可。
         run: |
           set -euo pipefail
 
+          XCODEBUILD_ARGS=(
+            -scheme FeishuMeetingCountdown
+            -destination "platform=macOS"
+            -configuration Debug
+            test
+            -skip-testing:FeishuMeetingCountdownTests/MenuBarContentViewSnapshotTests
+            -skip-testing:FeishuMeetingCountdownTests/SettingsPageSnapshotTests
+            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_REQUIRED=NO
+          )
+
           if command -v xcpretty >/dev/null 2>&1; then
             set -o pipefail
-            xcodebuild \
-              -scheme FeishuMeetingCountdown \
-              -destination "platform=macOS" \
-              -configuration Debug \
-              test \
-              CODE_SIGNING_ALLOWED=NO \
-              CODE_SIGNING_REQUIRED=NO | xcpretty
+            xcodebuild "${XCODEBUILD_ARGS[@]}" | xcpretty
           else
-            xcodebuild \
-              -scheme FeishuMeetingCountdown \
-              -destination "platform=macOS" \
-              -configuration Debug \
-              test \
-              CODE_SIGNING_ALLOWED=NO \
-              CODE_SIGNING_REQUIRED=NO
+            xcodebuild "${XCODEBUILD_ARGS[@]}"
           fi
