@@ -80,3 +80,20 @@ git commit
 1. 安排专项 task，清掉首次 lint 产出的 baseline warning（不在本 task 内处理）。
 2. 评估是否在未来某版本升级到 `--strict` 模式，把 warning 也变成构建失败条件。
 3. 如有新规则需求（例如针对 SwiftUI 的专项规则），可在 `.swiftlint.yml` 的 `opt_in_rules` 中追加。
+
+## 状态更新（2026-04-24）：扩展为多检查 hook + AGENTS.md 治理校验
+
+baseline 清理已于 2026-04-24 完成（详见 [dev-log 2026-04-24](../dev-logs/2026-04-24.md)）：SwiftLint error 归零，warning ~95 → 2（剩 2 条是真"该拆 page"的 file_length 信号，刻意保留）。
+
+同时，因为发现 AI 代理在过去 8 个 ADR commit 里反复违反了"新增 ADR / dev-log / pitfall 必须同步更新 docs/index.md"这条文档治理规则（详见 [dev-log 2026-04-24](../dev-logs/2026-04-24.md) 末尾的反思），把 pre-commit hook 由"单一 SwiftLint 检查"扩展为"聚合检查"：
+
+- 新增 [`scripts/pre-commit.sh`](../../scripts/pre-commit.sh) 作为入口聚合脚本，依次跑两个独立检查。
+- 新增 [`scripts/pre-commit-agents-check.sh`](../../scripts/pre-commit-agents-check.sh) 机械校验三类文档（ADR / dev-log / pitfall）的索引同步。会同时检查文件被 touch 与内容里包含新文件名两层条件，避免"只 touch 不写条目"绕过。
+- 原 [`scripts/pre-commit-swiftlint.sh`](../../scripts/pre-commit-swiftlint.sh) 保持单一职责不变，由聚合脚本调用。
+- [`scripts/install-pre-commit-hook.sh`](../../scripts/install-pre-commit-hook.sh) 改为安装聚合入口，已运行的用户重新执行一次即可升级。
+
+设计取舍：
+
+- **检查顺序**：AGENTS.md 检查在前、SwiftLint 在后。AGENTS.md 检查跑得快（只 grep staged 列表），常见违规（漏更 index）能立即暴露，节省后续 SwiftLint 调试循环。
+- **CI 暂不执行 AGENTS.md 检查**：本地 hook 是第一道关，CI 主要保护"代码能编译能跑测试"。如果未来发现绕过本地 hook 推上来的 PR 仍在违反索引规则，再加 CI 步骤。
+- **绕过策略**：保留 `git commit --no-verify` 用于批量历史回填等极少场景；scripts 在违规消息里明确写出这条 escape hatch 与同时跳过 SwiftLint 的副作用。

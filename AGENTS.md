@@ -65,6 +65,17 @@ Feishu Meeting Countdown for macOS
 
 仓库引入了 SwiftLint（`.swiftlint.yml`）来防止代码风格自然漂移。只扫描 `MeetingCountdownApp` 和 `MeetingCountdownAppTests` 两个目录；warning 是 review signal，不阻断构建；error 才阻断。在克隆仓库之后，运行一次 `bash scripts/install-pre-commit-hook.sh` 即可把 pre-commit hook 安装到本地 `.git/hooks/pre-commit`；此后每次 `git commit` 前，hook 会自动对本次暂存的 Swift 文件执行 SwiftLint，只有 error 级别的问题才会阻止提交，warning 仅打印但放行。如果机器上未安装 swiftlint，hook 会打印一行提示后继续放行，不强制阻断。CI（`.github/workflows/tests.yml`）会在单元测试步骤前额外执行 `swiftlint lint --quiet`，若机器没有 swiftlint 会先通过 `brew install swiftlint` 自动安装。首次引入会出现一批 warning，安排单独 task 清理，不在本批次修改 Swift 源文件。
 
+## 文档治理守卫：pre-commit AGENTS.md 检查
+
+同一个 pre-commit hook（聚合脚本 `scripts/pre-commit.sh`）在 SwiftLint 之前还会跑 `scripts/pre-commit-agents-check.sh`，机械校验本仓库历史上反复违反过的几条文档治理规则：
+
+- 新增 `docs/adrs/YYYY-MM-DD-*.md` 时必须同步更新 `docs/adrs/README.md` 与 `docs/index.md`。
+- 新增 `docs/dev-logs/YYYY-MM-DD.md` 时必须同步更新 `docs/dev-logs/README.md` 与 `docs/index.md`。
+- 新增 `docs/pitfalls/*.md`（README.md 除外）时必须同步更新 `docs/pitfalls/README.md` 与 `docs/index.md`。
+- README/index 不仅要被 touch，staged 内容里**必须真的提到了新文件名**——只 touch 不写条目同样会被拒。
+
+这些规则只在"新增"路径上生效（`--diff-filter=A`），修改 / 删除 / 重命名暂不强制。极少数批量历史回填场景可以用 `git commit --no-verify` 绕过，但这条命令同时跳过 SwiftLint，使用前要确保理解后果。检查脚本可以独立 dry-run：`bash scripts/pre-commit-agents-check.sh`。
+
 ## AI 代理执行约束（Hard Guardrails）
 
 - 禁止 force-push、删除分支、修改仓库 settings 或 GitHub secrets。

@@ -13,8 +13,10 @@
 - 本地 `Release` 构建与导出脚本。
 - GitHub Release 创建与上传辅助脚本。
 - GitHub Release workflow 所需 secrets 的导出与写入辅助脚本。
-- **pre-commit-swiftlint.sh**：Git pre-commit hook 的主体脚本。在每次提交前对暂存的 Swift 文件运行 SwiftLint；若 swiftlint 未安装则放行不阻断；只有 error 级别的 lint 问题才会阻断提交，warning 仅打印。
-- **install-pre-commit-hook.sh**：一次性安装脚本，将 `pre-commit-swiftlint.sh` 复制到 `.git/hooks/pre-commit` 并赋予可执行权限。在克隆仓库后运行一次即可；重复运行幂等（覆盖旧版本）。
+- **pre-commit.sh**：Git pre-commit hook 的入口（聚合脚本）。依次跑两个独立检查脚本，任一失败都阻断提交。
+- **pre-commit-agents-check.sh**：第一道检查。机械校验 AGENTS.md 文档治理规则——新增 ADR / dev-log / pitfall 时必须同步更新对应 README 和 `docs/index.md`，并且 README/index 的实际内容里必须真的提到了新文件名。可独立 dry-run：`bash scripts/pre-commit-agents-check.sh`。
+- **pre-commit-swiftlint.sh**：第二道检查。在每次提交前对暂存的 Swift 文件运行 SwiftLint；若 swiftlint 未安装则放行不阻断；只有 error 级别的 lint 问题才会阻断提交，warning 仅打印。
+- **install-pre-commit-hook.sh**：一次性安装脚本，将 `pre-commit.sh` 复制到 `.git/hooks/pre-commit` 并赋予可执行权限。在克隆仓库后运行一次即可；重复运行幂等（覆盖旧版本）。
 - 未来如果需要，也可以继续放不依赖付费签名链路的辅助脚本，例如清理构建产物、生成手动分发包、打印当前版本信息。
 
 ## 关键依赖
