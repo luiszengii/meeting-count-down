@@ -25,3 +25,5 @@
 - [SwiftUI Settings scene 在菜单栏 app 里的打开方式](./swiftui-settings-scene-in-menu-bar-app.md)
 - [新增源文件后需要重新生成 Xcode 工程](./xcodegen-regenerate-project-after-adding-files.md)
 - [ReminderEngine reconcile 在播放中误判新提醒并掐掉音频](./reminder-engine-reconcile-cancels-ongoing-playback.md)
+- [本地 Swift 6.3 vs CI Swift 6.0 严格并发分裂](./swift-version-divergence-local-vs-ci.md)
+- [snapshot 测试 PNG 跨环境必然 diff，CI 不适合跑视觉回归](./snapshot-pixel-diff-cross-environment.md)

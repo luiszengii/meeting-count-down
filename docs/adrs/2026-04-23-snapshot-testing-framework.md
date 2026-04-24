@@ -63,7 +63,35 @@ swift-snapshot-testing 已经提供了这一切，且有成熟的 image diff 支
 
 ## 后续动作
 
-- 基线录入后，任何 UI 改动若导致像素级变化，CI 会失败并报告 diff 图片。
+- 基线录入后，任何 UI 改动若导致像素级变化，本地测试会失败并报告 diff 图片。
 - 如果改动是预期的（例如刻意调整布局），需要手动重录基线：
   `withSnapshotTesting(record: .all) { super.invokeTest() }` 或删除旧 PNG 后重新运行测试。
 - 后续可扩展覆盖英文界面模式快照，当前暂只覆盖中文（简体）。
+
+## 状态更新（2026-04-24）：CI 跳过快照测试
+
+第一次把 13 条快照测试推到 CI 后，全部 fail——baseline 在作者本地（macOS 26 + Xcode beta）录制，CI macos-15 runner 用的是 macOS 15 + Xcode 16，**字体渲染、HiDPI 缩放和 AppKit 渲染管线版本与本地不同，PNG 像素级对比必然产生差异**，即使代码完全没改。
+
+详细分析见 [pitfall: snapshot-pixel-diff-cross-environment](../pitfalls/snapshot-pixel-diff-cross-environment.md)。
+
+### 决定
+
+[`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) 在 `xcodebuild test` 命令上加：
+
+```bash
+-skip-testing:FeishuMeetingCountdownTests/MenuBarContentViewSnapshotTests
+-skip-testing:FeishuMeetingCountdownTests/SettingsPageSnapshotTests
+```
+
+CI 测试规模 106 → 93。**本地仍跑全部 106 含快照**。
+
+### 取舍
+
+- 快照测试的真正价值是"作者本地写代码时 catch UI 退化"，CI 跑像素对比是 anti-pattern。
+- 没有引入 `precision: 0.95 / perceptualPrecision: 0.95` 容差选项——容差有掩盖真回归的风险，本地仍然走严格对比更直接。
+- 没有把 CI 改成"baseline 唯一权威源"——这要求作者本地不录基线（只 run），并通过 artifact 流程拿 baseline，工作流复杂度跳一档；当前作者机器单源足够。
+
+### 何时回头评估
+
+- 如果团队规模超过 1 人，作者机器不再是唯一录制源，需重新设计 baseline 权威源策略。
+- 如果出现"本地没注意到 UI 退化但被用户发现"的 case，说明本地快照保护不够，需要补 CI 的视觉守护。

@@ -41,6 +41,22 @@ T10 计算器部分由此完全被 T4 覆盖，无需重复。
 
 **结论**：T10 全部三个子项均已落地完成。
 
+### T12 状态补充（截至 2026-04-24）
+
+T12（SwiftLint + pre-commit hook）在 W4 落地基础设施时记下"首次跑会有一批 baseline warning，留给单独 task 清理"。该 baseline 清扫已于 2026-04-24 完成（commits `5e17e46` + `7bd10d3`）：
+
+- SwiftLint **error** 级违规：5 处全清，归零（包含 5 个 page 文件 `L` → `localized` 重命名、3 处 `f` → `formatter`、1 处长行拆分、1 处 4-tuple → struct）。
+- SwiftLint **warning** 级违规：约 95 → 2，下降 ~98%。修复手段同时包含两类：
+  - 调宽 `.swiftlint.yml` 阈值（file_length / type_body_length / function_body_length / identifier_name max / type_name max / function_parameter_count），把"真气味阈值"对齐项目实际维护边界。
+  - 机械修复：sorted_imports / vertical_whitespace / implicit_return / orphaned_doc_comment / line_length / vc → videoConference 全仓重命名 / force_unwrapping in tests → XCTUnwrap / 2 处 production 强解包 → guard + preconditionFailure / large_tuple → struct。
+- 剩 2 条 `file_length` warning（`OverviewPage.swift` 904 行 / `CalendarPage.swift` 893 行）刻意保留——它们是真"该拆 page"信号，归属下方 T5 的 follow-up 而不是用 config 掩盖。
+
+详见 [dev-log 2026-04-24](../docs/dev-logs/2026-04-24.md)。
+
+### CI 红到绿（截至 2026-04-24，跨 W6/W7/lint-cleanup）
+
+补一条 retroactive 状态：从 W6 (`831e6e8`) 起一直到 lint cleanup (`7bd10d3`) 之间所有 commit 在 GitHub Actions 上都 fail 没人发现，期间还包括用户自己的 `v0.1.5` push。根因是本地 Swift 6.3 vs CI Swift 6.0 在严格并发上的分裂，详见 [pitfall](../docs/pitfalls/swift-version-divergence-local-vs-ci.md)。已于 2026-04-24 修复（commit `f9361e6` 修代码 + `4e8409d` 跳过 CI snapshot）。CI 现状：93/93 通过（跳过 13 条 snapshot，本地全跑 106 条）。
+
 ---
 
 ## P0 — 阻碍其他重构的前置项（先做这两个）

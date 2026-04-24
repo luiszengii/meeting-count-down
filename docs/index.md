@@ -40,6 +40,14 @@
 | [./adrs/2026-03-30-onboarding-routes-through-settings-window.md](./adrs/2026-03-30-onboarding-routes-through-settings-window.md) | 记录首阶段接入向导先落在设置页的决策 |
 | [./adrs/2026-03-31-caldav-only-product-scope.md](./adrs/2026-03-31-caldav-only-product-scope.md) | 产品范围正式收敛到 CalDAV-only 单一路线 |
 | [./adrs/2026-04-02-phase-6-manual-distribution-without-paid-membership.md](./adrs/2026-04-02-phase-6-manual-distribution-without-paid-membership.md) | `Phase 6` 暂不阻塞于付费会员，先做无会员手动分发 |
+| [./adrs/2026-04-22-glass-ui-theme.md](./adrs/2026-04-22-glass-ui-theme.md) | 提取 `GlassUITheme` 集中 cornerRadius / padding / 菜单栏几何常量 |
+| [./adrs/2026-04-22-async-state-controller.md](./adrs/2026-04-22-async-state-controller.md) | 引入 `AsyncStateController` 协议统一 refresh / loading / error 模板 |
+| [./adrs/2026-04-22-presentation-split.md](./adrs/2026-04-22-presentation-split.md) | 1742 行 `Presentation.swift` 按职责拆为四个主题文件 |
+| [./adrs/2026-04-22-runtime-composition-and-event-bus.md](./adrs/2026-04-22-runtime-composition-and-event-bus.md) | `AppRuntime` 内部分组为 `Core` / `Shell`，闭包链改 `RefreshEventBus` |
+| [./adrs/2026-04-22-menu-bar-presentation-ownership.md](./adrs/2026-04-22-menu-bar-presentation-ownership.md) | 菜单栏 presentation 真值方定为 `ReminderState`，控制器收缩为 AppKit 宿主 |
+| [./adrs/2026-04-22-settings-page-registry.md](./adrs/2026-04-22-settings-page-registry.md) | 设置页从 `SettingsView` 扩展转为独立 `SettingsPage` 结构体注册表 |
+| [./adrs/2026-04-22-swiftlint-and-pre-commit.md](./adrs/2026-04-22-swiftlint-and-pre-commit.md) | 引入 SwiftLint 与 pre-commit hook 防止代码风格漂移 |
+| [./adrs/2026-04-23-snapshot-testing-framework.md](./adrs/2026-04-23-snapshot-testing-framework.md) | 引入 `swift-snapshot-testing` 作为首个外部 SPM 依赖做视觉回归 |
 
 ## 开发日志
 
@@ -60,6 +68,7 @@
 | [./dev-logs/2026-04-16.md](./dev-logs/2026-04-16.md) | 确认 `Phase 6` 完成、清理工作区并把顶层文档切换到 `Phase 7` 口径 |
 | [./dev-logs/2026-04-17.md](./dev-logs/2026-04-17.md) | 修正设置页 tab 选中态文字对比度，并补同步切换动画 |
 | [./dev-logs/2026-04-22.md](./dev-logs/2026-04-22.md) | 修复弹层倒计时不自动递减、菜单栏末段秒数丢失，以及密集会议只有最后一场响铃的 race |
+| [./dev-logs/2026-04-24.md](./dev-logs/2026-04-24.md) | 清掉 SwiftLint ~95 → 2 warnings；修复一直在红的 CI（本地 Swift 6.3 vs CI Swift 6.0 分裂）；snapshot 测试 CI 跳过 |
 
 ## Pitfalls
 
@@ -75,6 +84,8 @@
 | [./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md](./pitfalls/shared-bundle-id-between-debug-and-release-confuses-calendar-permission.md) | 记录 Debug / Release 共用 bundle id 时，TCC / EventKit 权限会混淆的问题 |
 | [./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md](./pitfalls/generated-infoplist-missing-calendar-usage-description-on-release-runner.md) | 记录自动生成 `Info.plist` 在 release runner 上丢失 Calendar 权限说明的问题 |
 | [./pitfalls/reminder-engine-reconcile-cancels-ongoing-playback.md](./pitfalls/reminder-engine-reconcile-cancels-ongoing-playback.md) | 记录 reconcile 把 `triggeredImmediately` 纳入相等性判断导致播放中音频被掐掉的 race |
+| [./pitfalls/swift-version-divergence-local-vs-ci.md](./pitfalls/swift-version-divergence-local-vs-ci.md) | 记录本地 Swift 工具链领先 CI 时严格并发新规则的本地通过 / CI fail 分裂 |
+| [./pitfalls/snapshot-pixel-diff-cross-environment.md](./pitfalls/snapshot-pixel-diff-cross-environment.md) | 记录 snapshot PNG 在作者本地与 CI 跨环境必然产生像素差，CI 应跳过视觉回归 |
 
 ## 模板
 
