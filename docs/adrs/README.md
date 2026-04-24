@@ -22,3 +22,4 @@ ADR 表示 Architecture / Decision Record，用于记录技术栈、产品形态
 - [2026-04-22 明确菜单栏 Presentation 真值方为 ReminderState，MenuBarStatusItemController 收缩为 AppKit 宿主](./2026-04-22-menu-bar-presentation-ownership.md)
 - [2026-04-22 将设置页从 SettingsView 扩展转为独立 SettingsPage 结构体注册表](./2026-04-22-settings-page-registry.md)
 - [2026-04-22 引入 SwiftLint 与 pre-commit hook 防止代码风格漂移](./2026-04-22-swiftlint-and-pre-commit.md)
+- [2026-04-23 引入 swift-snapshot-testing 进行视觉回归测试](./2026-04-23-snapshot-testing-framework.md)

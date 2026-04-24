@@ -28,15 +28,18 @@ T10 计算器部分由此完全被 T4 覆盖，无需重复。
 - `testConstructingTwoRegistriesWithSameControllersDoesNotCrash`：用同一批 controller 构建两次注册表，验证无共享可变状态导致的崩溃。
 - `testRegistryOrderMatchesSettingsTabAllCases`：注册表顺序与 `SettingsTab.allCases` 完全一致；新增 tab 时 CI 会在这里失败，强制同步更新注册表。
 
-**3. 快照框架采用 — 已延迟，待用户决策**
-计划采用 `swift-snapshot-testing` 对菜单栏 presentation 和 SettingsView 关键页做视觉回归。
-但 `swift-snapshot-testing` 将是项目的**第一个外部 Swift Package 依赖**（当前项目零外部依赖，审计视为优势）。
-本决策需要用户明确同意后才能推进。
-快照测试将锁定以下已拆分的 presentation 结构（参见相关 ADR）：
-- `docs/adrs/2026-04-22-presentation-split.md`：展示层按职责拆分的边界约定。
-- `docs/adrs/2026-04-22-menu-bar-presentation-ownership.md`：菜单栏 presentation 归属权约定。
+**3. 快照框架采用 — 已落地（W7, 2026-04-23）**
+`swift-snapshot-testing` v1.19.2（MIT）已作为测试专属依赖接入，详见
+`docs/adrs/2026-04-23-snapshot-testing-framework.md`。
 
-**结论**：T10 的两个可执行子项均已有覆盖；快照框架采用挂起，等待用户决策。
+落地内容：
+- 5 个 SettingsPage × 亮/暗 2 模式 = 10 条快照测试（`MeetingCountdownAppTests/Snapshots/SettingsPageSnapshotTests.swift`）。
+- MenuBarContentView 3 种状态（空闲 / 会议倒计时 / 错误）= 3 条快照测试（`MeetingCountdownAppTests/Snapshots/MenuBarContentViewSnapshotTests.swift`）。
+- PNG 基线入库于 `MeetingCountdownAppTests/Snapshots/__Snapshots__/`。
+- `Package.resolved` 从 `.gitignore` 中排除，确保依赖版本可复现。
+- 全量测试：93 条原有 + 13 条快照 = 106 条，全部通过。
+
+**结论**：T10 全部三个子项均已落地完成。
 
 ---
 

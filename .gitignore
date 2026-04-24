@@ -24,7 +24,11 @@ xcuserdata/
 # Swift Package Manager
 .build/
 .swiftpm/
-Package.resolved
+# 顶级 Package.resolved（纯 SPM 工程用）忽略，
+# 但 xcodegen 工程的解析文件在 xcodeproj 内部，需要入库以确保依赖版本可复现。
+/Package.resolved
+# 显式允许 xcodeproj 内部的 Package.resolved
+!MeetingCountdown.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Archives and logs
 *.ipa
