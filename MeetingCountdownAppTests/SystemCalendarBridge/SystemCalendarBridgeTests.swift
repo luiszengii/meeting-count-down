@@ -1,7 +1,7 @@
 import Combine
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试验证 Phase 2 系统日历桥接层的关键规则是否稳定。
 @MainActor
@@ -15,7 +15,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证当用户首次授权后还没有手动选过日历时，控制器会自动预选建议日历并持久化。
-    func testConnectionControllerAutoSelectsSuggestedCalendarsOnFirstAuthorizedLoad() async {
+    func testConnectionControllerAutoSelectsSuggestedCalendarsOnFirstAuthorizedLoad() async throws {
         let preferencesStore = InMemoryPreferencesStore()
         let access = StubSystemCalendarAccess(
             authorizationState: .authorized,
@@ -27,7 +27,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
         let controller = SystemCalendarConnectionController(
             calendarAccess: access,
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -38,8 +38,8 @@ final class SystemCalendarBridgeTests: XCTestCase {
         XCTAssertEqual(storedCalendarIDs, ["feishu"])
     }
 
-    /// 验证当用户已经显式保存过“空选择”后，控制器不会在下一次刷新时又自动把推荐日历选回来。
-    func testConnectionControllerDoesNotReselectSuggestedCalendarsAfterExplicitEmptySelection() async {
+    /// 验证当用户已经显式保存过"空选择"后，控制器不会在下一次刷新时又自动把推荐日历选回来。
+    func testConnectionControllerDoesNotReselectSuggestedCalendarsAfterExplicitEmptySelection() async throws {
         let preferencesStore = InMemoryPreferencesStore(
             selectedSystemCalendarIDs: [],
             hasStoredSelectedSystemCalendarIDs: true
@@ -54,7 +54,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
         let controller = SystemCalendarConnectionController(
             calendarAccess: access,
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -64,8 +64,8 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证当持久化里还留着旧日历 ID，但当前系统列表里已经没有这些日历时，
-    /// 控制器会把“原始持久化值”和“当前不可用的旧选择”都保留下来，供诊断页导出。
-    func testConnectionControllerTracksUnavailableStoredSelectionsForDiagnostics() async {
+    /// 控制器会把"原始持久化值"和"当前不可用的旧选择"都保留下来，供诊断页导出。
+    func testConnectionControllerTracksUnavailableStoredSelectionsForDiagnostics() async throws {
         let preferencesStore = InMemoryPreferencesStore(
             selectedSystemCalendarIDs: ["missing-calendar"],
             hasStoredSelectedSystemCalendarIDs: true
@@ -77,7 +77,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
         let controller = SystemCalendarConnectionController(
             calendarAccess: access,
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -90,7 +90,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证用户切换某个系统日历选择后，会立即写回持久化层。
-    func testConnectionControllerPersistsSelectionChanges() async {
+    func testConnectionControllerPersistsSelectionChanges() async throws {
         let preferencesStore = InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])
         let access = StubSystemCalendarAccess(
             authorizationState: .authorized,
@@ -102,7 +102,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
         let controller = SystemCalendarConnectionController(
             calendarAccess: access,
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -116,7 +116,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
 
     /// 验证自动保存失败时，控制器会回滚到上一次成功保存的日历选择，
     /// 避免 UI 停在一个看似已生效、实际上没有写入持久化层的假状态。
-    func testConnectionControllerRollsBackSelectionWhenPersistenceFails() async {
+    func testConnectionControllerRollsBackSelectionWhenPersistenceFails() async throws {
         let preferencesStore = FailingSelectionPreferencesStore(
             fallback: InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"])
         )
@@ -130,7 +130,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
         let controller = SystemCalendarConnectionController(
             calendarAccess: access,
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -171,8 +171,8 @@ final class SystemCalendarBridgeTests: XCTestCase {
                     payload: SystemCalendarEventPayload(
                         identifier: "event-1",
                         title: "团队周会",
-                        startAt: fixedNow().addingTimeInterval(15 * 60),
-                        endAt: fixedNow().addingTimeInterval(45 * 60),
+                        startAt: try fixedNow().addingTimeInterval(15 * 60),
+                        endAt: try fixedNow().addingTimeInterval(45 * 60),
                         timeZoneIdentifier: "Asia/Shanghai",
                         isAllDay: false,
                         isCancelled: false,
@@ -187,7 +187,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
             preferencesStore: preferencesStore
         )
 
-        let snapshot = try await source.refresh(trigger: .manualRefresh, now: fixedNow())
+        let snapshot = try await source.refresh(trigger: .manualRefresh, now: try fixedNow())
 
         XCTAssertEqual(snapshot.meetings.count, 1)
         XCTAssertEqual(snapshot.meetings.first?.title, "团队周会")
@@ -197,13 +197,14 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证 URL 提取和标题兜底逻辑能在不依赖 EventKit 的情况下直接被规则测试锁住。
-    func testEventNormalizerUsesFallbackTitleAndDeduplicatesLinks() {
+    func testEventNormalizerUsesFallbackTitleAndDeduplicatesLinks() throws {
+        let now = try fixedNow()
         let meeting = SystemCalendarEventNormalizer.makeMeetingRecord(
             from: SystemCalendarEventPayload(
                 identifier: "event-2",
                 title: "   ",
-                startAt: fixedNow(),
-                endAt: fixedNow().addingTimeInterval(30 * 60),
+                startAt: now,
+                endAt: now.addingTimeInterval(30 * 60),
                 timeZoneIdentifier: nil,
                 isAllDay: false,
                 isCancelled: false,
@@ -219,14 +220,14 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证协议默认 `refresh()` 完成后 `loadingState` 归位 `false`，正常完成时 `errorMessage` 为 `nil`。
-    func testRefreshTogglesLoadingStateAndClearsErrorOnSuccess() async {
+    func testRefreshTogglesLoadingStateAndClearsErrorOnSuccess() async throws {
         let controller = SystemCalendarConnectionController(
             calendarAccess: StubSystemCalendarAccess(
                 authorizationState: .authorized,
                 calendars: [calendar(id: "feishu", title: "飞书日历", suggested: true)]
             ),
             preferencesStore: InMemoryPreferencesStore(),
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             autoRefreshOnStart: false
         )
 
@@ -237,7 +238,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 验证用户选择日历后，控制器会通过 `RefreshEventBus` 向总线发布 `.manualRefresh` 事件。
-    func testCalendarSelectionPublishesManualRefreshEventOnBus() async {
+    func testCalendarSelectionPublishesManualRefreshEventOnBus() async throws {
         let bus = RefreshEventBus()
         var receivedTriggers: [RefreshTrigger] = []
         let cancellable = bus.publisher.sink { receivedTriggers.append($0) }
@@ -251,7 +252,7 @@ final class SystemCalendarBridgeTests: XCTestCase {
                 ]
             ),
             preferencesStore: InMemoryPreferencesStore(selectedSystemCalendarIDs: ["feishu"]),
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: try fixedNow()),
             refreshEventBus: bus,
             autoRefreshOnStart: false
         )
@@ -313,8 +314,10 @@ final class SystemCalendarBridgeTests: XCTestCase {
     }
 
     /// 所有桥接层测试共享同一个固定时间。
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 3, day: 31, hour: 9, minute: 0))!
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 3, day: 31, hour: 9, minute: 0))
+        )
     }
 }
 

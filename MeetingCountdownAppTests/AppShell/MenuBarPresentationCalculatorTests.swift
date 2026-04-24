@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定 `MenuBarPresentationCalculator` 在各种 `ReminderState` 和
 /// `SourceCoordinatorState` 组合下返回的 `MenuBarPresentation` 是否符合预期。

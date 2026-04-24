@@ -25,7 +25,7 @@ struct ReminderPreferences: Equatable, Sendable {
     /// 开启后只有在当前默认输出设备被识别为私密收听设备时才真正播放提醒音频。
     var playSoundOnlyWhenHeadphonesConnected: Bool
     /// 只对包含视频会议信息的事件建立提醒。
-    /// 当前以标准化后的 `.vc` 链接类型为判断依据。
+    /// 当前以标准化后的 `.videoConference` 链接类型为判断依据。
     var onlyForMeetingsWithVideoLink: Bool
     /// 是否跳过当前用户已明确拒绝的会议。
     /// 这里默认开启，避免把已拒绝的会议继续当成下一场会议。

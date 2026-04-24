@@ -204,7 +204,12 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
     ) {
         self.engine = AVAudioEngine()
         self.playerNode = AVAudioPlayerNode()
-        self.format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+        // 44100Hz 单声道是行业标准参数，AVFoundation 应始终支持；
+        // 若构建失败说明 AVFoundation 环境严重异常，此处主动终止并输出诊断信息。
+        guard let audioFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1) else {
+            preconditionFailure("无法创建 44100Hz 单声道音频格式：该格式是标准参数，失败意味着 AVFoundation 运行环境异常。")
+        }
+        self.format = audioFormat
         self.toneDuration = toneDuration
         self.frequency = frequency
         self.amplitude = amplitude
@@ -299,7 +304,11 @@ final class GeneratedToneReminderAudioEngine: ReminderAudioEngine {
     /// 生成一个带淡入淡出的正弦波缓冲区，减少纯方波式的“啪”声。
     private func makeToneBuffer() -> AVAudioPCMBuffer {
         let frameCount = AVAudioFrameCount(format.sampleRate * toneDuration)
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        // format 已在 init 中验证为合法格式，frameCapacity 为正整数；
+        // 若此处返回 nil 说明 AVFoundation 状态异常，主动终止并输出诊断信息便于排查。
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            preconditionFailure("无法创建 PCM 缓冲区：format 与 frameCapacity 均为合法值，失败意味着 AVFoundation 运行时异常。")
+        }
         buffer.frameLength = frameCount
 
         guard let channelData = buffer.floatChannelData?[0] else {

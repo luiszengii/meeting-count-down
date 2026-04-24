@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定 `SoundProfileAssetStore.deleteImportedSoundProfile(_:)` 的三种返回值语义。
 final class SoundProfileAssetStoreTests: XCTestCase {

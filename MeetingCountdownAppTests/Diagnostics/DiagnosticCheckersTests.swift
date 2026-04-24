@@ -1,6 +1,6 @@
 import EventKit
-import XCTest
 @testable import FeishuMeetingCountdown
+import XCTest
 
 /// 这些测试锁定 Phase 1 真实诊断检查器的映射行为。
 final class DiagnosticCheckersTests: XCTestCase {

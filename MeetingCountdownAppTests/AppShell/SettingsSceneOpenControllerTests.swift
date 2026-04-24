@@ -1,5 +1,5 @@
-import XCTest
 @testable import FeishuMeetingCountdown
+import XCTest
 
 /// 这些测试锁定设置窗口打开桥接器最基础的登记和调用语义。
 @MainActor

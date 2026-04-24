@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定菜单栏提醒展示的秒级倒计时、闪烁节奏和“会议开始”文案规则。
 @MainActor

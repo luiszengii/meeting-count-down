@@ -23,7 +23,7 @@ struct DefaultDiagnosticsProvider: DiagnosticsProviding {
 
     /// 读取当前系统日历权限并包装成统一快照。
     func currentSnapshot() async -> DiagnosticsSnapshot {
-        return DiagnosticsSnapshot(
+        DiagnosticsSnapshot(
             calendarPermission: await calendarPermissionChecker.run(),
             syncFreshness: await syncFreshnessChecker.run()
         )

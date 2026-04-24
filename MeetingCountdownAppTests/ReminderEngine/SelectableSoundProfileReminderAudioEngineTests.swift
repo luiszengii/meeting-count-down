@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定“当前选中提醒音频”接入正式提醒引擎后的关键时长选择规则。
 @MainActor
@@ -78,7 +78,7 @@ actor StubSelectableSoundProfileAssetStore: SoundProfileAssetManaging {
 
     func deleteImportedSoundProfile(_ profile: SoundProfile) async throws -> SoundProfileDeletionResult {
         /// 这组测试不关心删除逻辑。
-        return .deleted
+        .deleted
     }
 
     func url(for profile: SoundProfile) async throws -> URL {

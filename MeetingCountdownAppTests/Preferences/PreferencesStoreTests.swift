@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试验证 Phase 2 新增的非敏感连接配置持久化是否稳定。
 final class PreferencesStoreTests: XCTestCase {

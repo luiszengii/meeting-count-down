@@ -1,7 +1,7 @@
 import Combine
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定提醒音频列表控制器最核心的导入、切换和回退行为。
 @MainActor

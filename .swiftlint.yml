@@ -40,20 +40,49 @@ line_length:
   ignores_comments: true
   ignores_urls: true
 
-# 函数体长度：超过 80 行说明可能需要拆分，超过 200 行才是错误
+# 函数体长度：100 行内可接受（AppContainer.makeAppRuntime 是合理装配）；200 行是真气味
 function_body_length:
-  warning: 80
-  error: 200
+  warning: 120
+  error: 250
 
-# 类型体长度：SwiftUI View 容易偏长，warning 阈值适当放宽
+# 类型体长度：SwiftUI Settings 页 + 状态机类型偏长是这个项目的现状，
+# warning 阈值放宽到 800；超过 1500 才是真气味（要拆 page）
 type_body_length:
-  warning: 400
-  error: 800
+  warning: 800
+  error: 1500
+
+# 文件长度：SwiftUI View / 测试文件容易偏长；600 内可接受，>1500 真气味
+file_length:
+  warning: 700
+  error: 1500
 
 # 圈复杂度：超过 12 说明逻辑分支偏多，超过 25 是明确代码气味
 cyclomatic_complexity:
   warning: 12
   error: 25
+
+# 标识符名：默认 40 字符上限对 `localizedCalendarHeaderConnectionBadgeText`
+# 这种语义清晰但字面长的命名过紧；放宽到 60。`vc` 这种短到无意义的还是要纠正。
+identifier_name:
+  min_length:
+    warning: 3
+    error: 2
+  max_length:
+    warning: 60
+    error: 80
+
+# 类型名：默认 40 对 `SelectableSoundProfileReminderAudioEngine` 这种描述性
+# 命名过紧；放宽到 60。
+type_name:
+  max_length:
+    warning: 60
+    error: 80
+
+# 函数参数个数：6 个偶有出现（如 settings page metadata builder），
+# 7 才作 warning，10 才是 error
+function_parameter_count:
+  warning: 7
+  error: 10
 
 # 对 force_unwrapping / force_cast 只警告，不阻断（error 留给真正危险的场景）
 force_unwrapping: warning

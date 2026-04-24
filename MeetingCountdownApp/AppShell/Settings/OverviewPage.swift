@@ -435,7 +435,7 @@ private struct OverviewPageBody: View {
     // MARK: Presentation computed properties
 
     private func preferredJoinLink(for meeting: MeetingRecord) -> MeetingLink? {
-        if let videoLink = meeting.links.first(where: { $0.kind == .vc }) {
+        if let videoLink = meeting.links.first(where: { $0.kind == .videoConference }) {
             return videoLink
         }
         return meeting.links.first
@@ -469,28 +469,34 @@ private struct OverviewPageBody: View {
             }
         case let .playing(context, startedAt):
             if isReminderContext(context, for: meeting) {
+                let startedAtStr = absoluteFormatter.string(from: startedAt)
+                let seconds = context.countdownSeconds
                 return localized(
-                    "已在 \(absoluteFormatter.string(from: startedAt)) 开始提醒，倒计时持续 \(context.countdownSeconds) 秒。",
-                    "The reminder started at \(absoluteFormatter.string(from: startedAt)) and the countdown lasts \(context.countdownSeconds) seconds."
+                    "已在 \(startedAtStr) 开始提醒，倒计时持续 \(seconds) 秒。",
+                    "The reminder started at \(startedAtStr) and the countdown lasts \(seconds) seconds."
                 )
             }
         case let .triggeredSilently(context, triggeredAt, reason):
             if isReminderContext(context, for: meeting) {
+                let triggeredAtStr = absoluteFormatter.string(from: triggeredAt)
                 switch reason {
                 case .userMuted:
                     return localized(
-                        "已在 \(absoluteFormatter.string(from: triggeredAt)) 触发提醒，但当前是静音模式。",
-                        "The reminder was triggered at \(absoluteFormatter.string(from: triggeredAt)), but mute mode is on."
+                        "已在 \(triggeredAtStr) 触发提醒，但当前是静音模式。",
+                        "The reminder was triggered at \(triggeredAtStr), but mute mode is on."
                     )
                 case .outputRoutePolicy:
                     return localized(
-                        "已在 \(absoluteFormatter.string(from: triggeredAt)) 触发提醒，但当前输出设备不会播放声音。",
-                        "The reminder was triggered at \(absoluteFormatter.string(from: triggeredAt)), but the current audio output won't play sound."
+                        "已在 \(triggeredAtStr) 触发提醒，但当前输出设备不会播放声音。",
+                        "The reminder was triggered at \(triggeredAtStr), but the current audio output won't play sound."
                     )
                 }
             }
         case .disabled:
-            return localized("当前已关闭本地提醒，这场会议不会触发提醒。", "Local reminders are turned off, so this meeting won't trigger a reminder.")
+            return localized(
+                "当前已关闭本地提醒，这场会议不会触发提醒。",
+                "Local reminders are turned off, so this meeting won't trigger a reminder."
+            )
         case .failed(let message):
             return message
         case .idle:
@@ -499,7 +505,8 @@ private struct OverviewPageBody: View {
 
         return localized(
             "默认会在会议开始前 \(effectiveCountdownDurationLine) 触发提醒，倒计时持续 \(effectiveCountdownSeconds) 秒。",
-            "By default, the reminder triggers \(effectiveCountdownDurationLine) before the meeting and the countdown lasts \(effectiveCountdownSeconds) seconds."
+            "By default, the reminder triggers \(effectiveCountdownDurationLine) before the meeting"
+                + " and the countdown lasts \(effectiveCountdownSeconds) seconds."
         )
     }
 
@@ -741,24 +748,39 @@ private struct OverviewPageBody: View {
 
     private var localizedOverviewIssueDetail: String {
         if page.sourceCoordinator.state.lastErrorMessage != nil {
-            return localized("建议先去\u{201C}高级\u{201D}查看诊断信息，再决定下一步处理方式。", "Open Advanced and inspect diagnostics before deciding what to do next.")
+            return localized(
+                "建议先去\u{201C}高级\u{201D}查看诊断信息，再决定下一步处理方式。",
+                "Open Advanced and inspect diagnostics before deciding what to do next."
+            )
         }
         if case .failed = page.reminderEngine.state {
-            return localized("建议先去\u{201C}提醒\u{201D}页检查开关和倒计时设置，再到\u{201C}高级\u{201D}查看诊断信息。", "Check reminder settings first, then inspect diagnostics in Advanced.")
+            return localized(
+                "建议先去\u{201C}提醒\u{201D}页检查开关和倒计时设置，再到\u{201C}高级\u{201D}查看诊断信息。",
+                "Check reminder settings first, then inspect diagnostics in Advanced."
+            )
         }
         switch page.systemCalendarConnectionController.authorizationState {
         case .denied, .restricted, .writeOnly:
-            return localized("先修复日历权限后，会议读取和提醒才能恢复正常。", "Repair calendar access first so meeting reading and reminders can return to normal.")
+            return localized(
+                "先修复日历权限后，会议读取和提醒才能恢复正常。",
+                "Repair calendar access first so meeting reading and reminders can return to normal."
+            )
         default:
             break
         }
         switch syncFreshnessStatus {
         case .failed, .warning:
-            return localized("可以先立即同步一次；如果问题持续，再去\u{201C}高级\u{201D}查看诊断信息。", "Try syncing again first. If the issue continues, inspect diagnostics in Advanced.")
+            return localized(
+                "可以先立即同步一次；如果问题持续，再去\u{201C}高级\u{201D}查看诊断信息。",
+                "Try syncing again first. If the issue continues, inspect diagnostics in Advanced."
+            )
         case .idle, .pending, .passed:
             break
         }
-        return localized("如果后续出现权限、同步或音频问题，这里会优先展示修复入口。", "If permission, sync, or audio issues appear later, this area will show the fastest recovery path first.")
+        return localized(
+            "如果后续出现权限、同步或音频问题，这里会优先展示修复入口。",
+            "If permission, sync, or audio issues appear later, this area will show the fastest recovery path first."
+        )
     }
 
     // MARK: Duration & date helpers (private copies, avoid cross-type dependency)

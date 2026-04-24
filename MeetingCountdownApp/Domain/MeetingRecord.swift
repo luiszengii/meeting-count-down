@@ -62,7 +62,7 @@ struct MeetingRecord: Identifiable, Equatable, Sendable {
     /// 当前会议是否包含可直接入会的视频会议链接。
     /// 这条语义后续会被“仅提醒视频会议”过滤规则直接复用。
     var hasVideoConferenceLink: Bool {
-        links.contains { $0.kind == .vc }
+        links.contains { $0.kind == .videoConference }
     }
 
     /// 当前用户是否已经明确拒绝这场会议。
@@ -82,7 +82,7 @@ struct MeetingLink: Equatable, Sendable {
 /// 统一限制链接的语义种类，避免上层只拿到一个裸 URL 后不知道它应该如何使用。
 enum MeetingLinkKind: String, Codable, Equatable, Sendable {
     /// 视频会议或语音会议的直接加入链接。
-    case vc
+    case videoConference = "vc"
     /// 普通网页链接。
     case web
     /// 指向会议详情页或原始事件详情页的链接。

@@ -1,7 +1,7 @@
 import Combine
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定 `ReminderPreferencesController` 中 `AsyncStateController` 协议默认行为。
 @MainActor

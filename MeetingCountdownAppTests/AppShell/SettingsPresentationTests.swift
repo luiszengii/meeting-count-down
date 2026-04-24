@@ -1,15 +1,15 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定设置页展示态里本轮最关键的信息架构收口规则。
-/// 它们不验证 SwiftUI 具体排版，而是验证“哪些事实应该继续暴露，哪些不该再回流成全局复读”。
+/// 它们不验证 SwiftUI 具体排版，而是验证"哪些事实应该继续暴露，哪些不该再回流成全局复读"。
 @MainActor
 final class SettingsPresentationTests: XCTestCase {
-    /// 概览页头部只应保留“整体状态 + 最近同步”两枚高层 badge，
+    /// 概览页头部只应保留"整体状态 + 最近同步"两枚高层 badge，
     /// 避免把连接、授权等次级事实再塞回 hero 区。
-    func testOverviewHeaderBadgesCollapseToHealthAndSyncOnly() async {
-        let view = await makeSettingsView(
+    func testOverviewHeaderBadgesCollapseToHealthAndSyncOnly() async throws {
+        let view = try await makeSettingsView(
             authorizationState: .authorized,
             calendars: [calendar(id: "feishu", title: "飞书日历", suggested: true)]
         )
@@ -19,16 +19,16 @@ final class SettingsPresentationTests: XCTestCase {
 
     /// 当系统还没有授予日历读取权限时，高级页诊断摘要应直接指出权限问题，
     /// 而不是继续暴露难懂的内部 debug label。
-    func testCalendarConnectionDiagnosticSummaryPrefersAuthorizationIssue() async {
-        let view = await makeSettingsView(authorizationState: .denied)
+    func testCalendarConnectionDiagnosticSummaryPrefersAuthorizationIssue() async throws {
+        let view = try await makeSettingsView(authorizationState: .denied)
 
         XCTAssertEqual(view.localizedCalendarConnectionDiagnosticSummary, "日历权限被拒绝")
     }
 
     /// 当用户以前保存过的日历已经不在当前系统列表里时，
     /// 高级页应显示用户化的诊断摘要，而不是直接把 `selectionDebugState` 原样露出来。
-    func testCalendarConnectionDiagnosticSummaryUsesUserFacingSelectionMismatchCopy() async {
-        let view = await makeSettingsView(
+    func testCalendarConnectionDiagnosticSummaryUsesUserFacingSelectionMismatchCopy() async throws {
+        let view = try await makeSettingsView(
             authorizationState: .authorized,
             calendars: [calendar(id: "current", title: "当前日历", suggested: false)],
             storedSelectedCalendarIDs: ["missing"],
@@ -44,7 +44,8 @@ final class SettingsPresentationTests: XCTestCase {
         calendars: [SystemCalendarDescriptor] = [],
         storedSelectedCalendarIDs: Set<String> = [],
         hasStoredSelection: Bool = false
-    ) async -> SettingsView {
+    ) async throws -> SettingsView {
+        let now = try fixedNow()
         let preferencesStore = InMemoryPreferencesStore(
             selectedSystemCalendarIDs: storedSelectedCalendarIDs,
             hasStoredSelectedSystemCalendarIDs: hasStoredSelection
@@ -60,7 +61,7 @@ final class SettingsPresentationTests: XCTestCase {
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPresentationTests"),
             autoRefreshOnStart: false
         )
@@ -70,7 +71,7 @@ final class SettingsPresentationTests: XCTestCase {
                 calendars: calendars
             ),
             preferencesStore: preferencesStore,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             autoRefreshOnStart: false
         )
         let reminderPreferencesController = ReminderPreferencesController(
@@ -88,7 +89,7 @@ final class SettingsPresentationTests: XCTestCase {
             audioEngine: StubReminderAudioEngine(),
             audioOutputRouteProvider: StubAudioOutputRouteProvider(),
             scheduler: StubReminderScheduler(),
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPresentationTests")
         )
         let launchAtLoginController = LaunchAtLoginController(autoRefreshOnStart: false)
@@ -117,8 +118,10 @@ final class SettingsPresentationTests: XCTestCase {
     }
 
     /// 这些展示态测试共用同一个固定当前时间，避免日期相关文案受真实时钟影响。
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 4, day: 14, hour: 14, minute: 0))!
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 4, day: 14, hour: 14, minute: 0))
+        )
     }
 }
 

@@ -228,7 +228,9 @@ private struct RemindersPageBody: View {
                     detail: localized("外放时会自动静音。", "Sound stays silent when you're on speakers."),
                     isOn: Binding(
                         get: { page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected },
-                        set: { isEnabled in Task { await page.reminderPreferencesController.setPlaySoundOnlyWhenHeadphonesConnected(isEnabled) } }
+                        set: { isEnabled in
+                            Task { await page.reminderPreferencesController.setPlaySoundOnlyWhenHeadphonesConnected(isEnabled) }
+                        }
                     )
                 )
             }
@@ -356,9 +358,15 @@ private struct RemindersPageBody: View {
         case let .triggeredSilently(_, _, reason):
             switch reason {
             case .userMuted:
-                return localized("提醒已经命中，但当前为静音模式，因此不会播放声音。", "The reminder was triggered, but mute mode is on, so no sound will play.")
+                return localized(
+                    "提醒已经命中，但当前为静音模式，因此不会播放声音。",
+                    "The reminder was triggered, but mute mode is on, so no sound will play."
+                )
             case .outputRoutePolicy:
-                return localized("提醒已经命中，但当前输出不满足播放策略，因此不会播放声音。", "The reminder was triggered, but the current output doesn't satisfy playback policy.")
+                return localized(
+                    "提醒已经命中，但当前输出不满足播放策略，因此不会播放声音。",
+                    "The reminder was triggered, but the current output doesn't satisfy playback policy."
+                )
             }
         case .disabled:
             return localized("本地提醒已关闭，因此不会为下一场会议建立提醒。", "Local reminders are off, so the next meeting won't get a reminder.")
@@ -390,7 +398,9 @@ private struct RemindersPageBody: View {
     private var localizedOverviewAudioStatusTitle: String {
         if !page.reminderPreferencesController.reminderPreferences.globalReminderEnabled { return localized("不会播放", "Playback Off") }
         if page.reminderPreferencesController.reminderPreferences.isMuted { return localized("静音模式", "Muted") }
-        if page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected { return localized("仅耳机播放", "Headphones Only") }
+        if page.reminderPreferencesController.reminderPreferences.playSoundOnlyWhenHeadphonesConnected {
+            return localized("仅耳机播放", "Headphones Only")
+        }
         return localized("正常播放", "Audible")
     }
 

@@ -149,7 +149,6 @@ final class ReminderEngine: ObservableObject {
         self.state = .idle(message: "当前没有活动提醒任务。")
     }
 
-
     /// 把提醒引擎绑定到统一会议状态流上。
     /// 一旦 `SourceCoordinatorState` 变化，这里就会进入统一重算入口，并按需复用或重建提醒任务。
     func bind(to sourceCoordinator: SourceCoordinator) {

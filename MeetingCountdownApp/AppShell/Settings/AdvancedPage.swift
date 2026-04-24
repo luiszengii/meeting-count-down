@@ -172,7 +172,10 @@ private struct AdvancedPageBody: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    infoRow(title: localized("当前数据源", "Active Data Source"), value: localized("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar"))
+                    infoRow(
+                        title: localized("当前数据源", "Active Data Source"),
+                        value: localized("飞书 CalDAV / macOS 日历", "Feishu CalDAV / macOS Calendar")
+                    )
                     infoRow(title: localized("接入模式", "Connection Mode"), value: localized("CalDAV 单一路径", "CalDAV Only"))
                     infoRow(title: localized("可见日历", "Visible Calendars"), value: localizedVisibleCalendarCountValue)
                     infoRow(title: localized("连接诊断", "Connection Diagnosis"), value: localizedCalendarConnectionDiagnosticSummary)

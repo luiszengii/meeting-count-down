@@ -1,21 +1,21 @@
 import Combine
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试验证 Phase 0 聚合层的主状态流是否稳定。
 @MainActor
 final class SourceCoordinatorTests: XCTestCase {
     /// 验证刷新成功后，协调层会更新最近刷新时间，并重新计算下一场会议。
-    func testRefreshUpdatesLastRefreshAndNextMeeting() async {
-        let now = fixedNow()
+    func testRefreshUpdatesLastRefreshAndNextMeeting() async throws {
+        let now = try fixedNow()
         let coordinator = SourceCoordinator(
             source: StubMeetingSource(
                 descriptor: descriptor(),
                 currentHealthState: .ready(message: "系统日历已接入"),
                 sampleMeetings: [
-                    meeting(id: "later", now: now, offsetMinutes: 45),
-                    meeting(id: "sooner", now: now, offsetMinutes: 15)
+                    try meeting(id: "later", now: now, offsetMinutes: 45),
+                    try meeting(id: "sooner", now: now, offsetMinutes: 15)
                 ]
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
@@ -33,13 +33,13 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 
     /// 验证刷新前后的菜单栏标题会根据下一场会议倒计时切换，而不是一直停留在健康状态短标签。
-    func testMenuBarTitleSwitchesFromHealthLabelToCountdownAfterRefresh() async {
-        let now = fixedNow()
+    func testMenuBarTitleSwitchesFromHealthLabelToCountdownAfterRefresh() async throws {
+        let now = try fixedNow()
         let coordinator = SourceCoordinator(
             source: StubMeetingSource(
                 descriptor: descriptor(),
                 currentHealthState: .ready(message: "系统日历已接入"),
-                sampleMeetings: [meeting(id: "calendar", now: now, offsetMinutes: 40)]
+                sampleMeetings: [try meeting(id: "calendar", now: now, offsetMinutes: 40)]
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
             preferencesStore: InMemoryPreferencesStore(),
@@ -57,8 +57,8 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 
     /// 验证没有下一场会议时，菜单栏基础图标会继续保留日历 / 倒计时语义，而不是退回看起来像设置入口的符号。
-    func testMenuBarSymbolUsesCalendarOrTimerSemanticsInsteadOfSettingsSlider() async {
-        let now = fixedNow()
+    func testMenuBarSymbolUsesCalendarOrTimerSemanticsInsteadOfSettingsSlider() async throws {
+        let now = try fixedNow()
         let coordinator = SourceCoordinator(
             source: StubMeetingSource(
                 descriptor: descriptor(),
@@ -82,8 +82,8 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 
     /// 验证底层源抛出真正不可用错误时，协调层会把状态标记为失败并清空会议结果。
-    func testRefreshFailureMarksStateAsFailed() async {
-        let now = fixedNow()
+    func testRefreshFailureMarksStateAsFailed() async throws {
+        let now = try fixedNow()
         let coordinator = SourceCoordinator(
             source: FailingMeetingSource(
                 descriptor: descriptor(),
@@ -103,9 +103,9 @@ final class SourceCoordinatorTests: XCTestCase {
         XCTAssertNil(coordinator.state.nextMeeting)
     }
 
-    /// 验证底层源抛出“尚未配置”时，协调层会保持未配置语义，而不是误判成失败。
-    func testRefreshNotConfiguredKeepsStateAsUnconfigured() async {
-        let now = fixedNow()
+    /// 验证底层源抛出"尚未配置"时，协调层会保持未配置语义，而不是误判成失败。
+    func testRefreshNotConfiguredKeepsStateAsUnconfigured() async throws {
+        let now = try fixedNow()
         let coordinator = SourceCoordinator(
             source: FailingMeetingSource(
                 descriptor: descriptor(),
@@ -127,14 +127,14 @@ final class SourceCoordinatorTests: XCTestCase {
 
     /// 验证 `RefreshEventBus` 上的事件能触发协调层执行对应触发类型的刷新。
     /// 这是 T6 引入总线机制后最核心的集成验证：确认订阅链路端到端工作正常。
-    func testRefreshEventBusTriggersRefreshOnCoordinator() async {
-        let now = fixedNow()
+    func testRefreshEventBusTriggersRefreshOnCoordinator() async throws {
+        let now = try fixedNow()
         let bus = RefreshEventBus()
         let coordinator = SourceCoordinator(
             source: StubMeetingSource(
                 descriptor: descriptor(),
                 currentHealthState: .ready(message: "系统日历已接入"),
-                sampleMeetings: [meeting(id: "bus-driven", now: now, offsetMinutes: 20)]
+                sampleMeetings: [try meeting(id: "bus-driven", now: now, offsetMinutes: 20)]
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
             preferencesStore: InMemoryPreferencesStore(),
@@ -167,9 +167,13 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 
     /// 构造在固定时间基础上偏移若干分钟的测试会议。
-    private func meeting(id: String, now: Date, offsetMinutes: Int) -> MeetingRecord {
-        let startAt = Calendar(identifier: .gregorian).date(byAdding: .minute, value: offsetMinutes, to: now)!
-        let endAt = Calendar(identifier: .gregorian).date(byAdding: .minute, value: 30, to: startAt)!
+    private func meeting(id: String, now: Date, offsetMinutes: Int) throws -> MeetingRecord {
+        let startAt = try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(byAdding: .minute, value: offsetMinutes, to: now)
+        )
+        let endAt = try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(byAdding: .minute, value: 30, to: startAt)
+        )
 
         return MeetingRecord(
             id: id,
@@ -181,8 +185,10 @@ final class SourceCoordinatorTests: XCTestCase {
     }
 
     /// 返回所有测试共用的固定当前时间，确保断言稳定。
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 3, day: 30, hour: 9, minute: 0))!
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 3, day: 30, hour: 9, minute: 0))
+        )
     }
 }
 

@@ -296,7 +296,8 @@ struct MenuBarContentView: View {
             if interval <= 0 {
                 return localized("会议已开始", "Meeting started")
             }
-            return localized("开始时间 \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))", "Starts at \(Self.heroTimeFormatter.string(from: nextMeeting.startAt))")
+            let formattedTime = Self.heroTimeFormatter.string(from: nextMeeting.startAt)
+            return localized("开始时间 \(formattedTime)", "Starts at \(formattedTime)")
         }
 
         return primaryAction.subtitleFallback
@@ -341,7 +342,7 @@ struct MenuBarContentView: View {
         if let nextMeeting = sourceCoordinator.state.nextMeeting {
             if let preferredLink = preferredMeetingLink(for: nextMeeting) {
                 return PrimaryAction(
-                    title: preferredLink.kind == .vc ? localized("加入会议", "Join Video") : localized("查看详情", "View Details"),
+                    title: preferredLink.kind == .videoConference ? localized("加入会议", "Join Video") : localized("查看详情", "View Details"),
                     subtitleFallback: localized("打开下一场会议", "Open the next meeting"),
                     handler: {
                         NSWorkspace.shared.open(preferredLink.url)
@@ -383,7 +384,7 @@ struct MenuBarContentView: View {
     }
 
     private func preferredMeetingLink(for meeting: MeetingRecord) -> MeetingLink? {
-        if let videoLink = meeting.links.first(where: { $0.kind == .vc }) {
+        if let videoLink = meeting.links.first(where: { $0.kind == .videoConference }) {
             return videoLink
         }
 

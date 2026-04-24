@@ -1,8 +1,8 @@
 import AppKit
+@testable import FeishuMeetingCountdown
 import SnapshotTesting
 import SwiftUI
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 对五个 SettingsPage 做视觉基线快照，覆盖亮色 + 暗色模式。
 /// 共 5 页 × 2 模式 = 10 条快照测试。
@@ -23,7 +23,8 @@ final class SettingsPageSnapshotTests: XCTestCase {
 
     // MARK: - Pages setup (mirrors SettingsPageRegistryTests.makePages)
 
-    private func makePages() async -> [any SettingsPage] {
+    private func makePages() async throws -> [any SettingsPage] {
+        let now = try fixedNow()
         let store = InMemoryPreferencesStore()
 
         let sourceCoordinator = SourceCoordinator(
@@ -37,7 +38,7 @@ final class SettingsPageSnapshotTests: XCTestCase {
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
             preferencesStore: store,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPageSnapshotTests"),
             autoRefreshOnStart: false
         )
@@ -48,7 +49,7 @@ final class SettingsPageSnapshotTests: XCTestCase {
         let systemCalendarConnectionController = SystemCalendarConnectionController(
             calendarAccess: calendarAccess,
             preferencesStore: store,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             autoRefreshOnStart: false
         )
         let reminderPreferencesController = ReminderPreferencesController(
@@ -66,7 +67,7 @@ final class SettingsPageSnapshotTests: XCTestCase {
             audioEngine: SnapshotStubReminderAudioEngine(),
             audioOutputRouteProvider: SnapshotStubAudioOutputRouteProvider(),
             scheduler: SnapshotStubReminderScheduler(),
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPageSnapshotTests")
         )
         let launchAtLoginController = LaunchAtLoginController(autoRefreshOnStart: false)
@@ -106,10 +107,10 @@ final class SettingsPageSnapshotTests: XCTestCase {
         ]
     }
 
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(Calendar(identifier: .gregorian).date(from: DateComponents(
             year: 2026, month: 4, day: 23, hour: 10, minute: 0
-        ))!
+        )))
     }
 
     // MARK: - Snapshot helpers
@@ -126,7 +127,8 @@ final class SettingsPageSnapshotTests: XCTestCase {
             return "\(dir)/__Snapshots__/SettingsPageSnapshotTests"
         }
         // 相对路径 fallback：直接使用源码目录约定
-        return "/Users/luiszeng/Documents/GitHub/meeting-count-down/MeetingCountdownAppTests/Snapshots/__Snapshots__/SettingsPageSnapshotTests"
+        let base = "/Users/luiszeng/Documents/GitHub/meeting-count-down"
+        return "\(base)/MeetingCountdownAppTests/Snapshots/__Snapshots__/SettingsPageSnapshotTests"
     }()
 
     /// 把 AnyView 包进 NSHostingController，设置外观，截图。
@@ -157,66 +159,66 @@ final class SettingsPageSnapshotTests: XCTestCase {
 
     // MARK: - Overview
 
-    func testOverviewPageLight() async {
-        let pages = await makePages()
+    func testOverviewPageLight() async throws {
+        let pages = try await makePages()
         let page = pages[0]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .aqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .aqua)),
             named: "light"
         )
     }
 
-    func testOverviewPageDark() async {
-        let pages = await makePages()
+    func testOverviewPageDark() async throws {
+        let pages = try await makePages()
         let page = pages[0]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .darkAqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .darkAqua)),
             named: "dark"
         )
     }
 
     // MARK: - Calendar
 
-    func testCalendarPageLight() async {
-        let pages = await makePages()
+    func testCalendarPageLight() async throws {
+        let pages = try await makePages()
         let page = pages[1]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .aqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .aqua)),
             named: "light"
         )
     }
 
-    func testCalendarPageDark() async {
-        let pages = await makePages()
+    func testCalendarPageDark() async throws {
+        let pages = try await makePages()
         let page = pages[1]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .darkAqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .darkAqua)),
             named: "dark"
         )
     }
 
     // MARK: - Reminders
 
-    func testRemindersPageLight() async {
-        let pages = await makePages()
+    func testRemindersPageLight() async throws {
+        let pages = try await makePages()
         let page = pages[2]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .aqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .aqua)),
             named: "light"
         )
     }
 
-    func testRemindersPageDark() async {
-        let pages = await makePages()
+    func testRemindersPageDark() async throws {
+        let pages = try await makePages()
         let page = pages[2]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .darkAqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .darkAqua)),
             named: "dark"
         )
     }
@@ -225,44 +227,44 @@ final class SettingsPageSnapshotTests: XCTestCase {
 
     /// AudioPage 的 isPresentingSoundImporter Binding 传入 .constant(false)，
     /// 文件导入弹窗不会出现在快照里。
-    func testAudioPageLight() async {
-        let pages = await makePages()
+    func testAudioPageLight() async throws {
+        let pages = try await makePages()
         let page = pages[3]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .aqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .aqua)),
             named: "light"
         )
     }
 
-    func testAudioPageDark() async {
-        let pages = await makePages()
+    func testAudioPageDark() async throws {
+        let pages = try await makePages()
         let page = pages[3]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .darkAqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .darkAqua)),
             named: "dark"
         )
     }
 
     // MARK: - Advanced
 
-    func testAdvancedPageLight() async {
-        let pages = await makePages()
+    func testAdvancedPageLight() async throws {
+        let pages = try await makePages()
         let page = pages[4]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .aqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .aqua)),
             named: "light"
         )
     }
 
-    func testAdvancedPageDark() async {
-        let pages = await makePages()
+    func testAdvancedPageDark() async throws {
+        let pages = try await makePages()
         let page = pages[4]
         assertPageSnapshot(
             page.body(uiLanguage: .simplifiedChinese),
-            appearance: NSAppearance(named: .darkAqua)!,
+            appearance: try XCTUnwrap(NSAppearance(named: .darkAqua)),
             named: "dark"
         )
     }

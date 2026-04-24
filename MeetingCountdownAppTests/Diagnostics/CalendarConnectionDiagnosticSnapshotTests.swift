@@ -1,6 +1,6 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定“接入诊断快照”导出的关键信息，避免后续为了改 UI 文案把真正有用的排查字段删掉。
 final class CalendarConnectionDiagnosticSnapshotTests: XCTestCase {

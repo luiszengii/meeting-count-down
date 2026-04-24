@@ -1,13 +1,13 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试验证 Phase 4 本地提醒引擎最核心的调度和去重规则。
 @MainActor
 final class ReminderEngineTests: XCTestCase {
     /// 验证未来会议会被换算成一条真正的延迟提醒任务，而不是立刻播放。
-    func testReconcileSchedulesFutureMeetingUsingDefaultSoundDuration() async {
-        let now = fixedNow()
+    func testReconcileSchedulesFutureMeetingUsingDefaultSoundDuration() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 4)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -16,7 +16,7 @@ final class ReminderEngineTests: XCTestCase {
             scheduler: scheduler
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "future", now: now, offsetSeconds: 300)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "future", now: now, offsetSeconds: 300), now: now))
 
         guard case let .scheduled(context) = engine.state else {
             return XCTFail("Expected scheduled state, got \(engine.state)")
@@ -35,8 +35,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证等价的下一场会议重复发布时，会复用已有提醒而不是先取消再重建一条新任务。
-    func testReconcileReusesEquivalentScheduledReminderInsteadOfRescheduling() async {
-        let now = fixedNow()
+    func testReconcileReusesEquivalentScheduledReminderInsteadOfRescheduling() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 4)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -44,7 +44,7 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler
         )
-        let sourceState = readyState(nextMeeting: meeting(id: "same", now: now, offsetSeconds: 300))
+        let sourceState = readyState(nextMeeting: meeting(id: "same", now: now, offsetSeconds: 300), now: now)
 
         await engine.reconcile(with: sourceState)
         let firstTask = try? XCTUnwrap(scheduler.activeTasks.first)
@@ -64,8 +64,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证当会议已经近到来不及等待完整倒计时时，会立即触发默认音效播放。
-    func testReconcileImmediatelyPlaysWhenMeetingIsInsideCountdownWindow() async {
-        let now = fixedNow()
+    func testReconcileImmediatelyPlaysWhenMeetingIsInsideCountdownWindow() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 120)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -74,7 +74,7 @@ final class ReminderEngineTests: XCTestCase {
             scheduler: scheduler
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "soon", now: now, offsetSeconds: 30)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "soon", now: now, offsetSeconds: 30), now: now))
 
         guard case let .playing(context, _) = engine.state else {
             return XCTFail("Expected playing state, got \(engine.state)")
@@ -90,8 +90,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证静音模式仍然会命中提醒，但不会真的调用音频播放。
-    func testReconcileTriggersSilentlyWhenMuted() async {
-        let now = fixedNow()
+    func testReconcileTriggersSilentlyWhenMuted() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 120)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -104,7 +104,7 @@ final class ReminderEngineTests: XCTestCase {
             )
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "muted", now: now, offsetSeconds: 30)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "muted", now: now, offsetSeconds: 30), now: now))
 
         guard case let .triggeredSilently(context, _, reason) = engine.state else {
             return XCTFail("Expected silent trigger state, got \(engine.state)")
@@ -116,9 +116,9 @@ final class ReminderEngineTests: XCTestCase {
         XCTAssertTrue(scheduler.activeTasks.isEmpty)
     }
 
-    /// 验证开启“仅耳机输出时播放”后，如果默认输出是外放，则会静默命中而不是播放音频。
-    func testReconcileTriggersSilentlyWhenHeadphonePolicyBlocksCurrentOutput() async {
-        let now = fixedNow()
+    /// 验证开启"仅耳机输出时播放"后，如果默认输出是外放，则会静默命中而不是播放音频。
+    func testReconcileTriggersSilentlyWhenHeadphonePolicyBlocksCurrentOutput() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 120)
         let scheduler = TestReminderScheduler()
         let routeProvider = StubAudioOutputRouteProvider(
@@ -135,7 +135,7 @@ final class ReminderEngineTests: XCTestCase {
             )
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "speaker", now: now, offsetSeconds: 30)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "speaker", now: now, offsetSeconds: 30), now: now))
 
         guard case let .triggeredSilently(context, _, reason) = engine.state else {
             return XCTFail("Expected silent trigger state, got \(engine.state)")
@@ -147,8 +147,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证关闭总提醒开关后，不会创建任何活动提醒任务。
-    func testReconcileStaysDisabledWhenGlobalReminderIsOff() async {
-        let now = fixedNow()
+    func testReconcileStaysDisabledWhenGlobalReminderIsOff() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 5)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -161,7 +161,7 @@ final class ReminderEngineTests: XCTestCase {
             )
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "off", now: now, offsetSeconds: 300)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "off", now: now, offsetSeconds: 300), now: now))
 
         XCTAssertEqual(engine.state, .disabled)
         XCTAssertTrue(scheduler.activeTasks.isEmpty)
@@ -169,8 +169,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证同一场会议在提醒已经完整触发结束后，不会在下一次重算时再次播放提醒。
-    func testReconcileDoesNotReplayAlreadyTriggeredMeetingAfterPlaybackCompleted() async {
-        let now = fixedNow()
+    func testReconcileDoesNotReplayAlreadyTriggeredMeetingAfterPlaybackCompleted() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 120)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -178,7 +178,7 @@ final class ReminderEngineTests: XCTestCase {
             audioEngine: audioEngine,
             scheduler: scheduler
         )
-        let sourceState = readyState(nextMeeting: meeting(id: "dedupe", now: now, offsetSeconds: 30))
+        let sourceState = readyState(nextMeeting: meeting(id: "dedupe", now: now, offsetSeconds: 30), now: now)
 
         await engine.reconcile(with: sourceState)
         XCTAssertEqual(audioEngine.playCallCount, 1)
@@ -195,8 +195,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证当下一场会议消失后，之前已经安排好的延迟任务会被取消。
-    func testReconcileCancelsScheduledTaskWhenNextMeetingDisappears() async {
-        let now = fixedNow()
+    func testReconcileCancelsScheduledTaskWhenNextMeetingDisappears() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 10)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -205,10 +205,10 @@ final class ReminderEngineTests: XCTestCase {
             scheduler: scheduler
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "cancel", now: now, offsetSeconds: 300)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "cancel", now: now, offsetSeconds: 300), now: now))
         let scheduledTask = try? XCTUnwrap(scheduler.activeTasks.first)
 
-        await engine.reconcile(with: readyState(nextMeeting: nil))
+        await engine.reconcile(with: readyState(nextMeeting: nil, now: now))
 
         XCTAssertTrue(scheduledTask?.isCancelled ?? false)
         guard case let .idle(message) = engine.state else {
@@ -217,9 +217,9 @@ final class ReminderEngineTests: XCTestCase {
         XCTAssertTrue(message.contains("没有可安排提醒"))
     }
 
-    /// 验证默认音效播放完成后，提醒状态会回到“已触发，等待下一场会议”。
-    func testPlaybackCompletionReturnsStateToIdle() async {
-        let now = fixedNow()
+    /// 验证默认音效播放完成后，提醒状态会回到"已触发，等待下一场会议"。
+    func testPlaybackCompletionReturnsStateToIdle() async throws {
+        let now = try fixedNow()
         let audioEngine = SpyReminderAudioEngine(defaultDuration: 2)
         let scheduler = TestReminderScheduler()
         let engine = makeEngine(
@@ -228,7 +228,7 @@ final class ReminderEngineTests: XCTestCase {
             scheduler: scheduler
         )
 
-        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "playback", now: now, offsetSeconds: 1)))
+        await engine.reconcile(with: readyState(nextMeeting: meeting(id: "playback", now: now, offsetSeconds: 1), now: now))
         XCTAssertEqual(audioEngine.playCallCount, 1)
 
         await scheduler.fireNextActiveTask()
@@ -240,8 +240,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证会前倒计时进行中时，菜单栏会切到秒级倒计时标签。
-    func testPlayingStateProvidesMenuBarAlertPresentation() {
-        let now = fixedNow()
+    func testPlayingStateProvidesMenuBarAlertPresentation() throws {
+        let now = try fixedNow()
         let context = ScheduledReminderContext(
             meeting: meeting(id: "menu-bar-playing", now: now, offsetSeconds: 10),
             triggerAt: now,
@@ -263,8 +263,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证静音命中时，菜单栏仍会切到单独的静音提醒标签。
-    func testTriggeredSilentlyStateProvidesMenuBarAlertPresentation() {
-        let now = fixedNow()
+    func testTriggeredSilentlyStateProvidesMenuBarAlertPresentation() throws {
+        let now = try fixedNow()
         let context = ScheduledReminderContext(
             meeting: meeting(id: "menu-bar-silent", now: now, offsetSeconds: 30),
             triggerAt: now,
@@ -289,9 +289,9 @@ final class ReminderEngineTests: XCTestCase {
         )
     }
 
-    /// 验证因耳机输出策略被拦截时，菜单栏会切到单独的“避免外放”提醒标签。
-    func testTriggeredSilentlyByOutputPolicyProvidesDedicatedMenuBarAlertPresentation() {
-        let now = fixedNow()
+    /// 验证因耳机输出策略被拦截时，菜单栏会切到单独的"避免外放"提醒标签。
+    func testTriggeredSilentlyByOutputPolicyProvidesDedicatedMenuBarAlertPresentation() throws {
+        let now = try fixedNow()
         let context = ScheduledReminderContext(
             meeting: meeting(id: "menu-bar-speaker", now: now, offsetSeconds: 30),
             triggerAt: now,
@@ -317,8 +317,8 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 验证普通待调度状态不会错误地把菜单栏切到提醒态。
-    func testScheduledStateDoesNotProvideMenuBarAlertPresentation() {
-        let now = fixedNow()
+    func testScheduledStateDoesNotProvideMenuBarAlertPresentation() throws {
+        let now = try fixedNow()
         let context = ScheduledReminderContext(
             meeting: meeting(id: "menu-bar-idle", now: now, offsetSeconds: 300),
             triggerAt: now.addingTimeInterval(296),
@@ -351,10 +351,10 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 构造一个最常见的就绪态源状态，供提醒引擎直接消费。
-    private func readyState(nextMeeting: MeetingRecord?) -> SourceCoordinatorState {
+    private func readyState(nextMeeting: MeetingRecord?, now: Date) -> SourceCoordinatorState {
         SourceCoordinatorState(
             healthState: .ready(message: "系统日历已接入"),
-            lastRefreshAt: fixedNow(),
+            lastRefreshAt: now,
             nextMeeting: nextMeeting,
             meetings: nextMeeting.map { [$0] } ?? [],
             isRefreshing: false,
@@ -380,12 +380,14 @@ final class ReminderEngineTests: XCTestCase {
     }
 
     /// 提供所有测试共享的固定当前时间，避免断言依赖真实时钟。
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 4, day: 1, hour: 9, minute: 0, second: 0))!
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(
+            Calendar(identifier: .gregorian).date(from: DateComponents(year: 2026, month: 4, day: 1, hour: 9, minute: 0, second: 0))
+        )
     }
 }
 
-/// 用固定路由替代真实 CoreAudio 探测，让测试可以精确控制“当前默认输出设备”的语义。
+/// 用固定路由替代真实 CoreAudio 探测，让测试可以精确控制"当前默认输出设备"的语义。
 @MainActor
 private final class StubAudioOutputRouteProvider: AudioOutputRouteProviding {
     let route: AudioOutputRouteSnapshot

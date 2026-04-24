@@ -1,7 +1,7 @@
+@testable import FeishuMeetingCountdown
 import Foundation
 import SwiftUI
 import XCTest
-@testable import FeishuMeetingCountdown
 
 /// 这些测试锁定 `SettingsPage` 注册表的结构契约：页面数量、顺序、
 /// titleKey 内容、以及 body(uiLanguage:) 可以正常构建（不崩溃）。
@@ -13,8 +13,9 @@ final class SettingsPageRegistryTests: XCTestCase {
 
     /// 以最小依赖构建一个页面注册表，镜像 SettingsView.pages 的构造顺序。
     /// OverviewPage 需要跨页导航回调；其余页面依赖各自 controller。
-    private func makePages() async -> [any SettingsPage] {
+    private func makePages() async throws -> [any SettingsPage] {
         let store = InMemoryPreferencesStore()
+        let now = try fixedNow()
 
         let sourceCoordinator = SourceCoordinator(
             source: StubMeetingSource(
@@ -27,7 +28,7 @@ final class SettingsPageRegistryTests: XCTestCase {
             ),
             nextMeetingSelector: DefaultNextMeetingSelector(),
             preferencesStore: store,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPageRegistryTests"),
             autoRefreshOnStart: false
         )
@@ -38,7 +39,7 @@ final class SettingsPageRegistryTests: XCTestCase {
         let systemCalendarConnectionController = SystemCalendarConnectionController(
             calendarAccess: calendarAccess,
             preferencesStore: store,
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             autoRefreshOnStart: false
         )
         let reminderPreferencesController = ReminderPreferencesController(
@@ -56,7 +57,7 @@ final class SettingsPageRegistryTests: XCTestCase {
             audioEngine: RegistryTestStubReminderAudioEngine(),
             audioOutputRouteProvider: RegistryTestStubAudioOutputRouteProvider(),
             scheduler: RegistryTestStubReminderScheduler(),
-            dateProvider: FixedDateProvider(currentDate: fixedNow()),
+            dateProvider: FixedDateProvider(currentDate: now),
             logger: AppLogger(source: "SettingsPageRegistryTests")
         )
         let launchAtLoginController = LaunchAtLoginController(autoRefreshOnStart: false)
@@ -97,18 +98,18 @@ final class SettingsPageRegistryTests: XCTestCase {
         ]
     }
 
-    private func fixedNow() -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(
+    private func fixedNow() throws -> Date {
+        try XCTUnwrap(Calendar(identifier: .gregorian).date(from: DateComponents(
             year: 2026, month: 4, day: 22, hour: 10, minute: 0
-        ))!
+        )))
     }
 
     // MARK: - Test 1: Count and tab IDs
 
     /// 注册表必须包含恰好 5 个页面，且每个页面的 id 与
     /// SettingsTab.allCases 顺序一一对应（overview / calendar / reminders / audio / advanced）。
-    func testRegistryContainsExactlyFivePagesWithExpectedTabIDs() async {
-        let pages = await makePages()
+    func testRegistryContainsExactlyFivePagesWithExpectedTabIDs() async throws {
+        let pages = try await makePages()
 
         XCTAssertEqual(pages.count, 5,
             "注册表应包含恰好 5 个页面；新增 tab 必须同时更新注册表和 SettingsTab。")
@@ -123,8 +124,8 @@ final class SettingsPageRegistryTests: XCTestCase {
 
     /// 每个页面的 titleKey 中文和英文值都不能为空字符串，
     /// 确保 tab bar 和 header 的双语展示不会显示空白。
-    func testEachPageTitleKeyReturnsNonEmptyChineseAndEnglishValues() async {
-        let pages = await makePages()
+    func testEachPageTitleKeyReturnsNonEmptyChineseAndEnglishValues() async throws {
+        let pages = try await makePages()
 
         for page in pages {
             let (chinese, english) = page.titleKey
@@ -139,8 +140,8 @@ final class SettingsPageRegistryTests: XCTestCase {
 
     /// 每个页面的 body(uiLanguage:) 在中文和英文模式下都能正常构建，
     /// 不抛异常也不返回触发 fatalError 的视图（仅验证构建路径，不做快照对比）。
-    func testEachPageBodyConstructsWithoutCrashingInBothLanguages() async {
-        let pages = await makePages()
+    func testEachPageBodyConstructsWithoutCrashingInBothLanguages() async throws {
+        let pages = try await makePages()
 
         for page in pages {
             // AnyView is always non-nil by construction; the point is that the body
@@ -159,9 +160,9 @@ final class SettingsPageRegistryTests: XCTestCase {
     // MARK: - Test 4: Duplicate page construction lifecycle sanity
 
     /// 用同一批 controller 构建两次注册表，确认没有共享可变状态导致的崩溃或断言失败。
-    func testConstructingTwoRegistriesWithSameControllersDoesNotCrash() async {
-        let pages1 = await makePages()
-        let pages2 = await makePages()
+    func testConstructingTwoRegistriesWithSameControllersDoesNotCrash() async throws {
+        let pages1 = try await makePages()
+        let pages2 = try await makePages()
 
         XCTAssertEqual(pages1.count, pages2.count,
             "两次构建注册表应产生相同数量的页面。")
@@ -174,8 +175,8 @@ final class SettingsPageRegistryTests: XCTestCase {
     /// 注册表顺序必须与 SettingsTab.allCases 完全吻合，
     /// 这样任何人在 SettingsTab 里加新 case 后，CI 会在这里失败，
     /// 强制同步更新注册表。
-    func testRegistryOrderMatchesSettingsTabAllCases() async {
-        let pages = await makePages()
+    func testRegistryOrderMatchesSettingsTabAllCases() async throws {
+        let pages = try await makePages()
         let registryIDs = pages.map(\.id)
         let tabAllCases = SettingsTab.allCases
 

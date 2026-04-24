@@ -203,7 +203,7 @@ enum SystemCalendarEventNormalizer {
             || normalizedString.contains("video")
             || normalizedString.contains("lark")
             || normalizedString.contains("feishu") {
-            return .vc
+            return .videoConference
         }
 
         return .web

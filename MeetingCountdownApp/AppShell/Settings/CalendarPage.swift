@@ -258,7 +258,11 @@ private struct CalendarPageBody: View {
                 ),
                 tone: .error,
                 actions: [
-                    StatusCalloutAction(title: localized("打开系统设置", "Open System Settings"), tone: .primary, handler: openCalendarPrivacySettings),
+                    StatusCalloutAction(
+                        title: localized("打开系统设置", "Open System Settings"),
+                        tone: .primary,
+                        handler: openCalendarPrivacySettings
+                    ),
                     StatusCalloutAction(title: localized("重新检查连接", "Check Again"), tone: .secondary, handler: refreshCalendarConnection)
                 ]
             )
@@ -601,7 +605,10 @@ private struct CalendarPageBody: View {
         case .healthy:
             return localized("当前连接方式为 CalDAV，系统日历读取正常。", "The app is using CalDAV and can read macOS Calendar normally.")
         case .authorizationRequired:
-            return localized("应用尚未获得日历访问权限，当前无法读取会议并触发提醒。", "The app doesn't have calendar access yet, so it can't read meetings or trigger reminders.")
+            return localized(
+                "应用尚未获得日历访问权限，当前无法读取会议并触发提醒。",
+                "The app doesn't have calendar access yet, so it can't read meetings or trigger reminders."
+            )
         case let .connectionFailure(message):
             return message
         }
@@ -619,9 +626,11 @@ private struct CalendarPageBody: View {
     }
 
     private var localizedCalendarSelectionCountSummary: String {
-        localized(
-            "已选择 \(page.systemCalendarConnectionController.selectedCalendarIDs.count) 个，共 \(page.systemCalendarConnectionController.availableCalendars.count) 个可用",
-            "\(page.systemCalendarConnectionController.selectedCalendarIDs.count) selected, \(page.systemCalendarConnectionController.availableCalendars.count) available"
+        let selectedCount = page.systemCalendarConnectionController.selectedCalendarIDs.count
+        let totalCount = page.systemCalendarConnectionController.availableCalendars.count
+        return localized(
+            "已选择 \(selectedCount) 个，共 \(totalCount) 个可用",
+            "\(selectedCount) selected, \(totalCount) available"
         )
     }
 
