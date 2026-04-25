@@ -19,6 +19,7 @@
 | [./index.md](./index.md) | 当前这份全局内容索引 |
 | [./tooling-artifacts.md](./tooling-artifacts.md) | 说明正式文档与工具产物的边界 |
 | [./manual-installation.md](./manual-installation.md) | 面向测试用户和维护者的手动安装、放行和导出说明 |
+| [./release-process.md](./release-process.md) | 面向维护者的 Release 流程教程，从零讲清 tag push → 用户下载的全部链路 |
 
 ## 文档子索引
 
